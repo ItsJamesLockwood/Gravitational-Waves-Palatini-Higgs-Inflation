@@ -153,7 +153,7 @@ def plot_n_k(ns,rows=[]):
     plt.legend(title='Spectrum at $a=$',loc='lower right')
     plt.show()
     
-def plot_fig6(ns,rows=[]):
+def plot_fig6(ns,rows=[],vlines=False):
     if rows==[]:
         rows.append(int(ns.shape[0])/2)
     colors = np.flip(cm.magma(np.linspace(0,1,len(rows))),axis=0)
@@ -164,9 +164,11 @@ def plot_fig6(ns,rows=[]):
         plt.plot(xs,ys,label=ns['a'][rows[j]], color=colors[j])
     plt.yscale('log')
     
-    vert_lines = np.array([1.25, 1.8, 3.35])/ (2*np.pi) 
-    for vl in vert_lines:
-        plt.axvline(x = vl)
+    if vlines: 
+        vert_lines = np.array([1.25, 1.8, 3.35])/ (2*np.pi) 
+        for vl in vert_lines:
+            plt.axvline(x = vl)
+    
     plt.legend(title='Spectrum at $a=$',loc='lower right')
     plt.show()
 
