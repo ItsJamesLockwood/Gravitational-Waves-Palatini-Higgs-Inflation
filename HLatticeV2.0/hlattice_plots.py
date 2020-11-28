@@ -14,7 +14,7 @@ from plotUtils import *
 from physUtils import *
 #TODO: obtain these values from the data files
 #TODO: check conformal time used correctly
-
+from itertools import chain
 
 #%% Define variables 
 global lam, Mpl, g
@@ -23,6 +23,7 @@ Mpl = 1024
 Nstar= 50
 xi = 3.8*10**6 * lam * Nstar**2
 g = np.sqrt(3 * lam) #TODO: ?
+L = 64
 
 #wd = os.getcwd()
 wd_path = "D:/Physics/MPhys Project/gw-local-repo/HLatticeV2.0/"
@@ -36,13 +37,27 @@ def  trim_name(file):
 #%% File management
 file_name = "data/run_with_GW_17_11_screen.log"
 GW_file = "data/run_with_GW_17_11_GW.log"
-eliot_file = "data/Dataset-Friday_screen.log"
+eliot_file = "data/lf4-std-run1_screen.log"
 higgs_file = "data/higgs-vev-run1_screen.log"
 tanhfile = "data/higgs-tanh4-run1_screen.log"
+lf4_tkachev1 = "data/lf4-tkachev-coupling1_screen.log"
+lf4_tkachev2 = "data/lf4-tkachev-coupling2_screen.log"
+lf4_tkachev3 = "data/lf4-tkachev-coupling3_screen.log"
 
-filefile = eliot_file
-pw_field_number = 2 #Choose which field spectrum to plot (start: 1)
+
+filefile = lf4_tkachev3
+pw_field_number =2 #Choose which field spectrum to plot (start: 1)
+form = 'log'
+rows=[1,10,20,30,40,50,60,70,80,90]
+rsmall = [1,5,10,15,20,25,30,35,40,45]
+tk1 = [1,20,50,75,100] + list(range(2,19,3))
+tk2 = range(0,22,3)
+rmid = [1,10,90] + list(range(30,60,3))
+my_rows = rows
+tk_rows = tk2
+my_rows = sorted(my_rows)
 my_img_name =  trim_name(filefile) + '_img'
+save_img = False
 
 
 
@@ -140,9 +155,53 @@ def n_k(pw_data1,pw_data2,L=64):
     ns['a'] = a_list
     return ns
 
+def n_k_red(pw_data1,pw_data2,L=64):
+    pw_a = pw_data1.drop(['a'],axis=1)
+    pw_b = pw_data2.drop(['a'],axis=1)
+    a_list = pw_data1['a'] # By construction, this is the same as pw_data2['a']
+
+    ks = k_list(pw_data1,L=L)
+    #Retrieve actual field eignemode values
+    fk_df = pw_a.multiply(a_list**2,axis=0) 
+    fkdot_df = pw_b
+
+    #Some pretty cool element-wise multiplication between vector ks and dataframes fk_df and fkdot_df!
+    ns = 1/2 * (fk_df + fkdot_df)
+    #Store ks in the column headers
+    ns.columns = ks
+    #Add a values back for plotting purposes
+    ns['a'] = a_list
+    return ns
+
+def plot_n_t(ns,cols=[],save_img=False,img_name='Fig3_rubio',data=[]):
+    if cols==[]:
+        cols.append(int(ns.shape[1]/2))
+    colors = np.flip(cm.magma(np.linspace(0,1,len(cols))),axis=0)
+ 
+    for c in range(len(cols)):
+        print('C:',c)
+        #Retrieve k values from the column headers, discarding the 'a' in the last column
+        xs = np.array(ns['a']) 
+        ks = np.array(ns.columns[:-1])
+        ys = ns.iloc[:,cols[c]] * ks[cols[c]]**4
+        plt.plot(xs,ys,label=ks[cols[c]],color=colors[c])
+    if type(data)==pd.DataFrame:
+        plt.plot(data['a'],10**3*np.exp(data['mean1']),label='Field oscillation',linestyle='dashed')
+    plt.yscale('log')
+    plt.xlabel('$a(t)$')
+    plt.ylabel('$n_k(t)$')
+    plt.title("Occupation number $n_k(t)$ for different eigenmodes $k$ (Fig.3, Rubio)\n"+trim_name(filefile)+'_field_%i'%pw_field_number)
+    plt.legend(title='Spectrum at $k=$',loc='lower right')
+    if save_img:
+        plt.savefig(img_name + '_fig3_Rubio_f%i'%pw_field_number)
+        
+    plt.show()
+    
+
+
 def plot_n_k(ns,rows=[]):
     if rows==[]:
-        rows.append(int(ns.shape[0]))
+        rows.append(int(ns.shape[0]/2))
                     
     for r in rows:
         #Retrieve k values from the column headers, discarding the 'a' in the last column
@@ -152,11 +211,52 @@ def plot_n_k(ns,rows=[]):
     #plt.yscale('log')
     plt.legend(title='Spectrum at $a=$',loc='lower right')
     plt.show()
-    
-def plot_fig6(ns,rows=[],vlines=False):
+ 
+def plot_n_k_red(ns,rows=[]):
+    if rows==[]:
+        rows.append(int(ns.shape[0]/2))                   
+    for r in rows:
+        #Retrieve k values from the column headers, discarding the 'a' in the last column
+        xs = np.array(ns.columns[:-1]) 
+        ys = ns.iloc[r,:-1]
+        plt.plot(xs,ys,label=ns['a'][r])
+    plt.yscale('log')
+    plt.legend(title='Spectrum at $a=$',loc='lower right')
+    plt.show()
+     
+def plot_tkachev2(ns,rows=[],save_img=False,img_name="Tkachev2"):
     if rows==[]:
         rows.append(int(ns.shape[0])/2)
-    colors = np.flip(cm.magma(np.linspace(0,1,len(rows))),axis=0)
+        colors = np.flip(cm.magma(np.linspace(0,1,len(rows))),axis=0)
+    else:
+        colors = np.flip(cm.magma(np.linspace(0,1,len(rows))),axis=0)
+    for j in range(len(rows)):
+        #Retrieve k values from the column headers, discarding the 'a' in the last column
+        xs = np.array(ns.columns[:-1]) / (2 * np.pi)
+        ys = ns.iloc[rows[j],:-1] * 2
+        plt.plot(xs,ys,label="$a=$%f"%ns['a'][rows[j]], color=colors[j])
+    plt.yscale('log')
+    plt.xscale('log')
+    xl1 = np.linspace(min(xs),max(xs),1000)
+
+    plt.plot(xl1, xl1**(-3/2)*10**2,linestyle='dashed',label='~$k^{-3/2}$')
+    plt.plot(xl1, xl1**(-1)*10**4,linestyle='dashed',label='~$k^{-1}$')
+    plt.legend(loc='lower right')
+    plt.title("Occuptation number $n_k$ (Fig.2, Tkachev)")
+    plt.xlabel('k')
+    plt.ylabel('$n_k$')
+    if save_img==True:
+        plt.savefig(img_name + '_fig2_tkachev_f%i'%pw_field_number)
+
+    plt.show()
+
+def plot_fig6(ns,rows=[],vlines=False,save_img=False,img_name="Fig 6"):
+    if rows==[]:
+        rows.append(int(ns.shape[0])/2)
+        colors = np.flip(cm.magma(np.linspace(0,1,len(rows))),axis=0)
+    else:
+        colors = np.flip(cm.magma(np.linspace(0,1,len(rows))),axis=0)
+        #colors = np.flip(cm.magma(np.array(rows)/max(rows)),axis=0)
     for j in range(len(rows)):
         #Retrieve k values from the column headers, discarding the 'a' in the last column
         xs = np.array(ns.columns[:-1]) / (2 * np.pi)
@@ -170,15 +270,26 @@ def plot_fig6(ns,rows=[],vlines=False):
             plt.axvline(x = vl)
     
     plt.legend(title='Spectrum at $a=$',loc='lower right')
+    plt.title("Occupation number $n_k$ at different scale factors $a$ (Fig.6, Z.Huang)\n"+trim_name(filefile)+'_field_%i'%pw_field_number)
+    plt.xlabel(r"$k\Delta / 2 \pi$")
+    plt.ylabel(r"$ k^4\; n_k /\; 2 \pi^2\; \rho}$")
+    if save_img==True:
+        plt.savefig(img_name + '_fig6_field_%i'%pw_field_number)
+
     plt.show()
 
 #%% Main
 
 data = import_screen(filefile)
-pw_data1, pw_data2 = import_pw('data/'+trim_name(filefile) + '_pw_%i.log'%pw_field_number)
+pw_data1, pw_data2 = import_pw('data/'+trim_name(filefile) + '_pw_%i.%s'%(pw_field_number,form))
 
-n_df = n_k(pw_data1,pw_data2)
-plot_fig6(n_df, rows=[1,10,20,30,40,50,60,70,80,90])
+n_df = n_k(pw_data1,pw_data2,L=L)
+nred_df  = n_k_red(pw_data1,pw_data2,L=L)
+print(data['a'])
+plot_n_t(n_df,cols=[1,4,5,20,30],save_img=save_img,img_name=my_img_name,data=data)
+#plot_fig6(n_df, rows=my_rows, save_img=save_img,img_name=my_img_name)
+tk_rows = sorted(tk_rows)
+#plot_tkachev2(n_df,rows=tk_rows,save_img=save_img,img_name=my_img_name)
 #plot_gw(pw_data1,trim=2,save_img=False)
 
 
