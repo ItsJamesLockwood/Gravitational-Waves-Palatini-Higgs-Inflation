@@ -13,7 +13,9 @@ module model
   real(dl),parameter:: xi = 3.8d6 * Nstar**2 * lambda
   real(dl),parameter:: xi2 = xi**2
   real(dl),parameter:: xisqrt = xi**0.5 
- 
+  
+  real(dl),parameter:: a = lambda * Mplsq**2 / 4.d0 / xi2
+  real(dl),parameter:: b = xisqrt/Mpl
 !!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
 !!***************define macros here;************************
@@ -52,7 +54,7 @@ contains
   function potential(f)
     real(dl) f(ns)
     real(dl) potential
-    potential = (lambda * Mplsq**2 / 4.d0 /xi2 ) * TANH( xisqrt * PHI / Mpl)**4 
+    potential = a * TANH( b * PHI )**4 
   end function potential
 
 !! the derivative of pential w.r.t. to the fields
@@ -61,7 +63,7 @@ contains
     real(dl) f(ns)
     real(dl),dimension(ns):: dVdf
     dVdf = (/ &
-         4 * (lambda * Mplsq**2 / 4.d0 /xi2 ) * xisqrt/Mpl * TANH( xisqrt * PHI / Mpl )**3 / COSH(xisqrt * PHI / Mpl)**2 &
+         4.d0 * a * b * TANH( b * PHI )**3 / COSH(b * PHI )**2 &
          /)
   end function dVdf
 
@@ -72,7 +74,7 @@ contains
     integer fld
     select case(fld)
     case(1)
-       mass_sq = v2/2
+       mass_sq = 4.d0*a* b**2 * (3.d0*TANH(b*x)**2 / COSH(b*x)**4 - 2.d0*TANH(b*x)**4 / COSH(b*x)**2 )
     case default
        stop "wrong argument fld in mass_sq"
     end select
