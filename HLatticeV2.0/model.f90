@@ -1,4 +1,4 @@
-!!The model here is V=lambda/4 (h^2 - v^2)^2 (default model in LatticeEasy and DEFROST, see hep-ph 9705347)
+!!The model here is V=lambda * Mpl**2/(4 xi**2) * tanh(xi * chi/ Mpl) (default model in LatticeEasy and DEFROST, see hep-ph 9705347)
 
 module model
   use define_fields
@@ -8,10 +8,12 @@ module model
 !!*******************define the couplings etc. for your model *************
 !!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !!the predefined constants that you can use: GeV, MPl (the reduced Planck Mass), PlanckMass (the Planck Mass), Mplsq (square of the reduced Planck Mass)
-  real(dl):: lambda =1.d-14
-  real(dl),parameter:: viv = 1.e-3_dl * PlanckMass
-  real(dl),parameter:: v2 = viv**2
-  
+  real(dl),parameter:: lambda =1.d-4
+  real(dl),parameter:: Nstar = 50
+  real(dl),parameter:: xi = 3.8d6 * Nstar**2 * lambda
+  real(dl),parameter:: xi2 = xi**2
+  real(dl),parameter:: xisqrt = xi**0.5 
+ 
 !!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
 !!***************define macros here;************************
@@ -50,7 +52,7 @@ contains
   function potential(f)
     real(dl) f(ns)
     real(dl) potential
-    potential = (lambda/4.d0) * ( PHI**2 - v2)**2 
+    potential = (lambda * Mplsq**2 / 4.d0 /xi2 ) * TANH( xisqrt * PHI / Mpl)**4 
   end function potential
 
 !! the derivative of pential w.r.t. to the fields
@@ -59,7 +61,7 @@ contains
     real(dl) f(ns)
     real(dl),dimension(ns):: dVdf
     dVdf = (/ &
-         lambda*PHI*( PHI**2 - v2) &
+         4 * (lambda * Mplsq**2 / 4.d0 /xi2 ) * xisqrt/Mpl * TANH( xisqrt * PHI / Mpl )**3 / COSH(xisqrt * PHI / Mpl)**2 &
          /)
   end function dVdf
 
@@ -143,9 +145,10 @@ contains
 !!#endif
     case(2)
        fp = open_file("data/"//trim(run_name)//"_model.info", "w")
-       write(fp%unit,*) "V = lambda/4 (h^2 - v^2)"
+       write(fp%unit,*) "V = lambda * Mpl^2 /(4 xi^2) tanh(xi^.5 chi/Mpl)"
        write(fp%unit,*) "reduced Planck Mass M_p = ", Mpl
        write(fp%unit,*) "lambda = ",lambda
+       write(fp%unit,*) "xi = ",xi
        write(fp%unit,*) "n = ",n
        write(fp%unit,*) "dx=",metric%dx
        write(fp%unit,*) "Initial fields values:", Init_fields
