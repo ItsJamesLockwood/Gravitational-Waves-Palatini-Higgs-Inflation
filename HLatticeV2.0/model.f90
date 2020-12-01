@@ -74,7 +74,7 @@ contains
     integer fld
     select case(fld)
     case(1)
-       mass_sq = 4.d0*a* b**2 * (3.d0*TANH(b*x)**2 / COSH(b*x)**4 - 2.d0*TANH(b*x)**4 / COSH(b*x)**2 )
+       mass_sq = 4.d0*a* b**2 * (3.d0*TANH(b*PHI)**2 / COSH(b*PHI)**4 - 2.d0*TANH(b*PHI)**4 / COSH(b*PHI)**2 )
     case default
        stop "wrong argument fld in mass_sq"
     end select
