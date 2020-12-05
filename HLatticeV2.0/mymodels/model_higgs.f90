@@ -70,7 +70,7 @@ contains
     integer fld
     select case(fld)
     case(1)
-       mass_sq = v2/2
+       mass_sq = lambda * (3.d0* PHI**2 -v2)
     case default
        stop "wrong argument fld in mass_sq"
     end select

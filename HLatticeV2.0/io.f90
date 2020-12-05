@@ -191,7 +191,7 @@ contains
 
   subroutine print_settings_file()
     type(file_pointer) fp
-    fp = open_file("data/"//trim(run_name)//"_sim_settings.info", "w")
+    fp = open_file("data/"//trim(run_name)//"_sim_settings.log", "w")
     write(fp%unit,*) "Number of fields: ", ns
     write(fp%unit,*) "Initial boxsize times H: ", boxsize_H
     write(fp%unit,*) "Discretisatin scheme [1-3]: ", DIS_SCHEME 
