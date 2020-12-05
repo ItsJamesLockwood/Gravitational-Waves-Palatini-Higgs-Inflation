@@ -44,13 +44,13 @@
 !!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
 !!number of scalar fields, the global variable "ns" in the code.
-#define NUM_SCALAR_FIELDS 1
+#define NUM_SCALAR_FIELDS 2
 
 !!the length of each edge times Hubble: In HLattice the speed of light is defined to be 1, so this quantity is dimensionless. It should be chosen such that the dominating growing mode is captured. 
 #define INIT_BOXSIZE_TIMES_H 15.
 
 !! define the discretization scheme
-#define DIS_SCHEME LATTICEEASY
+#define DIS_SCHEME HLATTICE2
   !!here you can use:
   !! LATTICEEASY : \partial^2_x -->  -2 ( 1 - cos(k_x) ) This option is recommended for simulations without metric perturbations. It CANNOT be used for simulations with metric perturbations, because the first-order derivatives are not defined here.
   !! HLATTICE1 : \partial_x --> i sin(k_x), faster but less accurate spatial derivatives
@@ -69,7 +69,7 @@
 #define INTEGRATOR SYMPLECTIC_6TH
 
 !! define the # of grid points along each edge of the cubical box (global variable "n" in the code):it must be integer power of 2 (and between 4 and 4096); the total number of grid points is n^3
-#define SIMU_RESOLUTION 64
+#define SIMU_RESOLUTION 256
 
 !! want gravitational waves? You can use it for any METRIC_OPTION. In the case METRIC_OPTION = MINKOWSKI_BACKGROUND or FRW_BACKGROUND, the metric perturbations will be integrated without giving feedback to the scalar fields.
 #define WANTGW NO
@@ -84,7 +84,7 @@
 
 !!stop the program if the scale factor exceeds the following value
 !!Note that the scale factor is normalized to be 1 at the beginning of lattice simulation
-#define MAX_SCALE_FACTOR 130.
+#define MAX_SCALE_FACTOR 93.
 
 !!*** below are some settings that you can, but usually do not need to change *****
 
