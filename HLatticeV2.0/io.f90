@@ -189,5 +189,27 @@ contains
     endif
   end subroutine output_pw
 
+  subroutine print_settings_file()
+    type(file_pointer) fp
+    fp = open_file("data/"//trim(run_name)//"_sim_settings.info", "w")
+    write(fp%unit,*) "Number of fields: ", ns
+    write(fp%unit,*) "Initial boxsize times H: ", boxsize_H
+    write(fp%unit,*) "Discretisatin scheme [1-3]: ", DIS_SCHEME 
+    write(fp%unit,*) "GW turned on? [0/1]: ", WANTGW 
+    write(fp%unit,*) "Metric [1-4]: ", METRIC_OPTION
+    write(fp%unit,*) "Integrator [1-3]: ", INTEGRATOR
+    write(fp%unit,*) "Lattice points on side: ", n
+    write(fp%unit,*) "Conformal time used [0/1]: ", USE_CONFORMAL_TIME
+    write(fp%unit,*) "Max scale factor: ", stop_at_a
+    write(fp%unit,*) "Max steps: ", MAX_STEPS
+    write(fp%unit,*) "Feedback interval (for evolving h_ij): ", FEEDBACK_INTERVAL
+    write(fp%unit,*) "Checkpoints (for gauge scaling): ", CHECKPOINT_AND_GW_INTERVAL
+    write(fp%unit,*) "\n<Non-standard settings>"
+    write(fp%unit,*) "Sub integrator steps: ", SUB_INTEGRATOR_STEPS
+    write(fp%unit,*) "Reduced Planck mass: ", REDUCED_PLANCK_MASS
+    write(fp%unit,*) "Use standard wavenumber (i.e. not k_eff): ",USE_STANDARD_WAVENUMBER
+    write(fp%unit,*) "Only print a and H [0/1]: ", FEEDBACK_ONLYAH 
+    call close_file(fp)
+  end subroutine print_settings_file
 
 end module io_utils
