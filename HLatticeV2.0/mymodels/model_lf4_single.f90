@@ -9,7 +9,7 @@ module model
 !!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !!the predefined constants that you can use: GeV, MPl (the reduced Planck Mass), PlanckMass (the Planck Mass), Mplsq (square of the reduced Planck Mass)
   real(dl):: lambda =1.d-14
-  real(dl):: g2l = 120.
+  real(dl):: g2l = 0.
 !!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
 !!***************define macros here;************************

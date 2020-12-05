@@ -8,8 +8,8 @@ module model
 !!*******************define the couplings etc. for your model *************
 !!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !!the predefined constants that you can use: GeV, MPl (the reduced Planck Mass), PlanckMass (the Planck Mass), Mplsq (square of the reduced Planck Mass)
-  real(dl):: lambda =1.d-14
-  real(dl):: g2l = 120.
+  real(dl):: lambda =1.d-8
+  real(dl):: g2l = 30._dl**2 / 1.d-8
 !!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
 !!***************define macros here;************************
