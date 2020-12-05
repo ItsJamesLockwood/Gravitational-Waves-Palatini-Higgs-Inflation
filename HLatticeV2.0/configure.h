@@ -50,7 +50,7 @@
 #define INIT_BOXSIZE_TIMES_H 15.
 
 !! define the discretization scheme
-#define DIS_SCHEME HLATTICE2
+#define DIS_SCHEME LATTICEEASY
   !!here you can use:
   !! LATTICEEASY : \partial^2_x -->  -2 ( 1 - cos(k_x) ) This option is recommended for simulations without metric perturbations. It CANNOT be used for simulations with metric perturbations, because the first-order derivatives are not defined here.
   !! HLATTICE1 : \partial_x --> i sin(k_x), faster but less accurate spatial derivatives
@@ -64,12 +64,14 @@
   !! FRW_PERTURB_FIXED : FRW with perturbations in synchronous gauge and fixed spatial coordinates; It is not guaranteed that h_{ij} will be small for the chosen frame. The gauge modes (corresponding to the freedom of choosing arbitrary spatial coordinates in synchronous gauge) can be large enough to spoil the h_{ij}<<1 approximation. DO NOT TRUST THE RESULTS when you see h_{ij} ~ 0.01: in such case the code might still be stable, but the approximations in HLattice is no longer valid.
  !! FRW_PERTURB_ADAPTIVE: use adaptive spatial coordinates to remove gauge modes. This option can slightly spoil energy conservation (since you are now summing up the energy on different physical positions). This is a new feature in HLattice. The stability need to be further studied.
 
+!! use OMP - parallel processing. Enables/disables the $omp commands.
+#define USE_OMP NO
 
 !! define the integrator: SYMPLECTIC_2ND, SYMPLECTIC_4TH, SYMPLECTIC_6TH
 #define INTEGRATOR SYMPLECTIC_6TH
 
 !! define the # of grid points along each edge of the cubical box (global variable "n" in the code):it must be integer power of 2 (and between 4 and 4096); the total number of grid points is n^3
-#define SIMU_RESOLUTION 256
+#define SIMU_RESOLUTION 64
 
 !! want gravitational waves? You can use it for any METRIC_OPTION. In the case METRIC_OPTION = MINKOWSKI_BACKGROUND or FRW_BACKGROUND, the metric perturbations will be integrated without giving feedback to the scalar fields.
 #define WANTGW NO

@@ -17,7 +17,7 @@ from physUtils import *
 from itertools import chain
 
 #%% Define variables 
-global lam, Mpl, g
+global lam, Mpl, g, divx,divy
 lam = 10**-2
 Mpl = 1024
 Nstar= 50
@@ -30,9 +30,13 @@ wd_path = "D:/Physics/MPhys Project/gw-local-repo/HLatticeV2.0/"
 os.chdir(wd_path)
 print("Current working dir: ",os.getcwd())
 
-def  trim_name(file):
-    ind = file.index('_screen')
-    return file[5:ind]
+def trim_name(file):
+    try:
+        begin = len(file)+1 - file[::-1].index('\\')
+    except ValueError:
+        begin = len(file)+1 - file[::-1].index('/')
+    end = file.index('_screen')
+    return file[:end]
 
 #%% File management
 file_name = "data/run_with_GW_17_11_screen.log"
@@ -43,10 +47,17 @@ tanhfile = "data/higgs-tanh4-run1_screen.log"
 lf4_tkachev1 = "data/lf4-tkachev-coupling1_screen.log"
 lf4_tkachev2 = "data/lf4-tkachev-coupling2_screen.log"
 lf4_tkachev3 = "data/lf4-tkachev-coupling3_screen.log"
-file128 = "data/lf4-std-h2-128-run1_screen.log"
+file128 = "data/lf4-std-h2-128-run2_screen.log"
+lf4LE128 = "data/Lphi4_LatticeEasy_128points_Run1_screen.log"
 
-filefile = file128
-pw_field_number =2 #Choose which field spectrum to plot (start: 1)
+hl30 = r"D:\Physics\MPhys Project\DatasetArcive\lf4-64-LE-M1-LH30_screen.log"
+hl302= r"D:\Physics\MPhys Project\DatasetArcive\lf4-64-H2-M1-LH30_screen.log"
+
+filefile = hl302
+
+divx=2
+divy = 10**-0
+pw_field_number = 2 #Choose which field spectrum to plot (start: 1)
 form = 'log'
 rows=[1,10,20,30,40,50,60,70,80,90]
 rsmall = [1,5,10,15,20,25,30,35,40,45]
@@ -259,8 +270,8 @@ def plot_fig6(ns,rows=[],vlines=False,save_img=False,img_name="Fig 6"):
         #colors = np.flip(cm.magma(np.array(rows)/max(rows)),axis=0)
     for j in range(len(rows)):
         #Retrieve k values from the column headers, discarding the 'a' in the last column
-        xs = np.array(ns.columns[:-1]) / (2 * np.pi)
-        ys = ns.iloc[rows[j],:-1] * (2 * xs**4)
+        xs = np.array(ns.columns[:-1]) / (2 * np.pi) / divx
+        ys = ns.iloc[rows[j],:-1] * (2 * xs**4) /divy
         plt.plot(xs,ys,label=ns['a'][rows[j]], color=colors[j])
     plt.yscale('log')
     
@@ -281,7 +292,7 @@ def plot_fig6(ns,rows=[],vlines=False,save_img=False,img_name="Fig 6"):
 #%% Main
 
 data = import_screen(filefile)
-pw_data1, pw_data2 = import_pw('data/'+trim_name(filefile) + '_pw_%i.%s'%(pw_field_number,form))
+pw_data1, pw_data2 = import_pw(trim_name(filefile) + '_pw_%i.%s'%(pw_field_number,form))
 
 n_df = n_k(pw_data1,pw_data2,L=L)
 nred_df  = n_k_red(pw_data1,pw_data2,L=L)

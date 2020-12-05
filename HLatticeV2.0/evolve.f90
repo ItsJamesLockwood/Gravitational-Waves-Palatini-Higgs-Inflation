@@ -140,14 +140,25 @@ contains
     metric%piy = metric%piy + (2._dl*metric%y)* fields_kinetic_energy() * dt
 #endif
 #endif
+#if USE_OMP
     !$omp parallel do default(shared) private(i,j,k)
     LOOP
     fields_f(:,i,j,k) = fields_f(:,i,j,k) + fields_p(:,i,j,k) * ss / DETG(i,j,k)
+
 #if METRIC_PERTURB
     MEPIU(i,j,k) = MEPIU(i,j,k) + sum(fields_p(:,i,j,k)**2) * ss2 / DETG(i,j,k)
 #endif
     ENDLOOP
     !$omp end parallel do
+#else
+    LOOP
+    fields_f(:,i,j,k) = fields_f(:,i,j,k) + fields_p(:,i,j,k) * ss / DETG(i,j,k)
+
+#if METRIC_PERTURB
+    MEPIU(i,j,k) = MEPIU(i,j,k) + sum(fields_p(:,i,j,k)**2) * ss2 / DETG(i,j,k)
+#endif
+    ENDLOOP
+#endif    
     return
   end subroutine Hamiltonian_fields_kinetic
 
@@ -162,6 +173,7 @@ contains
     ss = dt/Mplsq/noncanonical_Runge_Kutta_steps
     ss2 = ss/2._dl
     do irk = 1,noncanonical_Runge_Kutta_steps
+#if USE_OMP
        !$omp parallel do default(shared) private(i,j,k,tv1,tv2,tv3,tv4)
        LOOP
        tv1(1:3) = (2._dl*MEPIU(i,j,k) - sum(MEPIU(i,j,k)))/DETG(i,j,k)*ss
@@ -176,6 +188,20 @@ contains
        MEPIU(i,j,k) = MEPIU(i,j,k) + (tv1(4:6)+2.*tv2(4:6)+tv3(4:6)+tv4(4:6))/3._dl
        ENDLOOP
        !$omp end parallel do
+#else
+       LOOP
+       tv1(1:3) = (2._dl*MEPIU(i,j,k) - sum(MEPIU(i,j,k)))/DETG(i,j,k)*ss
+       tv1(4:6) =  (sum(MEPIU(i,j,k)**2) - 0.5_dl*sum(MEPIU(i,j,k))**2 )/DETG(i,j,k)*ss2
+       tv2(1:3) = (2._dl*(MEPIU(i,j,k)+tv1(4:6)) - sum(MEPIU(i,j,k)+tv1(4:6)))*fast_exp(-sum(MEU(i,j,k)+tv1(1:3))/2._dl)*ss
+       tv2(4:6) = (sum((MEPIU(i,j,k)+tv1(4:6))**2) - 0.5_dl*sum(MEPIU(i,j,k)+tv1(4:6))**2 )*fast_exp(-sum(MEU(i,j,k)+tv1(1:3))/2._dl)* ss2 
+       tv3(1:3) = (4._dl*(MEPIU(i,j,k)+tv2(4:6)) - 2._dl*sum(MEPIU(i,j,k)+tv2(4:6)))*fast_exp(-sum(MEU(i,j,k)+tv2(1:3))/2._dl)*ss
+       tv3(4:6) = (sum((MEPIU(i,j,k)+tv2(4:6))**2) - 0.5_dl*sum(MEPIU(i,j,k)+tv2(4:6))**2 )*fast_exp(-sum(MEU(i,j,k)+tv2(1:3))/2._dl)*ss
+       tv4(1:3) = (2._dl*(MEPIU(i,j,k)+tv3(4:6)) - sum(MEPIU(i,j,k)+tv3(4:6)))*fast_exp(-sum(MEU(i,j,k)+tv3(1:3))/2._dl)*ss
+       tv4(4:6) = (sum((MEPIU(i,j,k)+tv3(4:6))**2) - 0.5_dl*sum(MEPIU(i,j,k)+tv3(4:6))**2 )*fast_exp(-sum(MEU(i,j,k)+tv3(1:3))/2._dl)*ss2
+       MEU(i,j,k) = MEU(i,j,k) + (tv1(1:3)+2.*tv2(1:3)+tv3(1:3)+tv4(1:3))/3._dl
+       MEPIU(i,j,k) = MEPIU(i,j,k) + (tv1(4:6)+2.*tv2(4:6)+tv3(4:6)+tv4(4:6))/3._dl
+       ENDLOOP
+#endif
     enddo
     return
 #endif
@@ -195,12 +221,19 @@ contains
     !!the pi_v terms
     ss = 2._dl*dt/Mplsq 
     ss2 = ss/4._dl
+#if USE_OMP
     !$omp parallel do default(shared) private(i,j,k)
     LOOP
     MEV(i,j,k) = MEV(i,j,k) + ss * MEPIV(i,j,k)/DETG(i,j,k)
     MEPIU(i,j,k) = MEPIU(i,j,k) + ss2 * sum(MEPIV(i,j,k)**2)/DETG(i,j,k)
     ENDLOOP
     !$omp end parallel do
+#else
+    LOOP
+    MEV(i,j,k) = MEV(i,j,k) + ss * MEPIV(i,j,k)/DETG(i,j,k)
+    MEPIU(i,j,k) = MEPIU(i,j,k) + ss2 * sum(MEPIV(i,j,k)**2)/DETG(i,j,k)
+    ENDLOOP
+#endif
 #endif
     return
   end subroutine Hamiltonian_gravity_kinetic_offdiagonal
@@ -247,6 +280,7 @@ contains
 
     do k=1,n
        call get_cach(k)
+#if USE_OMP
        !$omp parallel do default(shared) private(i,j,gr)
        do j=1,n; do i=1,n
           fields_p(:,i,j,k) = fields_p(:,i,j,k) + ss*( &
@@ -377,6 +411,136 @@ contains
 #endif
        enddo;enddo
        !$omp end parallel do
+#else
+       do j=1,n; do i=1,n
+          fields_p(:,i,j,k) = fields_p(:,i,j,k) + ss*( &
+               - dVdf(fields_f(:,i,j,k))*CACH_DG(i,j,0)) &
+               + ss2* &
+#if METRIC_PERTURB
+#if DIS_SCHEME == HLATTICE1
+               (TWO_DFLD_X(i+1,j,k) *CACH_DGUP11(i+1,j,0) &
+               -TWO_DFLD_X(i-1,j,k) *CACH_DGUP11(i-1,j,0)   &
+               +TWO_DFLD_Y(i,j+1,k) *CACH_DGUP22(i,j+1,0) &
+               -TWO_DFLD_Y(i,j-1,k) *CACH_DGUP22(i,j-1,0)   &
+               +TWO_DFLD_Z(i,j,k+1) *CACH_DGUP33(i,j,1)   &
+               -TWO_DFLD_Z(i,j,k-1) *CACH_DGUP33(i,j,-1)   &
+               +TWO_DFLD_Y(i+1,j,k) *CACH_DGUP12(i+1,j,0) &
+               -TWO_DFLD_Y(i-1,j,k) *CACH_DGUP12(i-1,j,0) &
+               +TWO_DFLD_X(i,j+1,k) *CACH_DGUP12(i,j+1,0) &
+               -TWO_DFLD_X(i,j-1,k) *CACH_DGUP12(i,j-1,0) &
+               +TWO_DFLD_Z(i+1,j,k) *CACH_DGUP13(i+1,j,0) &
+               -TWO_DFLD_Z(i-1,j,k) *CACH_DGUP13(i-1,j,0) &
+               +TWO_DFLD_X(i,j,k+1) *CACH_DGUP13(i,j,1) &
+               -TWO_DFLD_X(i,j,k-1) *CACH_DGUP13(i,j,-1) &
+               +TWO_DFLD_Z(i,j+1,k) *CACH_DGUP23(i,j+1,0) &
+               -TWO_DFLD_Z(i,j-1,k) *CACH_DGUP23(i,j-1,0) &
+               +TWO_DFLD_Y(i,j,k+1) *CACH_DGUP23(i,j,1) &
+               -TWO_DFLD_Y(i,j,k-1) *CACH_DGUP23(i,j,-1) &
+               )
+#elif DIS_SCHEME == HLATTICE2
+               ((TWELVE_DFLD_X(i+1,j,k) *CACH_DGUP11(i+1,j,0) &
+               -TWELVE_DFLD_X(i-1,j,k) *CACH_DGUP11(i-1,j,0)   &
+               +TWELVE_DFLD_Y(i,j+1,k) *CACH_DGUP22(i,j+1,0) &
+               -TWELVE_DFLD_Y(i,j-1,k) *CACH_DGUP22(i,j-1,0)   &
+               +TWELVE_DFLD_Z(i,j,k+1) *CACH_DGUP33(i,j,1)   &
+               -TWELVE_DFLD_Z(i,j,k-1) *CACH_DGUP33(i,j,-1)   &
+               +TWELVE_DFLD_Y(i+1,j,k) *CACH_DGUP12(i+1,j,0) &
+               -TWELVE_DFLD_Y(i-1,j,k) *CACH_DGUP12(i-1,j,0) &
+               +TWELVE_DFLD_X(i,j+1,k) *CACH_DGUP12(i,j+1,0) &
+               -TWELVE_DFLD_X(i,j-1,k) *CACH_DGUP12(i,j-1,0) &
+               +TWELVE_DFLD_Z(i+1,j,k) *CACH_DGUP13(i+1,j,0) &
+               -TWELVE_DFLD_Z(i-1,j,k) *CACH_DGUP13(i-1,j,0) &
+               +TWELVE_DFLD_X(i,j,k+1) *CACH_DGUP13(i,j,1) &
+               -TWELVE_DFLD_X(i,j,k-1) *CACH_DGUP13(i,j,-1) &
+               +TWELVE_DFLD_Z(i,j+1,k) *CACH_DGUP23(i,j+1,0) &
+               -TWELVE_DFLD_Z(i,j-1,k) *CACH_DGUP23(i,j-1,0) &
+               +TWELVE_DFLD_Y(i,j,k+1) *CACH_DGUP23(i,j,1) &
+               -TWELVE_DFLD_Y(i,j,k-1) *CACH_DGUP23(i,j,-1) &
+               )*8.- ( &
+               TWELVE_DFLD_X(i+2,j,k) *CACH_DGUP11(i+2,j,0) &
+               -TWELVE_DFLD_X(i-2,j,k) *CACH_DGUP11(i-2,j,0)   &
+               +TWELVE_DFLD_Y(i,j+2,k) *CACH_DGUP22(i,j+2,0) &
+               -TWELVE_DFLD_Y(i,j-2,k) *CACH_DGUP22(i,j-2,0)   &
+               +TWELVE_DFLD_Z(i,j,k+2) *CACH_DGUP33(i,j,2)   &
+               -TWELVE_DFLD_Z(i,j,k-2) *CACH_DGUP33(i,j,-2)   &
+               +TWELVE_DFLD_Y(i+2,j,k) *CACH_DGUP12(i+2,j,0) &
+               -TWELVE_DFLD_Y(i-2,j,k) *CACH_DGUP12(i-2,j,0) &
+               +TWELVE_DFLD_X(i,j+2,k) *CACH_DGUP12(i,j+2,0) &
+               -TWELVE_DFLD_X(i,j-2,k) *CACH_DGUP12(i,j-2,0) &
+               +TWELVE_DFLD_Z(i+2,j,k) *CACH_DGUP13(i+2,j,0) &
+               -TWELVE_DFLD_Z(i-2,j,k) *CACH_DGUP13(i-2,j,0) &
+               +TWELVE_DFLD_X(i,j,k+2) *CACH_DGUP13(i,j,2) &
+               -TWELVE_DFLD_X(i,j,k-2) *CACH_DGUP13(i,j,-2) &
+               +TWELVE_DFLD_Z(i,j+2,k) *CACH_DGUP23(i,j+2,0) &
+               -TWELVE_DFLD_Z(i,j-2,k) *CACH_DGUP23(i,j-2,0) &
+               +TWELVE_DFLD_Y(i,j,k+2) *CACH_DGUP23(i,j,2) &
+               -TWELVE_DFLD_Y(i,j,k-2) *CACH_DGUP23(i,j,-2) &
+               ))
+#endif
+#else
+#if DIS_SCHEME == LATTICEEASY
+               LAPLACIAN(i,j,k)
+#elif DIS_SCHEME == HLATTICE1
+               FOUR_LAP(i,j,k)
+#elif DIS_SCHEME == HLATTICE2
+               I44_LAP(i,j,k)
+#endif
+#endif
+
+
+          !!gravity waves are generated here
+#if METRIC_PERTURB
+#if DIS_SCHEME == HLATTICE1
+          gr(1) = sum(TWO_DFLD_X(i,j,k)**2)/2.
+          gr(2) = sum(TWO_DFLD_Y(i,j,k)**2)/2.
+          gr(3) = sum(TWO_DFLD_Z(i,j,k)**2)/2.
+          gr(4) = sum(TWO_DFLD_Y(i,j,k)*TWO_DFLD_Z(i,j,k))
+          gr(5) = sum(TWO_DFLD_X(i,j,k)*TWO_DFLD_Z(i,j,k))
+          gr(6) = sum(TWO_DFLD_X(i,j,k)*TWO_DFLD_Y(i,j,k))
+#elif DIS_SCHEME == HLATTICE2
+          gr(1) = sum(TWELVE_DFLD_X(i,j,k)**2)/2.
+          gr(2) = sum(TWELVE_DFLD_Y(i,j,k)**2)/2.
+          gr(3) = sum(TWELVE_DFLD_Z(i,j,k)**2)/2.
+          gr(4) = sum(TWELVE_DFLD_Y(i,j,k)*TWELVE_DFLD_Z(i,j,k))
+          gr(5) = sum(TWELVE_DFLD_X(i,j,k)*TWELVE_DFLD_Z(i,j,k))
+          gr(6) = sum(TWELVE_DFLD_X(i,j,k)*TWELVE_DFLD_Y(i,j,k))
+#endif
+          MEPIU(i,j,k) = MEPIU(i,j,k) - 0.5_dl*potential(fields_f(:,i,j,k))*CACH_DG(i,j,0)*ss 
+          
+          metric_p(:,i,j,k) = metric_p(:,i,j,k) - matmul(gr,sipar%cach_ddgup(:,:,i,j,sipar%cach_ind(0)))*ss2
+
+#if DIS_SCHEME == HLATTICE1
+          metric_p(1,i,j,k) = metric_p(1,i,j,k) - ss4*( &
+               FOUR_D2U_ZZ(2,i,j,k)  + FOUR_D2U_YY(3,i,j,k) - 2.*FOUR_D2V_YZ(1,i,j,k))
+          metric_p(2,i,j,k) = metric_p(2,i,j,k) - ss4*( &
+                FOUR_D2U_ZZ(1,i,j,k) + FOUR_D2U_XX(3,i,j,k) - 2.*FOUR_D2V_XZ(2,i,j,k))
+          metric_p(3,i,j,k) = metric_p(3,i,j,k) - ss4*( &
+               FOUR_D2U_XX(2,i,j,k) + FOUR_D2U_YY(1,i,j,k) - 2.*FOUR_D2V_XY(3,i,j,k))
+          metric_p(4,i,j,k) = metric_p(4,i,j,k) - ss3*( &
+               -FOUR_D2V_XX(1,i,j,k) + FOUR_D2V_XY(2,i,j,k) + FOUR_D2V_XZ(3,i,j,k)- FOUR_D2U_YZ(1,i,j,k))
+          metric_p(5,i,j,k) = metric_p(5,i,j,k) - ss3*( &
+               -FOUR_D2V_YY(2,i,j,k) + FOUR_D2V_XY(1,i,j,k) + FOUR_D2V_YZ(3,i,j,k)- FOUR_D2U_XZ(2,i,j,k))
+          metric_p(6,i,j,k) = metric_p(6,i,j,k) - ss3*( &
+               -FOUR_D2V_ZZ(3,i,j,k) +FOUR_D2V_XZ(1,i,j,k) + FOUR_D2V_YZ(2,i,j,k)- FOUR_D2U_XY(3,i,j,k))
+#elif DIS_SCHEME == HLATTICE2
+          metric_p(1,i,j,k) = metric_p(1,i,j,k) - ss4*( &
+               I44_D2U_ZZ(2,i,j,k)  + I44_D2U_YY(3,i,j,k) - 2.*I44_D2V_YZ(1,i,j,k))
+          metric_p(2,i,j,k) = metric_p(2,i,j,k) - ss4*( &
+                I44_D2U_ZZ(1,i,j,k) + I44_D2U_XX(3,i,j,k) - 2.*I44_D2V_XZ(2,i,j,k))
+          metric_p(3,i,j,k) = metric_p(3,i,j,k) - ss4*( &
+               I44_D2U_XX(2,i,j,k) + I44_D2U_YY(1,i,j,k) - 2.*I44_D2V_XY(3,i,j,k))
+          metric_p(4,i,j,k) = metric_p(4,i,j,k) - ss3*( &
+               -I44_D2V_XX(1,i,j,k) + I44_D2V_XY(2,i,j,k) + I44_D2V_XZ(3,i,j,k)- I44_D2U_YZ(1,i,j,k))
+          metric_p(5,i,j,k) = metric_p(5,i,j,k) - ss3*( &
+               -I44_D2V_YY(2,i,j,k) + I44_D2V_XY(1,i,j,k) + I44_D2V_YZ(3,i,j,k)- I44_D2U_XZ(2,i,j,k))
+          metric_p(6,i,j,k) = metric_p(6,i,j,k) - ss3*( &
+               -I44_D2V_ZZ(3,i,j,k) +I44_D2V_XZ(1,i,j,k) + I44_D2V_YZ(2,i,j,k)- I44_D2U_XY(3,i,j,k))
+#endif
+
+          MEPIU(i,j,k) = MEPIU(i,j,k) - ss5*CACH_DG(i,j,0)
+#endif
+       enddo;enddo
+#endif
     enddo
   end subroutine Hamiltonian_potential_and_gradient
 
@@ -405,13 +569,18 @@ contains
 #else
     dphyst = dt
 #endif
-
+#if USE_OMP
     !$omp parallel do private(i,j,k) default(shared)
     LOOP
     metric_h(:,i,j,k) = metric_h(:,i,j,k) + dphyst * metric_p(:,i,j,k)
     ENDLOOP
     !$omp end parallel do
-
+#else
+    LOOP
+    metric_h(:,i,j,k) = metric_h(:,i,j,k) + dphyst * metric_p(:,i,j,k)
+    ENDLOOP
+#endif
+#if USE_OMP
     !$omp parallel do private(i,j,k) default(shared)
     LOOP
 #if DIS_SCHEME == LATTICEEASY
@@ -445,7 +614,39 @@ contains
 #endif
     ENDLOOP
     !$omp end parallel do
+#else
+    LOOP
+#if DIS_SCHEME == LATTICEEASY
+    metric_p(:,i,j,k) = metric_p(:,i,j,k) + dphyst * ( -metric_p(:,i,j,k)*H3 + (metric_h(:,sind(i+1),j,k)+metric_h(:,sind(i-1),j,k)+metric_h(:,i,sind(j+1),k)+metric_h(:,i,sind(j-1),k)+metric_h(:,i,j,sind(k+1))+metric_h(:,i,j,sind(k-1))-6.*metric_h(:,i,j,k))/physdx2 + m2* (/  &
+         sum((fields_f(:,sind(i+1),j,k)-fields_f(:,i,j,k))**2), & 
+         sum((fields_f(:,i,sind(j+1),k)-fields_f(:,i,j,k))**2), &
+         sum((fields_f(:,i,j,sind(k+1))-fields_f(:,i,j,k))**2), &
+         sum((fields_f(:,i, sind(j+1),k)-fields_f(:,i,j,k))*(fields_f(:,i,j,sind(k+1))-fields_f(:,i,j,k))) , &
+         sum((fields_f(:,sind(i+1),j,k)-fields_f(:,i,j,k))*(fields_f(:,i,j,sind(k+1))-fields_f(:,i,j,k))) , &
+         sum((fields_f(:,sind(i+1),j,k)-fields_f(:,i,j,k))*(fields_f(:,i,sind(j+1),k)-fields_f(:,i,j,k))) &
+        /) )
+#elif DIS_SCHEME == HLATTICE1
+    metric_p(:,i,j,k) = metric_p(:,i,j,k) + dphyst * ( -metric_p(:,i,j,k)*H3 +FOUR_NABLA2_FLD(metric_h,:,i,j,k)/fourphysdx2 + m2* (/  &
+         sum(TWO_DFLD_X(i,j,k)**2), & 
+         sum(TWO_DFLD_Y(i,j,k)**2), &
+         sum(TWO_DFLD_Z(i,j,k)**2), &
+         sum(TWO_DFLD_Y(i,j,k)*TWO_DFLD_Z(i,j,k)) , &
+         sum(TWO_DFLD_Z(i,j,k)*TWO_DFLD_X(i,j,k)) , &
+         sum(TWO_DFLD_X(i,j,k)*TWO_DFLD_Y(i,j,k)) &
+        /) )
+#elif DIS_SCHEME == HLATTICE2
 
+    metric_p(:,i,j,k) = metric_p(:,i,j,k) + dphyst * ( -metric_p(:,i,j,k)*H3 +I44_NABLA2_FLD(metric_h,:,i,j,k)/I44physdx2 + m2* (/  &
+         sum(TWELVE_DFLD_X(i,j,k)**2), & 
+         sum(TWELVE_DFLD_Y(i,j,k)**2), &
+         sum(TWELVE_DFLD_Z(i,j,k)**2), &
+         sum(TWELVE_DFLD_Y(i,j,k)*TWELVE_DFLD_Z(i,j,k)) , &
+         sum(TWELVE_DFLD_Z(i,j,k)*TWELVE_DFLD_X(i,j,k)) , &
+         sum(TWELVE_DFLD_X(i,j,k)*TWELVE_DFLD_Y(i,j,k)) &
+        /) )
+#endif
+    ENDLOOP
+#endif
     !!the following operation does not change h_{ij} in Fourier space (for
     !nonzero k), but it significantly reduces numerical noises
     do i=1,6

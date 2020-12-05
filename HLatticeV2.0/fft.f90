@@ -31,6 +31,7 @@ contains
     integer(IB) i,j,k,id
     real(dl)::keff,w
     fft_initialized = .true.
+#if USE_OMP
     !$omp parallel do
     do i=1,N
        fft_cos(i)=cos(const_2pi*(i-1)*FFT_FORWARD/n)
@@ -62,6 +63,37 @@ contains
        fft_effk2dx2(i) = fft_effkdx(i)**2
     enddo
     !$omp end parallel do
+#else
+    do i=1,N
+       fft_cos(i)=cos(const_2pi*(i-1)*FFT_FORWARD/n)
+       fft_sin(i)=sin(const_2pi*(i-1)*FFT_FORWARD/n)
+       fft_eit(i)=cmplx(fft_cos(i),fft_sin(i))
+       fft_coshalf(i) = cos(const_pi*(i-1)*FFT_FORWARD/n)
+       fft_sinhalf(i) = sin(const_pi*(i-1)*FFT_FORWARD/n)
+#if USE_STANDARD_WAVENUMBER
+       !! stop "By default this feature is switched off"
+       if(i.le.n/2+1)then
+          fft_effkdx(i) = const_2pi*(i-1)*FFT_BACKWARD/n
+       else
+          fft_effkdx(i) = const_2pi*(i-1-n)*FFT_BACKWARD/n
+       endif
+#elif DIS_SCHEME ==  LATTICEEASY
+       if(i.le.n/2+1) then
+          fft_effkdx(i) = -2.*fft_sinhalf(i)
+       else
+          fft_effkdx(i) = 2.*fft_sinhalf(i)
+       endif
+#elif DIS_SCHEME == HLATTICE1
+       fft_effkdx(i) = -fft_sin(i)
+#elif DIS_SCHEME == HLATTICE2
+       fft_effkdx(i) = -fft_sin(i)/3.*(4.-fft_cos(i))
+#else
+       stop "Discretization scheme not defined in configure.h"
+#endif
+
+       fft_effk2dx2(i) = fft_effkdx(i)**2
+    enddo
+#endif
 
 #if MATCH_CONFIGURATION_SPACE_FLUC
     if(fft_cutoff_ind.lt.n/2) then
@@ -70,6 +102,7 @@ contains
        stop
     endif
     fft_vol = 0._dl
+#if USE_OMP
     !$omp parallel do reduction(+:fft_vol) private(i,j,k,id,keff,w) default(shared)
     LOOP
     keff=fft_absk_ind(i,j,k)
@@ -77,6 +110,13 @@ contains
     if(id.gt.0 .and. id.le.fft_numk)fft_vol(id) = fft_vol(id) + 1.
     ENDLOOP
     !$omp end parallel do
+#else
+    LOOP
+    keff=fft_absk_ind(i,j,k)
+    id = nint(keff)
+    if(id.gt.0 .and. id.le.fft_numk)fft_vol(id) = fft_vol(id) + 1.
+    ENDLOOP
+#endif
 #else
     do i=1,fft_numk
        fft_vol(i) = const_pi * 4.* real(i,dl)**2
@@ -120,12 +160,17 @@ contains
     if(size(ref,2).ne.N .or. size(ref,3).ne. n .or. size(ref,4).ne.N) stop "CubicFFT: wrong size of input array"
     if(size(imf,2).ne.N .or. size(imf,3).ne. n .or. size(imf,4).ne.N) stop "CubicFFT: wrong size of input array"
     !!FFT in x and y direction
+#if USE_OMP
     !$omp parallel do private(k) default(shared)
     do k=1,N 
        call FFT_2D(ref(:,1:n,1:n,k),imf(:,1:n,1:n,k),direction)
     enddo
     !$omp end parallel do
-
+#else
+    do k=1,N 
+       call FFT_2D(ref(:,1:n,1:n,k),imf(:,1:n,1:n,k),direction)
+    enddo
+#endif
     mmax=1
     indx=Nby2
     !!shared memory, output is scrambled format (i,j,k)-> bit_reverse_array(i),bit_reverse_array(j),bit_reverse_array(k)
@@ -133,11 +178,17 @@ contains
        do while(N.gt.mmax)
           istep=2*mmax
           do m=0,mmax-1
+#if USE_OMP
              !$omp parallel do 
              do i=m+1,N,istep
                 call FFT_xstep(ref,imf,i,mmax,m,indx)
              enddo
              !$omp end parallel do
+#else 
+             do i=m+1,N,istep
+                call FFT_xstep(ref,imf,i,mmax,m,indx)
+             enddo
+#endif
           enddo
           mmax=istep
           indx=indx/2
@@ -146,11 +197,17 @@ contains
        do while(N.gt.mmax)
           istep=2*mmax
           do m=0,mmax-1
+#if USE_OMP
              !$omp parallel do 
              do i=m+1,N,istep
                 call FFT_xstep_backward(ref,imf,i,mmax,m,indx)
              enddo
              !$omp end parallel do
+#else
+             do i=m+1,N,istep
+                call FFT_xstep_backward(ref,imf,i,mmax,m,indx)
+             enddo
+#endif
           enddo
           mmax=istep
           indx=indx/2
@@ -390,11 +447,17 @@ contains
     if(size(ref,2).ne.N .or. size(ref,3).ne. n .or. size(ref,4).ne.N .or. size(ref,1) .ne. msize .or. size(imf,1).ne.msize .or. size(imf,2).ne.N .or. size(imf,3).ne. n .or. size(imf,4).ne.N ) stop "CubicMassiveFFT: wrong size of input array"
     !!FFT in x and y direction
 
+#if USE_OMP
     !$omp parallel do private(k) default(shared)
     do k=1,N 
        call mfft_2D(msize,ref(:,1:N,1:N,k),imf(:,1:n,1:n,k),direction)
     enddo
     !$omp end parallel do
+#else
+    do k=1,N 
+       call mfft_2D(msize,ref(:,1:N,1:N,k),imf(:,1:n,1:n,k),direction)
+    enddo
+#endif
     mmax=1
     indx=Nby2
     !!shared memory, output is scrambled format (i,j,k)-> bit_reverse_array(i),bit_reverse_array(j),bit_reverse_array(k)
@@ -402,11 +465,17 @@ contains
        do while(N.gt.mmax)
           istep=2*mmax
           do m=0,mmax-1
+#if USE_OMP
              !$omp parallel do 
              do i=m+1,N,istep
                 call mfft_xstep(msize,ref,imf,i,mmax,m,indx)
              enddo
              !$omp end parallel do
+#else
+             do i=m+1,N,istep
+                call mfft_xstep(msize,ref,imf,i,mmax,m,indx)
+             enddo
+#endif
           enddo
           mmax=istep
           indx=indx/2
@@ -415,11 +484,17 @@ contains
        do while(N.gt.mmax)
           istep=2*mmax
           do m=0,mmax-1
+#if USE_OMP
              !$omp parallel do 
              do i=m+1,N,istep
                 call mfft_xstep_backward(msize,ref,imf,i,mmax,m,indx)
              enddo
              !$omp end parallel do
+#else
+             do i=m+1,N,istep
+                call mfft_xstep_backward(msize,ref,imf,i,mmax,m,indx)
+             enddo
+#endif
           enddo
           mmax=istep
           indx=indx/2

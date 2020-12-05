@@ -19,11 +19,17 @@ contains
        return
     endif
     cach = 0._dl
+#if USE_OMP
     !$omp parallel do default(shared) private(i,j,k)
     LOOP
     cach(k) = cach(k) + potential(fields_f(:,i,j,k))*DETG(i,j,k)
     ENDLOOP      
     !$omp end parallel do
+#else
+    LOOP
+    cach(k) = cach(k) + potential(fields_f(:,i,j,k))*DETG(i,j,k)
+    ENDLOOP      
+#endif
     potential_energy = sum(cach)/ncube
     return
   end function potential_energy
@@ -38,11 +44,17 @@ contains
     endif
 #if METRIC_PERTURB
     cach = 0._dl
+#if USE_OMP
     !$omp parallel do default(shared) private(i,j,k)
     LOOP
     cach(k) = cach(k) + sum(fields_p(:,i,j,k)**2)/DETG(i,j,k)
     ENDLOOP
     !$omp end parallel do
+#else
+    LOOP
+    cach(k) = cach(k) + sum(fields_p(:,i,j,k)**2)/DETG(i,j,k)
+    ENDLOOP
+#endif
     fields_kinetic_energy = sum(cach) / 2._dl /ncube
 #else
     fields_kinetic_energy = sum(fields_p**2)/2._dl/ncube
@@ -62,6 +74,7 @@ contains
        return
     endif
     cach = 0._dl
+#if USE_OMP
     !$omp parallel do default(shared) private(i,j,k)
     LOOP
     cach(k) = cach(k) +   &
@@ -104,6 +117,48 @@ contains
 #endif
     ENDLOOP
     !$omp end parallel do
+#else
+        LOOP
+    cach(k) = cach(k) +   &
+#if DIS_SCHEME == LATTICEEASY
+         sum((GRID_FLD(fields_f,:,i+1,j,k)-GRID_FLD(fields_f,:,i,j,k))**2 &
+         +(GRID_FLD(fields_f,:,i,j+1,k)-GRID_FLD(fields_f,:,i,j,k))**2 &
+         +(GRID_FLD(fields_f,:,i,j,k+1)-GRID_FLD(fields_f,:,i,j,k))**2)
+#elif DIS_SCHEME ==  HLATTICE1
+#if METRIC_PERTURB
+         DETG(i,j,k) * ( &
+         GUP11(i,j,k) * sum(TWO_DFLD_X(i,j,k)**2) &
+         + GUP22(i,j,k) * sum(TWO_DFLD_Y(i,j,k)**2) &
+         + GUP33(i,j,k) * sum(TWO_DFLD_Z(i,j,k)**2) &
+         + 2._dl*( &
+         GUP23(i,j,k) * sum(TWO_DFLD_Y(i,j,k)*TWO_DFLD_Z(i,j,k)) &
+         + GUP13(i,j,k) * sum(TWO_DFLD_X(i,j,k)*TWO_DFLD_Z(i,j,k)) &
+         + GUP12(i,j,k) * sum(TWO_DFLD_X(i,j,k)*TWO_DFLD_Y(i,j,k)) &
+         ))
+#else
+         sum(TWO_DFLD_X(i,j,k)**2) &
+         + sum(TWO_DFLD_Y(i,j,k)**2) &
+         + sum(TWO_DFLD_Z(i,j,k)**2)
+#endif
+#elif DIS_SCHEME == HLATTICE2
+#if METRIC_PERTURB
+         DETG(i,j,k) * ( &
+         GUP11(i,j,k) * sum(TWELVE_DFLD_X(i,j,k)**2) &
+         + GUP22(i,j,k) * sum(TWELVE_DFLD_Y(i,j,k)**2) &
+         + GUP33(i,j,k) * sum(TWELVE_DFLD_Z(i,j,k)**2) &
+         + 2._dl*( &
+         GUP23(i,j,k) * sum(TWELVE_DFLD_Y(i,j,k)*TWELVE_DFLD_Z(i,j,k)) &
+         + GUP13(i,j,k) * sum(TWELVE_DFLD_X(i,j,k)*TWELVE_DFLD_Z(i,j,k)) &
+         + GUP12(i,j,k) * sum(TWELVE_DFLD_X(i,j,k)*TWELVE_DFLD_Y(i,j,k)) &
+         ))
+#else
+         sum(TWELVE_DFLD_X(i,j,k)**2) &
+         + sum(TWELVE_DFLD_Y(i,j,k)**2) &
+         + sum(TWELVE_DFLD_Z(i,j,k)**2)
+#endif
+#endif
+    ENDLOOP
+#endif
 #if DIS_SCHEME == LATTICEEASY
     fields_gradient_energy = sum(cach) /ncube/ (metric%physdx)**2 / 2._dl
 #elif DIS_SCHEME == HLATTICE1
@@ -124,11 +179,17 @@ contains
     endif
 #if METRIC_PERTURB
     cach=0._dl
+#if USE_OMP
     !$omp parallel do default(shared) private(i,j,k)
     LOOP
     cach(k) = cach(k) + ( sum(MEPIV(i,j,k)**2) + 2._dl*sum(MEPIU(i,j,k)**2) - sum(MEPIU(i,j,k))**2 )/DETG(i,j,k)
     ENDLOOP
     !$omp end parallel do
+#else
+    LOOP
+    cach(k) = cach(k) + ( sum(MEPIV(i,j,k)**2) + 2._dl*sum(MEPIU(i,j,k)**2) - sum(MEPIU(i,j,k))**2 )/DETG(i,j,k)
+    ENDLOOP
+#endif
     gravity_kinetic_energy = sum(cach)/Mplsq/ncube
 #else
     gravity_kinetic_energy = -3.*effective_Hubble()**2*Mplsq
@@ -151,6 +212,7 @@ contains
        return
     endif
     cach = 0._dl
+#if USE_OMP
     !$omp parallel do default(shared) private(i,j,k)
     LOOP
     cach(k) = cach(k) + ( &
@@ -169,7 +231,24 @@ contains
 #endif
     ENDLOOP
     !$omp end parallel do
-
+#else
+    LOOP
+    cach(k) = cach(k) + ( &
+#if DIS_SCHEME == HLATTICE1
+         TWO_DV_X(1,i,j,k)**2 + TWO_DV_Y(2,i,j,k)**2 + TWO_DV_Z(3,i,j,k)**2  &
+         - TWO_DU_Z(1,i,j,k)*TWO_DU_Z(2,i,j,k)- TWO_DU_X(2,i,j,k)*TWO_DU_X(3,i,j,k) - TWO_DU_Y(1,i,j,k)*TWO_DU_Y(3,i,j,k)  &
+         )/2. &
+         - (TWO_DV_X(1,i,j,k)+TWO_DV_Z(3,i,j,k))*TWO_DV_Y(2,i,j,k) - TWO_DV_X(1,i,j,k)*TWO_DV_Z(3,i,j,k) &
+         + TWO_DV_Y(1,i,j,k)*TWO_DU_Z(1,i,j,k) + TWO_DV_Z(2,i,j,k)*TWO_DU_X(2,i,j,k) + TWO_DV_X(3,i,j,k)*TWO_DU_Y(3,i,j,k)
+#elif DIS_SCHEME == HLATTICE2
+         TWELVE_DV_X(1,i,j,k)**2 + TWELVE_DV_Y(2,i,j,k)**2 + TWELVE_DV_Z(3,i,j,k)**2  &
+         - TWELVE_DU_Z(1,i,j,k)*TWELVE_DU_Z(2,i,j,k)- TWELVE_DU_X(2,i,j,k)*TWELVE_DU_X(3,i,j,k) - TWELVE_DU_Y(1,i,j,k)*TWELVE_DU_Y(3,i,j,k)  &
+         )/2. &
+         - (TWELVE_DV_X(1,i,j,k)+TWELVE_DV_Z(3,i,j,k))*TWELVE_DV_Y(2,i,j,k) - TWELVE_DV_X(1,i,j,k)*TWELVE_DV_Z(3,i,j,k) &
+         + TWELVE_DV_Y(1,i,j,k)*TWELVE_DU_Z(1,i,j,k) + TWELVE_DV_Z(2,i,j,k)*TWELVE_DU_X(2,i,j,k) + TWELVE_DV_X(3,i,j,k)*TWELVE_DU_Y(3,i,j,k)
+#endif
+    ENDLOOP
+#endif
     if(present(dg))then
        gravity_gradient_energy = sum(cach)/ncube * dg**(1./3._dl)*Mplsq/metric%physdx**2 
     else
@@ -198,11 +277,17 @@ contains
     endif
 #if METRIC_PERTURB
     cach = 0._dl
+#if USE_OMP
     !$omp parallel do default(shared) private(i,j,k)
     LOOP
     cach(k) = cach(k) + DETG(i,j,k)
     ENDLOOP
     !$omp end parallel do
+#else
+    LOOP
+    cach(k) = cach(k) + DETG(i,j,k)
+    ENDLOOP
+#endif
     total_detg = sum(cach)/ncube
 #else
     total_detg = 1._dl
@@ -236,11 +321,17 @@ contains
     endif
 #if METRIC_PERTURB
     cach = 0._dl
+#if USE_OMP
     !$omp parallel do default(shared) private(i,j,k)
     LOOP
     cach(k) = cach(k) + sum(MEPIU(i,j,k))*DETG(i,j,k)
     ENDLOOP
     !$omp end parallel do
+#else
+    LOOP
+    cach(k) = cach(k) + sum(MEPIU(i,j,k))*DETG(i,j,k)
+    ENDLOOP
+#endif
     if(present(totdg))then
        effective_Hubble = -sum(cach)/ncube/totdg/3._dl/Mplsq
     else
@@ -336,11 +427,17 @@ contains
 #if DIS_SCHEME == HLATTICE1
     if(k.eq.1)then !!initialize slice #1 and slice #0
        do ii=0,1
+#if USE_OMP
           !$omp parallel do default(shared) private(i,j)
           do j=1,n; do i=1,n
              call get_dgup(i,j,ii,sipar%cach_dg(i,j,ii),sipar%cach_dgup(:,i,j,ii),sipar%cach_ddgup(:,:,i,j,ii))
           enddo; enddo
           !$omp end parallel do
+#else
+          do j=1,n; do i=1,n
+             call get_dgup(i,j,ii,sipar%cach_dg(i,j,ii),sipar%cach_dgup(:,i,j,ii),sipar%cach_ddgup(:,:,i,j,ii))
+          enddo; enddo
+#endif
        enddo
        sipar%cach_ind(-1) = 2 !!previous slice
        sipar%cach_ind(0) = 0  !!the current slice
@@ -349,19 +446,32 @@ contains
 
     sipar%cach_ind = mod(sipar%cach_ind+1, 3)  !!rotate the indices
     !!calculate the slice #k+1
+#if USE_OMP
     !$omp parallel do default(shared) private(i,j)
     do j=1,n; do i=1,n
        call get_dgup(i,j,k+1,sipar%cach_dg(i,j,sipar%cach_ind(1)), sipar%cach_dgup(:,i,j,sipar%cach_ind(1)),sipar%cach_ddgup(:,:,i,j,sipar%cach_ind(1)))
     enddo; enddo
     !$omp end parallel do
+#else
+    do j=1,n; do i=1,n
+       call get_dgup(i,j,k+1,sipar%cach_dg(i,j,sipar%cach_ind(1)), sipar%cach_dgup(:,i,j,sipar%cach_ind(1)),sipar%cach_ddgup(:,:,i,j,sipar%cach_ind(1)))
+    enddo; enddo
+#endif
+
 #elif DIS_SCHEME == HLATTICE2
     if(k.eq.1)then !!initialize slice #0, #1, #2, #3
        do ii=0,3
+#if USE_OMP
           !$omp parallel do default(shared) private(i,j)
           do j=1,n; do i=1,n
              call get_dgup(i,j,ii-1,sipar%cach_dg(i,j,ii),sipar%cach_dgup(:,i,j,ii),sipar%cach_ddgup(:,:,i,j,ii))
           enddo; enddo
           !$omp end parallel do
+#else
+          do j=1,n; do i=1,n
+             call get_dgup(i,j,ii-1,sipar%cach_dg(i,j,ii),sipar%cach_dgup(:,i,j,ii),sipar%cach_ddgup(:,:,i,j,ii))
+          enddo; enddo
+#endif
        enddo
        sipar%cach_ind(-2) = 4
        sipar%cach_ind(-1) = 0 
@@ -372,11 +482,18 @@ contains
 
     sipar%cach_ind = mod(sipar%cach_ind+1, 5)  !!rotate the indices
     !!calculate the slice #k+1
+#if USE_OMP
     !$omp parallel do default(shared) private(i,j)
     do j=1,n; do i=1,n
        call get_dgup(i,j,k+2,sipar%cach_dg(i,j,sipar%cach_ind(2)), sipar%cach_dgup(:,i,j,sipar%cach_ind(2)),sipar%cach_ddgup(:,:,i,j,sipar%cach_ind(2)))
     enddo; enddo
     !$omp end parallel do
+#else
+    do j=1,n; do i=1,n
+       call get_dgup(i,j,k+2,sipar%cach_dg(i,j,sipar%cach_ind(2)), sipar%cach_dgup(:,i,j,sipar%cach_ind(2)),sipar%cach_ddgup(:,:,i,j,sipar%cach_ind(2)))
+    enddo; enddo
+#endif
+
 #endif
 #endif
     return
@@ -409,11 +526,17 @@ contains
 #if METRIC_PERTURB
     !!get the h_{ij}' 
     metric_p = metric_p*(2./Mplsq*metric%physdx)
+#if USE_OMP
     !$omp parallel do
     LOOP
     MEPIU(i,j,k) = (2.*MEPIU(i,j,k)-sum(MEPIU(i,j,k)))
     ENDLOOP
     !$omp end parallel do
+#else
+    LOOP
+    MEPIU(i,j,k) = (2.*MEPIU(i,j,k)-sum(MEPIU(i,j,k)))
+    ENDLOOP
+#endif
 #else
     metric_p = metric_p*metric%physdx
 #endif
@@ -428,13 +551,21 @@ contains
     call CubicMassiveFFT(6,metric_h,metric_p,FFT_BACKWARD)
     print*,sqrt(sum(metric_h**2)/ncube)
     tmp=0.
+#if USE_OMP
     !$omp parallel do reduction(+:tmp)
     LOOP
     tmp = tmp + sum(metric_h(1:3,i,j,k))**2
     ENDLOOP
     !$omp end parallel do
+#else
+    LOOP
+    tmp = tmp + sum(metric_h(1:3,i,j,k))**2
+    ENDLOOP
+#endif
+
     print*,sqrt(tmp)
     tmp=0.
+#if USE_OMP
     !$omp parallel do reduction(+:tmp)
     LOOP
     tmp = tmp + (TWELVE_DU_X(1,i,j,k)+TWELVE_DV_Y(3,i,j,k)+TWELVE_DV_Z(2,i,j,k))**2 & 
@@ -442,6 +573,13 @@ contains
          +(TWELVE_DU_Z(3,i,j,k)+TWELVE_DV_Y(1,i,j,k)+TWELVE_DV_X(2,i,j,k))**2
     ENDLOOP
     !$omp end parallel do
+#else
+    LOOP
+    tmp = tmp + (TWELVE_DU_X(1,i,j,k)+TWELVE_DV_Y(3,i,j,k)+TWELVE_DV_Z(2,i,j,k))**2 & 
+         +(TWELVE_DU_Y(2,i,j,k)+TWELVE_DV_X(3,i,j,k)+TWELVE_DV_Z(1,i,j,k))**2 &
+         +(TWELVE_DU_Z(3,i,j,k)+TWELVE_DV_Y(1,i,j,k)+TWELVE_DV_X(2,i,j,k))**2
+    ENDLOOP
+#endif
     print*,sqrt(tmp)/12.
     stop
 #endif
@@ -472,11 +610,17 @@ contains
 #else
 #if METRIC_PERTURB
     metric_p = metric_p*(Mplsq/2./ metric%physdx)
+#if USE_OMP
     !$omp parallel do
     LOOP
     MEPIU(i,j,k) = (MEPIU(i,j,k)-sum(MEPIU(i,j,k)))/2.
     ENDLOOP
     !$omp end parallel do
+#else
+    LOOP
+    MEPIU(i,j,k) = (MEPIU(i,j,k)-sum(MEPIU(i,j,k)))/2.
+    ENDLOOP
+#endif
 #else
     metric_p = metric_p/ metric%physdx
 #endif
