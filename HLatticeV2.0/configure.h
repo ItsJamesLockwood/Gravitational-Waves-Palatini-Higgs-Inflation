@@ -50,14 +50,14 @@
 #define INIT_BOXSIZE_TIMES_H 15.
 
 !! define the discretization scheme
-#define DIS_SCHEME LATTICEEASY
+#define DIS_SCHEME HLATTICE2
   !!here you can use:
   !! LATTICEEASY : \partial^2_x -->  -2 ( 1 - cos(k_x) ) This option is recommended for simulations without metric perturbations. It CANNOT be used for simulations with metric perturbations, because the first-order derivatives are not defined here.
   !! HLATTICE1 : \partial_x --> i sin(k_x), faster but less accurate spatial derivatives
   !! HLATTICE2 : \partial_x --> i/3 sin(k_x) (4 - cos(k_x)), slower but more accurate spatial derivatives. This option is recommended for simulations with metric perturbations
 
 !! define the metric
-#define METRIC_OPTION FRW_BACKGROUND
+#define METRIC_OPTION FRW_PERTURB_FIXED
   !! you can use:
   !! MINKOWSKI_BACKGROUND : minkowski spacetime
   !! FRW_BACKGROUND : FRW, evolve a(t) together with the scalar fields
@@ -84,7 +84,7 @@
 
 !!stop the program if the scale factor exceeds the following value
 !!Note that the scale factor is normalized to be 1 at the beginning of lattice simulation
-#define MAX_SCALE_FACTOR 130.
+#define MAX_SCALE_FACTOR 93.
 
 !!*** below are some settings that you can, but usually do not need to change *****
 
