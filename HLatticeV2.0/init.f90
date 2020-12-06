@@ -48,7 +48,7 @@ contains
     enddo
     init_fields = THE_FIELDS
     init_momenta = THE_MOMENTA
-
+    call print_settings_file()
     call print_info()
 
     sipar%time = 0
