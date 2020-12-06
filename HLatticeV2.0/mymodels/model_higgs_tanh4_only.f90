@@ -8,7 +8,7 @@ module model
 !!*******************define the couplings etc. for your model *************
 !!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !!the predefined constants that you can use: GeV, MPl (the reduced Planck Mass), PlanckMass (the Planck Mass), Mplsq (square of the reduced Planck Mass)
-  real(dl),parameter:: lambda =1.d-4
+  real(dl),parameter:: lambda =1.d-14
   real(dl),parameter:: Nstar = 50
   real(dl),parameter:: xi = 3.8d6 * Nstar**2 * lambda
   real(dl),parameter:: xi2 = xi**2
