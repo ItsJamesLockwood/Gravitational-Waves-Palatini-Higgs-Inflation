@@ -8,7 +8,7 @@ module model
 !!*******************define the couplings etc. for your model *************
 !!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !!the predefined constants that you can use: GeV, MPl (the reduced Planck Mass), PlanckMass (the Planck Mass), Mplsq (square of the reduced Planck Mass)
-  real(dl),parameter:: lambda =1.d-14
+  real(dl),parameter:: lambda =1.d-4
   real(dl),parameter:: Nstar = 50
   real(dl),parameter:: xi = 3.8d6 * Nstar**2 * lambda
   real(dl),parameter:: xi2 = xi**2
@@ -63,7 +63,7 @@ contains
     real(dl) f(ns)
     real(dl),dimension(ns):: dVdf
     dVdf = (/ &
-         4.d0 * a * b * TANH( b * PHI )**3 / COSH(b * PHI )**2 &
+         4*a*b * (1-TANH(b*PHI)**2) * TANH(b*PHI)**3 &
          /)
   end function dVdf
 
@@ -74,7 +74,7 @@ contains
     integer fld
     select case(fld)
     case(1)
-       mass_sq = 4.d0*a* b**2 * (3.d0*TANH(b*PHI)**2 / COSH(b*PHI)**4 - 2.d0*TANH(b*PHI)**4 / COSH(b*PHI)**2 )
+       mass_sq = 4.d0*a*b**2 * (1-TANH(b*PHI)**2) * (3*TANH(b*PHI)**2-5*TANH(b*PHI)**4)
     case default
        stop "wrong argument fld in mass_sq"
     end select
