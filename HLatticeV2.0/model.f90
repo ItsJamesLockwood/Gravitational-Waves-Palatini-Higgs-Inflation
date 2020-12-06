@@ -115,18 +115,29 @@ contains
     real(dl) k,omega
     integer(IB) fld
     omega=k**2+mass_sq(init_fields,fld)
+    !write(*,*) "initial omega^2: ",omega
+    !write(*,*) "amps: ",model_Power(1),"and", model_Power(2)
+    !write(*,*) "amps: ",model_Power
+
     if(n*k*metric%dx .lt. const_pi .or. omega.lt.0.) then
        model_Power =0._dl
+       write(*,*) "1st IF: ",model_Power      
        return
     endif
     omega=sqrt(omega)
+    !write(*,*) "initial omega: ",omega
     if(omega.gt.Init_Hubble)then 
        !!put in 1/2 particle per phase space volume
        !!note this is just an approximation. If you care about time scale of one or two oscillations. The quantum->classical transition should be calculated analytically.
        model_Power(1) = 0.5_dl/omega
+       model_Power(2) = 0.5_dl*omega
+
+       write(*,*) "2nd IF: ",model_Power,"and omega:", omega      
        return
     endif
+    !write(*,*) "amps: ",model_Power(1),"and", model_Power(2)
     model_Power = 0._dl
+    write(*,*) "3rd IF: ",model_Power      
     return
   end function model_Power
 

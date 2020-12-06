@@ -106,11 +106,22 @@ contains
        amp=Model_Power(fld,i*k_unit/metric%physdx)
        repk(i)=amp(1)
        impk(i)=amp(2)
-    enddo     
+        write(*,*) "Values:", amp(1), "and", amp(2), "at index",i
+    enddo
+    write(*,*) "Any negative values:",(any(repk.lt.0.) .or. any(impk.lt.0.))
     repk=repk*(n/metric%dx)**3 
     impk=impk*(n/metric%dx)**3*metric%physdx**2
     fft_ind_re =fld
     fft_ind_im =fld
+    if(any(repk.lt.0)) then
+      write(*,*) "THERE IS A repk LESS THAN ZERO!"
+      write(*,*) "Metric value: ",metric%dx
+    endif
+    if( any(impk.lt.0) ) then 
+      write(*,*) "THERE IS A impk LESS THAN ZERO!"
+      write(*,*) "Metric value: ",metric%dx
+    endif
+    
     call FFT_RandomGaussian(fields_f,fields_p,repk,impk)
     fields_p(fld,:,:,:)=fields_p(fld,:,:,:)/metric%physdx
 #ifdef DEBUG_MODE
