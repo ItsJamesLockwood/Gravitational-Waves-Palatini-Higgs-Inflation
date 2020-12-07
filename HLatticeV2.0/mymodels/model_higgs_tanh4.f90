@@ -113,22 +113,45 @@ contains
   function model_Power(fld,k)
     real(dl),dimension(2):: model_Power
     real(dl) k,omega
+    logical,save::warning = .true.
     integer(IB) fld
-    omega=k**2+mass_sq(init_fields,fld)
-    if(n*k*metric%dx .lt. const_pi .or. omega.lt.0.) then
-       model_Power =0._dl
-       return
+    if(n*k*metric%dx .lt. const_pi) then
+      model_Power =0._dl
+      return
     endif
-    omega=sqrt(omega)
-    if(omega.gt.Init_Hubble)then 
-       !!put in 1/2 particle per phase space volume
-       !!note this is just an approximation. If you care about time scale of one or two oscillations. The quantum->classical transition should be calculated analytically.
-       model_Power(1) = 0.5_dl/omega
-       return
-    endif
-    model_Power = 0._dl
-    return
-  end function model_Power
+    !check that k > k_min=a * H_init (note: k in code is defined as comoving momentum):
+    if(k.gt.Init_Hubble)then 
+      !define omega^2:
+      omega=k**2+mass_sq(init_fields,fld)
+      !check if omega / effective mass squared is positive
+      if(omega.gt.0.)then
+         omega=sqrt(abs(omega))
+         !TODO: why is this statement necessary?
+         if(omega*metric%dx .le. const_2pi .and. omega*metric%dx*n .ge. const_2pi)then
+            model_Power(1) = 0.5_dl/omega
+            model_Power(2) = 0.5_dl*omega
+            return
+         endif
+      !We now consider the tachyonic region (i.e. k_min < k < k_max)
+      else
+         !Set the initial conditions from arxiv:1902.10148. 
+         model_Power(1) = Mpl/k /metric%a**3
+         model_Power(2) = xisqrt/SQRT(lambda)* k/Mpl /metric%a**3
+         if(warning)then
+            write(*,*) "Tachyonic region initialization may be not correct"
+            warning = .false.
+         endif
+         return
+      endif
+   !When k < k_min: no longer in tachyonic region
+   else
+      model_Power(1) = 0.5_dl/k*(init_Hubble/k)**2
+      model_Power(2) = 0._dl
+      return
+   endif
+   model_Power = 0._dl
+   return
+   end function model_Power
 
 
 !!model outputs
