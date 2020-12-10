@@ -1,0 +1,16 @@
+/.git
+/.gitattributes
+/Datasets
+/Fortran-error-log.md
+/HLatticeV2src
+/LICENSE
+/Lphi4_LatticeEasy_128points_Run1
+/README.md
+/week7_plots.zip
+/week8_nk.py
+*.mod
+*.o
+*.exe
+*.log
+*.info
+*.zip

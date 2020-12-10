@@ -264,6 +264,7 @@ contains
     metric%a = metric%a*ainc
     metric%physdx = metric%physdx * ainc
     metric_h(1:3,:,:,:) = metric_h(1:3,:,:,:) - 2._dl*log(ainc)
+    write(*,*) "Ainc:",ainc,"Metric h:",metric_h(1:3,:,:,:)
     ainc = ainc**3
     metric_p = metric_p/ainc
     fields_p = fields_p/ainc
