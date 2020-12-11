@@ -12,5 +12,9 @@
 *.o
 *.exe
 *.log
+<<<<<<< HEAD
 *.info
 *.zip
+=======
+*.info
+>>>>>>> 9a148e3a349200544b478daeba14f4ef79969d2c
