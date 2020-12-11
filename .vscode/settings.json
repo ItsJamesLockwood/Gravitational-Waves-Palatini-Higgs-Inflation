@@ -1,0 +1,6 @@
+{
+    "git.scanRepositories": [
+        "D:\\Physics"
+    ],
+    "scm.alwaysShowProviders": true
+}
