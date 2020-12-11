@@ -56,6 +56,7 @@ contains
     metric%y = 1._dl
     metric%a = 1._dl
     init_Hubble = sqrt((potential(THE_FIELDS)+sum(THE_MOMENTA**2)/2.)/3.)/Mpl
+    write(*,*) "First initial Hubble:",init_hubble
     metric%dx = boxsize_H/init_Hubble/n
     metric%physdx=metric%dx*metric%a
     sipar%dt = model_dt_per_step()
