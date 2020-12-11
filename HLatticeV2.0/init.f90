@@ -106,7 +106,7 @@ contains
        amp=Model_Power(fld,i*k_unit/metric%physdx)
        repk(i)=amp(1)
        impk(i)=amp(2)
-        write(*,*) "Values:", amp(1), "and", amp(2), "at index",i
+       !write(*,*) "Values:", amp(1), "and", amp(2), "at index",i
     enddo
     write(*,*) "Any negative values:",(any(repk.lt.0.) .or. any(impk.lt.0.))
     repk=repk*(n/metric%dx)**3 

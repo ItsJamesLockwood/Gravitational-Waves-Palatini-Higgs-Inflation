@@ -32,7 +32,7 @@ module model
 !!Just define where you want to start the background evolution. Note this is NOT where you start the lattice simulation, which is defined in a subroutine "start_box_simulation" in this file.
  !!initial field values
   real(dl),dimension(ns)::init_fields=(/ &
-       3.5_dl *PlanckMass &
+       0.002_dl *PlanckMass &
        /)
 
 !!Initial field momenta
