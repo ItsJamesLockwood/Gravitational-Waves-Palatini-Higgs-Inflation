@@ -84,7 +84,7 @@
 
 !!stop the program if the scale factor exceeds the following value
 !!Note that the scale factor is normalized to be 1 at the beginning of lattice simulation
-#define MAX_SCALE_FACTOR 93.
+#define MAX_SCALE_FACTOR 10000.
 
 !!*** below are some settings that you can, but usually do not need to change *****
 
