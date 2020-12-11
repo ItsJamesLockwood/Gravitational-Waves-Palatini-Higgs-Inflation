@@ -8,9 +8,9 @@
 /README.md
 /week7_plots.zip
 /week8_nk.py
-*.mod
-*.o
-*.exe
-*.log
-*.info
-*.zip
+/*.mod
+/*.o
+/*.exe
+/*.log
+/*.info
+/*.zip
