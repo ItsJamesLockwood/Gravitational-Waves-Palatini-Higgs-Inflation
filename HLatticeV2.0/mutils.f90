@@ -7,7 +7,7 @@ module mutils
   
   logical::need_recalculate=.true.
   real(dl)::last_potential_energy, last_fields_kinetic_energy, last_fields_gradient_energy, last_gravity_kinetic_energy, last_gravity_gradient_energy, last_total_detg, last_effective_Hubble
-
+  real(dl)::cur_ainc,cur_total_detg
 contains
 
   !!the total potential energy of the scalar fields
@@ -261,7 +261,9 @@ contains
     !!coordinate transformation: redefine dx-> a dx
 #if METRIC_PERTURB 
     ainc = (total_detg())**(1._dl/3._dl)
-    write(*,*) "Ainc:",ainc, "Total Detg:",total_detg()
+    cur_ainc = ainc
+    cur_total_detg = total_detg()
+    write(*,*) "Ainc:",cur_ainc, "Total Detg:",cur_total_detg
     metric%a = metric%a*ainc
     metric%physdx = metric%physdx * ainc
     metric_h(1:3,:,:,:) = metric_h(1:3,:,:,:) - 2._dl*log(ainc)
