@@ -47,7 +47,7 @@
 #define NUM_SCALAR_FIELDS 1
 
 !!the length of each edge times Hubble: In HLattice the speed of light is defined to be 1, so this quantity is dimensionless. It should be chosen such that the dominating growing mode is captured. 
-#define INIT_BOXSIZE_TIMES_H 15.
+#define INIT_BOXSIZE_TIMES_H 6.
 
 !! define the discretization scheme
 #define DIS_SCHEME HLATTICE2

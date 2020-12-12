@@ -50,8 +50,9 @@ unstable2 = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\test-exit
 unstable3 = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\test-exit-r3_screen.log"
 unstable4 = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\test-exit-r4_screen.log"
 unstable5 = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\test-exit-r5_screen.log"
+unstable6 = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\test-exit-r6_screen.log"
 
-filefile = unstable5
+filefile = unstable6
 pw_field_number =1 #Choose which field spectrum to plot (start: 1)
 form = 'log'
 rows=[1,10,20,30,40,50,60,70,80,90]
@@ -294,14 +295,15 @@ nred_df  = n_k_red(pw_data1,pw_data2,L=L)
 print(data['a'])
 #plot_n_t(n_df,cols=[1,4,5,20,30],save_img=save_img,img_name=my_img_name,data=data)
 my_rows = np.searchsorted(n_df['a'],my_rows)
-#plot_fig6(n_df, rows=my_rows, save_img=save_img,img_name=my_img_name)
+my_rows = range(1,n_df.shape[0],2)
+plot_fig6(n_df, rows=my_rows, save_img=save_img,img_name=my_img_name)
 tk_rows = sorted(tk_rows)
 #plot_tkachev2(n_df,rows=tk_rows,save_img=save_img,img_name=my_img_name)
 #plot_gw(pw_data1,trim=2,save_img=False)
 loc_min = 0
-loc_max = 90
+loc_max = None
 
-plt.plot(data['a'][loc_min:loc_max],data['mean2'][loc_min:loc_max])
+#plt.plot(data['a'][loc_min:loc_max]**.5,data['mean1'][loc_min:loc_max])
 #plt.plot(data.diff()['a'][loc_min:loc_max])
 
 #plt.plot(pw_data1.iloc[4,:-1]**2)

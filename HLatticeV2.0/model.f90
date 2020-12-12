@@ -14,7 +14,7 @@ module model
   real(dl),parameter:: xi2 = xi**2
   real(dl),parameter:: xisqrt = xi**0.5 
   
-  real(dl),parameter:: a = lambda * Mplsq**2 / 4.d0 / xi2
+  real(dl),parameter:: coef = lambda * Mplsq**2 / 4.d0 / xi2
   real(dl),parameter:: b = xisqrt/Mpl
 !!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
@@ -54,7 +54,7 @@ contains
   function potential(f)
     real(dl) f(ns)
     real(dl) potential
-    potential = a * TANH( b * PHI )**4 
+    potential = coef * TANH( b * PHI )**4 
   end function potential
 
 !! the derivative of pential w.r.t. to the fields
@@ -63,7 +63,7 @@ contains
     real(dl) f(ns)
     real(dl),dimension(ns):: dVdf
     dVdf = (/ &
-         4.d0 * a * b * TANH( b * PHI )**3 / COSH(b * PHI )**2 &
+         4.d0 * coef * b * TANH( b * PHI )**3 / COSH(b * PHI )**2 &
          /)
   end function dVdf
 
@@ -74,7 +74,7 @@ contains
     integer fld
     select case(fld)
     case(1)
-       mass_sq = 4.d0*a* b**2 * (3.d0*TANH(b*PHI)**2 / COSH(b*PHI)**4 - 2.d0*TANH(b*PHI)**4 / COSH(b*PHI)**2 )
+       mass_sq = 4.d0*coef* b**2 * (3.d0*TANH(b*PHI)**2 / COSH(b*PHI)**4 - 2.d0*TANH(b*PHI)**4 / COSH(b*PHI)**2 )
     case default
        stop "wrong argument fld in mass_sq"
     end select
@@ -145,6 +145,8 @@ contains
       endif
    !When k < k_min: no longer in tachyonic region
    else
+      write(*,*) "effective k_min / Hubble = ", k_unit/metric%physdx/Init_Hubble
+      stop "Dit programma is nu gefucked"
       model_Power(1) = 0.5_dl/k*(init_Hubble/k)**2
       model_Power(2) = 0._dl
       return
