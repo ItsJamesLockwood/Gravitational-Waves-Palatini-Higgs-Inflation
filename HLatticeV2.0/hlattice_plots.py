@@ -32,7 +32,7 @@ print("Current working dir: ",os.getcwd())
 
 def  trim_name(file):
     ind = file.index('_screen')
-    return file[5:ind]
+    return file[:ind]
 
 #%% File management
 file_name = "data/run_with_GW_17_11_screen.log"
@@ -44,9 +44,15 @@ lf4_tkachev1 = "data/lf4-tkachev-coupling1_screen.log"
 lf4_tkachev2 = "data/lf4-tkachev-coupling2_screen.log"
 lf4_tkachev3 = "data/lf4-tkachev-coupling3_screen.log"
 file128 = "data/lf4-std-h2-128-run1_screen.log"
+fref = r"D:\Physics\MPhys Project\DatasetArcive\lf4-128-H2-M1-LH30_screen.log"
+unstable1 = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\test-exit-r1_screen.log"
+unstable2 = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\test-exit-r2_screen.log"
+unstable3 = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\test-exit-r3_screen.log"
+unstable4 = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\test-exit-r4_screen.log"
+unstable5 = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\test-exit-r5_screen.log"
 
-filefile = file128
-pw_field_number =2 #Choose which field spectrum to plot (start: 1)
+filefile = unstable5
+pw_field_number =1 #Choose which field spectrum to plot (start: 1)
 form = 'log'
 rows=[1,10,20,30,40,50,60,70,80,90]
 rsmall = [1,5,10,15,20,25,30,35,40,45]
@@ -281,19 +287,22 @@ def plot_fig6(ns,rows=[],vlines=False,save_img=False,img_name="Fig 6"):
 #%% Main
 
 data = import_screen(filefile)
-pw_data1, pw_data2 = import_pw('data/'+trim_name(filefile) + '_pw_%i.%s'%(pw_field_number,form))
+pw_data1, pw_data2 = import_pw(trim_name(filefile) + '_pw_%i.%s'%(pw_field_number,form))
 
 n_df = n_k(pw_data1,pw_data2,L=L)
 nred_df  = n_k_red(pw_data1,pw_data2,L=L)
 print(data['a'])
 #plot_n_t(n_df,cols=[1,4,5,20,30],save_img=save_img,img_name=my_img_name,data=data)
 my_rows = np.searchsorted(n_df['a'],my_rows)
-plot_fig6(n_df, rows=my_rows, save_img=save_img,img_name=my_img_name)
+#plot_fig6(n_df, rows=my_rows, save_img=save_img,img_name=my_img_name)
 tk_rows = sorted(tk_rows)
 #plot_tkachev2(n_df,rows=tk_rows,save_img=save_img,img_name=my_img_name)
 #plot_gw(pw_data1,trim=2,save_img=False)
+loc_min = 0
+loc_max = 90
 
-
+plt.plot(data['a'][loc_min:loc_max],data['mean2'][loc_min:loc_max])
+#plt.plot(data.diff()['a'][loc_min:loc_max])
 
 #plt.plot(pw_data1.iloc[4,:-1]**2)
 #plot_pw_k(pw_data1,save_img=True,trim=10)
@@ -311,7 +320,7 @@ tk_rows = sorted(tk_rows)
 #plot_gw(df2,img_name='df2')
 
 #%% Temp test of omega
-templ = [3.0818286343172027E-004,
+'''templ = [3.0818286343172027E-004,
          3.2058427750028849E-004,
          3.4025032220321951E-004,
          3.6601186544975902E-004,
@@ -334,3 +343,4 @@ xs = np.arange(1,len(tl)+1)
 plt.yscale('log')
 plt.xscale('log')
 plt.plot(xs,tl,'ro')
+'''
