@@ -32,7 +32,7 @@ print("Current working dir: ",os.getcwd())
 
 def  trim_name(file):
     ind = file.index('_screen')
-    return file[5:ind]
+    return file[:ind]
 
 #%% File management
 file_name = "data/run_with_GW_17_11_screen.log"
@@ -45,8 +45,13 @@ lf4_tkachev2 = "data/lf4-tkachev-coupling2_screen.log"
 lf4_tkachev3 = "data/lf4-tkachev-coupling3_screen.log"
 file128 = "data/lf4-std-h2-128-run1_screen.log"
 
-filefile = file128
-pw_field_number =2 #Choose which field spectrum to plot (start: 1)
+lfg0i = "D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\lfg0-test%i_screen.log"
+version = 1
+
+lfg = lfg0i%version
+
+filefile = lfg
+pw_field_number =1 #Choose which field spectrum to plot (start: 1)
 form = 'log'
 rows=[1,10,20,30,40,50,60,70,80,90]
 rsmall = [1,5,10,15,20,25,30,35,40,45]
@@ -260,10 +265,10 @@ def plot_fig6(ns,rows=[],vlines=False,save_img=False,img_name="Fig 6"):
     for j in range(len(rows)):
         #Retrieve k values from the column headers, discarding the 'a' in the last column
         xs = np.array(ns.columns[:-1]) / (2 * np.pi)
-        ys = ns.iloc[rows[j],:-1] * (2 * xs**4)
+        ys = ns.iloc[rows[j],:-1] * (2 )#* xs**4)
         plt.plot(xs,ys,label=ns['a'][rows[j]], color=colors[j])
     plt.yscale('log')
-    
+    plt.xscale('log')
     if vlines: 
         vert_lines = np.array([1.25, 1.8, 3.35])/ (2*np.pi) 
         for vl in vert_lines:
@@ -281,14 +286,38 @@ def plot_fig6(ns,rows=[],vlines=False,save_img=False,img_name="Fig 6"):
 #%% Main
 
 data = import_screen(filefile)
-pw_data1, pw_data2 = import_pw('data/'+trim_name(filefile) + '_pw_%i.%s'%(pw_field_number,form))
+pw_data1, pw_data2 = import_pw(trim_name(filefile) + '_pw_%i.%s'%(pw_field_number,form))
 
 n_df = n_k(pw_data1,pw_data2,L=L)
 nred_df  = n_k_red(pw_data1,pw_data2,L=L)
 print(data['a'])
 #plot_n_t(n_df,cols=[1,4,5,20,30],save_img=save_img,img_name=my_img_name,data=data)
 my_rows = np.searchsorted(n_df['a'],my_rows)
-plot_fig6(n_df, rows=my_rows, save_img=save_img,img_name=my_img_name)
+
+fileA = r"D:\Physics\MPhys Project\DatasetArcive\reference_run_lf4_g=0_64_H2_M1_screen.log"
+fileB = r"D:\Physics\MPhys Project\DatasetArcive\tanh-small-test1_screen.log"
+
+file2 = fileB
+data2 = import_screen(file2)
+pw_data12, pw_data22 = import_pw(trim_name(file2) + '_pw_%i.%s'%(pw_field_number,form))
+
+n_df2 = n_k(pw_data12,pw_data22,L=L)
+
+my_rows = range(0,n_df.shape[0],10)
+my_rows2 = range(0,n_df2.shape[0],10)
+#my_rows= my_rows
+#plot_fig6(n_df, rows=my_rows, save_img=save_img,img_name=my_img_name)
+#plot_fig6(n_df2, rows=my_rows2, save_img=save_img,img_name=my_img_name)
+diff = data-data2
+n_diff = n_df/n_df2
+
+#plt.yscale('log')
+for i in range(0,n_diff.shape[0]-1,2):
+    #plt.plot(n_diff.iloc[i,:-1])
+    continue
+plot_fig6(n_df2,my_rows2, save_img=save_img,img_name=my_img_name)
+#plt.yscale('log')
+
 tk_rows = sorted(tk_rows)
 #plot_tkachev2(n_df,rows=tk_rows,save_img=save_img,img_name=my_img_name)
 #plot_gw(pw_data1,trim=2,save_img=False)
@@ -311,6 +340,8 @@ tk_rows = sorted(tk_rows)
 #plot_gw(df2,img_name='df2')
 
 #%% Temp test of omega
+'''
+
 templ = [3.0818286343172027E-004,
          3.2058427750028849E-004,
          3.4025032220321951E-004,
@@ -334,3 +365,4 @@ xs = np.arange(1,len(tl)+1)
 plt.yscale('log')
 plt.xscale('log')
 plt.plot(xs,tl,'ro')
+'''
