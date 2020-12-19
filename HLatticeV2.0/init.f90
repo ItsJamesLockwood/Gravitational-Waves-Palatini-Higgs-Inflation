@@ -16,7 +16,7 @@ contains
 #define THE_MOMENTA y(ns+1:2*ns)  
   subroutine initialize()
     real(dl) y(2*ns+1)
-    real(dl) t, tnext
+    real(dl) t, tnext, i_slow
     logical ierror
     DEFINE_IND
 
@@ -42,10 +42,13 @@ contains
        THE_MOMENTA = init_momenta
     endif
 
+    i_slow=0
     do while(.not.Start_Box_Simulation(THE_FIELDS, THE_MOMENTA))
-       tnext = t + 0.0005_dl * Mpl/sqrt((potential(THE_FIELDS)+sum(THE_MOMENTA**2)/2.)/3._dl)
+        i_slow= i_slow + 1
+        tnext = t + 0.0005_dl * Mpl/sqrt((potential(THE_FIELDS)+sum(THE_MOMENTA**2)/2.)/3._dl)
        call dverk(ode_background,t,y,tnext,1.e-7_dl)
     enddo
+    write(*,*) "Begin simulation after ",i_slow," itereations."    
     init_fields = THE_FIELDS
     init_momenta = THE_MOMENTA
     call print_settings_file()
@@ -56,10 +59,13 @@ contains
     metric%y = 1._dl
     metric%a = 1._dl
     init_Hubble = sqrt((potential(THE_FIELDS)+sum(THE_MOMENTA**2)/2.)/3.)/Mpl
-    write(*,*) "First initial Hubble:",init_hubble
     metric%dx = boxsize_H/init_Hubble/n
     metric%physdx=metric%dx*metric%a
     sipar%dt = model_dt_per_step()
+    write(*,*) "Time increment:",sipar%dt
+    write(*,*) "Space increment:",metric%dx
+    write(*,*) "Physical increment:",metric%physdx
+
     do fld=1,ns
        if(do_init(fld))call InitSpectrum(fld) 
        write(*,*) "field # "//trim(int2str(fld))//" initialized"
