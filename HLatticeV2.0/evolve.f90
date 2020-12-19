@@ -182,6 +182,8 @@ contains
 #if METRIC_OPTION == FRW_BACKGROUND
 #if USE_CONFORMAL_TIME
     metric%y = metric%y - metric%piy/Mplsq/6._dl *dt
+    !write(*,*) "metric%y:",metric%y, "; K_f:", fields_kinetic_energy()
+
 #else
     metric%y = metric%y - (3._dl/8._dl)*metric%piy/Mplsq *dt
 #endif
