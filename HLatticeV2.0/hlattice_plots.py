@@ -17,7 +17,8 @@ from physUtils import *
 from itertools import chain
 
 #%% Define variables 
-global lam, Mpl, g
+global lam, Mpl, g, LH
+LH=15
 lam = 10**-2
 Mpl = 1024
 Nstar= 50
@@ -45,6 +46,7 @@ lf4_tkachev2 = "data/lf4-tkachev-coupling2_screen.log"
 lf4_tkachev3 = "data/lf4-tkachev-coupling3_screen.log"
 file128 = "data/lf4-std-h2-128-run1_screen.log"
 fref = r"D:\Physics\MPhys Project\DatasetArcive\lf4-128-H2-M1-LH30_screen.log"
+fref2 = r"D:\Physics\MPhys Project\DatasetArcive\data-12-1\lf4-std-h2-128-run1_screen.log"
 unstable1 = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\test-exit-r1_screen.log"
 unstable2 = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\test-exit-r2_screen.log"
 unstable3 = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\test-exit-r3_screen.log"
@@ -52,7 +54,24 @@ unstable4 = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\test-exit
 unstable5 = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\test-exit-r5_screen.log"
 unstable6 = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\test-exit-r6_screen.log"
 
-filefile = unstable6
+f0small = r"D:\Physics\MPhys Project\DatasetArcive\tanh-f0-small-test1_screen.log"
+f0small6_1 = r"D:\Physics\MPhys Project\DatasetArcive\tanh-f0-small-lh6-test1_screen.log"
+f0small6_2 = r"D:\Physics\MPhys Project\DatasetArcive\tanh-f0-small-lh6-test2_screen.log"
+f0big6_1 = r"D:\Physics\MPhys Project\DatasetArcive\tanh-f0-big-lh6-test1_screen.log"
+f0big6_2 = r"D:\Physics\MPhys Project\DatasetArcive\tanh-f0-big-lh6-test2_screen.log"
+f0big6_3 = r"D:\Physics\MPhys Project\DatasetArcive\tanh-f0-big-lh6-test3_screen.log"
+
+stdMed = r"D:\Physics\MPhys Project\DatasetArcive\tanh-medium-test1_screen.log"
+stdMed2 = r"D:\Physics\MPhys Project\DatasetArcive\tanh-medium-test2_screen.log"
+stdMed6_1 = r"D:\Physics\MPhys Project\DatasetArcive\tanh-medium-lh6-test1_screen.log"
+
+lf4g3 = r"D:\Physics\MPhys Project\DatasetArcive\lf4-g3-test1_screen.log"
+lf4g1lh30 = r"D:\Physics\MPhys Project\DatasetArcive\lf4-g1-lh30-test1_screen.log"
+lf4g3lh30 = r"D:\Physics\MPhys Project\DatasetArcive\lf4-g3-128-lh30-test1_screen.log"
+
+
+filefile = unstable4
+
 pw_field_number =1 #Choose which field spectrum to plot (start: 1)
 form = 'log'
 rows=[1,10,20,30,40,50,60,70,80,90]
@@ -64,7 +83,8 @@ my_rows = rows
 tk_rows = tk2
 my_rows = sorted(my_rows)
 my_img_name =  trim_name(filefile) + '_img'
-save_img = False
+my_img_name = 'foo-%i'%LH
+save_img = True
 
 
 
@@ -246,8 +266,8 @@ def plot_tkachev2(ns,rows=[],save_img=False,img_name="Tkachev2"):
     plt.xscale('log')
     xl1 = np.linspace(min(xs),max(xs),1000)
 
-    plt.plot(xl1, xl1**(-3/2)*10**2,linestyle='dashed',label='~$k^{-3/2}$')
-    plt.plot(xl1, xl1**(-1)*10**4,linestyle='dashed',label='~$k^{-1}$')
+    #plt.plot(xl1, xl1**(-3/2)*10**2,linestyle='dashed',label='~$k^{-3/2}$')
+    #plt.plot(xl1, xl1**(-1)*10**4,linestyle='dashed',label='~$k^{-1}$')
     plt.legend(loc='lower right')
     plt.title("Occuptation number $n_k$ (Fig.2, Tkachev)")
     plt.xlabel('k')
@@ -258,6 +278,12 @@ def plot_tkachev2(ns,rows=[],save_img=False,img_name="Tkachev2"):
     plt.show()
 
 def plot_fig6(ns,rows=[],vlines=False,save_img=False,img_name="Fig 6"):
+    fig,ax = plt.subplots()
+    #ax.plot(range(10),np.exp(np.array(range(10))**2),'ro')
+    #ax.set_yscale('log')
+    #ax.set_zorder(2)
+    #ax.set_facecolor('none')
+    divx = LH/13.87
     if rows==[]:
         rows.append(int(ns.shape[0])/2)
         colors = np.flip(cm.magma(np.linspace(0,1,len(rows))),axis=0)
@@ -266,24 +292,41 @@ def plot_fig6(ns,rows=[],vlines=False,save_img=False,img_name="Fig 6"):
         #colors = np.flip(cm.magma(np.array(rows)/max(rows)),axis=0)
     for j in range(len(rows)):
         #Retrieve k values from the column headers, discarding the 'a' in the last column
-        xs = np.array(ns.columns[:-1]) / (2 * np.pi)
+        xs = np.array(ns.columns[:-1]) / (2 * np.pi)/2 /divx
         ys = ns.iloc[rows[j],:-1] * (2 * xs**4)
-        plt.plot(xs,ys,label=ns['a'][rows[j]], color=colors[j])
-    plt.yscale('log')
+        ax.plot(xs,ys,label=ns['a'][rows[j]], color=colors[j])
+    ax.set_yscale('log')
     
     if vlines: 
         vert_lines = np.array([1.25, 1.8, 3.35])/ (2*np.pi) 
         for vl in vert_lines:
             plt.axvline(x = vl)
     
-    plt.legend(title='Spectrum at $a=$',loc='lower right')
-    plt.title("Occupation number $n_k$ at different scale factors $a$ (Fig.6, Z.Huang)\n"+trim_name(filefile)+'_field_%i'%pw_field_number)
-    plt.xlabel(r"$k\Delta / 2 \pi$")
-    plt.ylabel(r"$ k^4\; n_k /\; 2 \pi^2\; \rho}$")
-    if save_img==True:
-        plt.savefig(img_name + '_fig6_field_%i'%pw_field_number)
+    #ax.legend(title='Spectrum at $a=$',loc='lower right')
+    ax.set_xlim(right=0.375)
+    #ax.set_title("Occupation number $n_k$ at different scale factors $a$ (Fig.6, Z.Huang)\n"+trim_name(filefile)+'_field_%i'%pw_field_number)
+    ax.set_xlabel(r"$k\Delta / 2 \pi$")
+    ax.set_ylabel(r"$ k^4\; n_k /\; 2 \pi^2\; \rho}$")
+    '''
+    ax2 = ax.twinx()
+    ax2.axis('off')
+    ax3 = ax2.twiny()
+    img = plt.imread("tkachev_plot.jpg")
+    global xmin,xmax,ymin,ymax
+    xmin,xmax = ns.columns[:-1].min(),ns.columns[:-1].max()
+    ymin,ymax = ns.iloc[:,:-1].min().min(),ns.iloc[:,:-1].max().max()
+    ax3.imshow(img,extent = [xmin,xmax,ymin,ymax],aspect='auto')
+    ax3.axis('off')
+    '''
+
+    
+    if save_img==True or True:
+        fig.savefig(img_name + '_fig6_field_%i.png'%pw_field_number,transparent=True)
 
     plt.show()
+
+
+#%% Image stuff
 
 #%% Main
 
@@ -293,10 +336,16 @@ pw_data1, pw_data2 = import_pw(trim_name(filefile) + '_pw_%i.%s'%(pw_field_numbe
 n_df = n_k(pw_data1,pw_data2,L=L)
 nred_df  = n_k_red(pw_data1,pw_data2,L=L)
 print(data['a'])
-#plot_n_t(n_df,cols=[1,4,5,20,30],save_img=save_img,img_name=my_img_name,data=data)
 my_rows = np.searchsorted(n_df['a'],my_rows)
-my_rows = range(1,n_df.shape[0],2)
-plot_fig6(n_df, rows=my_rows, save_img=save_img,img_name=my_img_name)
+#my_rows = range(0,n_df.shape[0],20)
+my_cols = range(0,n_df.shape[1]-1,1)
+#plot_fig6(n_df, rows=my_rows, save_img=save_img,img_name=my_img_name)
+
+plt.plot(data['a'],data['mean1'])
+#plt.plot(data['a'])
+
+#plot_n_t(n_df,cols=my_cols,save_img=save_img,img_name=my_img_name,data=data)
+#plt.plot(data['a'],data['mean1'])
 tk_rows = sorted(tk_rows)
 #plot_tkachev2(n_df,rows=tk_rows,save_img=save_img,img_name=my_img_name)
 #plot_gw(pw_data1,trim=2,save_img=False)
@@ -345,4 +394,35 @@ xs = np.arange(1,len(tl)+1)
 plt.yscale('log')
 plt.xscale('log')
 plt.plot(xs,tl,'ro')
+'''
+'''
+xekseni2 = [0.81136, 0.67958, 0.43465, 0.58106, 0.55695, 0.33327, 0.75665, 0.2849, 0.93146, 0.20716, 0.6752, 0.59276,
+            0.56391, 0.70997, 0.6097, 0.20941, 0.94315, 0.06609, 0.39222, 0.53361]
+data = [0.09141346037829952, 0.06969760102294438, 0.0473781028644485, 0.059295628198887916, 0.0571418702849134,
+        0.04050307759274645, 0.08088991113201109, 0.03746878506083184, 0.13583224333004337, 0.03269066677698429,
+        0.06918929672995293, 0.06040315211901601, 0.05772815718352134, 0.07361582566248871, 0.06212973486945907,
+        0.03283216378016191, 0.14407484921136313, 0.02266323793619761, 0.04439409523587426, 0.055067724315696655]
+
+xmin, xmax, ymin, ymax = (0.001, 1, 0.01, 1)
+
+ax = plt.gca()
+ax.plot(xekseni2, data, "ro", marker="o", markersize=1, label="Present Work")
+ax.set_yscale('log')
+#ax.set_xscale('log')
+ax.set_xlabel('P')
+ax.set_ylabel(r'$\tau_{c}^{*}$')
+ax.set_xlim(xmin, xmax)
+ax.set_ylim(ymin, ymax)
+ax.legend(loc='lower right')
+ax.set_zorder(2)
+ax.set_facecolor('none')
+
+ax_tw_x = ax.twinx()
+ax_tw_x.axis('off')
+ax2 = ax.twiny()
+
+im = plt.imread('tkachev_plot.jpg')
+ax2.imshow(im, extent=[xmin, xmax, ymin, ymax], aspect='auto')
+ax2.axis('off')
+plt.show()
 '''
