@@ -52,7 +52,7 @@ unstable4 = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\test-exit
 unstable5 = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\test-exit-r5_screen.log"
 unstable6 = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\test-exit-r6_screen.log"
 
-filefile = unstable6
+filefile = unstable4
 pw_field_number =1 #Choose which field spectrum to plot (start: 1)
 form = 'log'
 rows=[1,10,20,30,40,50,60,70,80,90]
@@ -149,7 +149,7 @@ def n_k(pw_data1,pw_data2,L=64):
     ks = k_list(pw_data1,L=L)
     
     #Retrieve actual field eignemode values
-    fk_df = pw_a.multiply(a_list**2,axis=0) / ks**5
+    fk_df = pw_a / ks**5
     fkdot_df = pw_b / ks**3
     #fk_df = pw_a
     #fkdot_df = pw_b
