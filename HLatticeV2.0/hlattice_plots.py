@@ -34,6 +34,10 @@ def  trim_name(file):
     ind = file.index('_screen')
     return file[:ind]
 
+def trim_file_name(file):
+    ind1 = file.index('_screen')
+    ind2 = file.rindex('\\')+1
+    return file[ind2:ind1]
 #%% File management
 file_name = "data/run_with_GW_17_11_screen.log"
 GW_file = "data/run_with_GW_17_11_GW.log"
@@ -56,16 +60,23 @@ unstable6 = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\test-exit
 l4s = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\l0-ts-run%i_screen.log"
 l6s = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\l6-ts-run%i_screen.log"
 t4s = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\t4-ts-run%i_screen.log"
+r4s = r"D:\Physics\MPhys Project\DatasetArcive\Remote tests\rl4-ts-run%i_screen.log"
+rt4 = r"D:\Physics\MPhys Project\DatasetArcive\Remote tests\rt4-ts-run%i_screen.log"
 
-v4 = 25
-v6 = 2
-vt = 4
+l4i = 25
+l6i = 2
+t4i = 4
+rl4i = 6
+rti = 2
+#1,2,4,7
 
-lf4 = l4s%v4
-lf6 = l6s%v6
-th4 = t4s%vt
+lf4 = l4s%l4i
+lf6 = l6s%l6i
+th4 = t4s%t4i
+rl4 = r4s%rl4i 
+rth = rt4%rti
 
-filefile = th4
+filefile = rl4
 pw_field_number =1 #Choose which field spectrum to plot (start: 1)
 form = 'log'
 rows=[1,10,20,30,40,50,60,70,80,90]
@@ -298,18 +309,24 @@ def plot_fig6(ns,rows=[],vlines=False,save_img=False,img_name="Fig 6"):
 
     plt.show()
 
-def mission_control(data,ns,rows=[],error=True):
+def mission_control(data,ns,rows=[],error=True,save_panel=False,save_plots=False,path=filefile,truncate=0):
+    png_name = trim_file_name(path)
+    if truncate!=0:
+        png_name += '_trunc' + str(truncate)
+        truncate = np.searchsorted(data['a'],truncate)
+    else:
+        truncate = data.shape[0]-1
     fig, ax = plt.subplots(2,2)
-    fig.set_figwidth(10)
+    fig.set_figwidth(13)
     fig.set_figheight(9.5)
     plt.subplots_adjust(top=.93)
     #Subplt 0,0
-    ax[0,0].plot(data.index, data['mean1'])
+    ax[0,0].plot(data['a'][:truncate], data['mean1'][:truncate])
     ax[0,0].set_title("Inflaton field evolution")
     #Subplot 0,1
     diffs = data['a'].diff()[1:]
     ax[0,1].set_title("Increment of a for each step j")
-    ax[0,1].plot(data.index[1:], diffs)
+    ax[0,1].plot(data.index[1:][:truncate], diffs[:truncate])
     
     #Subplot 1,0
     if rows==[]:
@@ -323,7 +340,7 @@ def mission_control(data,ns,rows=[],error=True):
         ax[1,0].plot(xs,ys,label=ns['a'][rows[j]], color=colors[j])
     ax[1,0].set_yscale('log')
     #plt.xscale('log')    
-    ax[1,0].legend(title='Spectrum at $a=$',loc='lower right')
+    #ax[1,0].legend(title='Spectrum at $a=$',loc='lower right')
     ax[1,0].set_title("Occupation number $n_k$")
     ax[1,0].set_xlabel(r"$k\Delta / 2 \pi$")
     ax[1,0].set_ylabel(r"$ k^4\; n_k /\; 2 \pi^2\; \rho}$")
@@ -333,15 +350,32 @@ def mission_control(data,ns,rows=[],error=True):
     ax[1,1].set_title('Reproduction of Fig.1: ratios of energies')
     ax[1,1].set_xlabel('a')
     ax[1,1].set_ylabel('$\log_{10}(|E|/E_{tot})$')
-    ax[1,1].plot(data['a'],data['pratio'],linestyle='dashed',label='Potential energy')
-    ax[1,1].plot(data['a'],data['kratio'],linestyle='dashed',label='Kinetic energy')
-    ax[1,1].plot(data['a'],data['gratio'],'b',label='Gradient of field energy')
+    ax[1,1].plot(data['a'][:truncate],data['pratio'][:truncate],linestyle='dashed',label='Potential energy')
+    ax[1,1].plot(data['a'][:truncate],data['kratio'][:truncate],linestyle='dashed',label='Kinetic energy')
+    ax[1,1].plot(data['a'][:truncate],data['gratio'][:truncate],'b',label='Gradient of field energy')
     ax[1,1].legend()
     
     if error==True:
-        truncate =0
-        ax[1,1].plot(data['a'][truncate:],abs(1/(data['omega'][truncate:]+1)-1),linestyle='dashed',label='Fractional energy noises')
+        ax[1,1].plot(data['a'][:truncate],abs(1/(data['omega'][:truncate]+1)-1),linestyle='dashed',label='Fractional energy noises')
         ax[1,1].legend()
+        
+
+    if save_panel==True:
+        print("Saving panel...")
+        fig.savefig(png_name + '_panel.png')
+    if save_plots==True:
+        print("Saving individual plots...")
+        #extent = ax[0,0].get_window_extent().transformed(fig.dpi_scale_trans.inverted())
+        extents = [ax[i,j].get_tightbbox(fig.canvas.renderer).transformed(fig.dpi_scale_trans.inverted()) for i in range(2) for j in range(2)]
+        
+        # Pad the saved area by 10% in the x-direction and 20% in the y-direction
+        padx = 1.05
+        pady = 1.1
+        fig.savefig(png_name + '_field.png', bbox_inches=extents[0].expanded(padx, pady))
+        fig.savefig(png_name + '_increments.png', bbox_inches=extents[1].expanded(padx, pady))
+        fig.savefig(png_name + '_n_k.png', bbox_inches=extents[2].expanded(padx, pady))
+        fig.savefig(png_name + '_energies.png', bbox_inches=extents[3].expanded(padx, pady))
+
 #%% Main
 
 data = import_screen(filefile)
@@ -379,7 +413,8 @@ loc_max = None
 #plot_gw(df2,img_name='df2')
 
 #%% Mission control
-mission_control(data,n_df,rows=my_rows)
+mission_control(data,n_df,rows=my_rows,save_panel=True,save_plots=True,truncate=10)
+#mission_control(data,n_df,rows=my_rows)
 
 #%% Temp test of omega
 '''templ = [3.0818286343172027E-004,

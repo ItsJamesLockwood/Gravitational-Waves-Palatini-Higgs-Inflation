@@ -107,8 +107,8 @@ contains
     write(screen_file%unit,'(F10.5,'//trim(Int2str(2*ns+9))//'G11.3)') metric%a, effective_Hubble(), total_fields_energy(), potential_energy()/total_fields_energy(), fields_kinetic_energy()/total_fields_energy(), fields_gradient_energy()/total_fields_energy(), gravity_kinetic_energy()/total_fields_energy(),gravity_gradient_energy()/total_fields_energy(), total_energy()/total_fields_energy(),sqrt(sum(metric_h(:,1:n,1:n,1:n)**2)/ncube/6._dl), avef, flucf
 #else
     if(sipar%nsteps.eq.0)then
-       write(*,'(A9, 5A11, 2A'//trim(int2str(ns*11))//')') 'a  ','H  ','rho/3H^2-1','P_f/E_f ', 'K_f/E_f ', 'G_f/E_f ', 'mean_fields',  'rms_fields'
-       write(screen_file%unit,'(A9, 5A11, 2A'//trim(int2str(ns*11))//')') 'a  ','H  ','rho/3H^2 -1','P_f/E_f ', 'K_f/E_f ', 'G_f/E_f ', 'mean_fields',  'rms_fields'
+       write(*,'(A9, 5A11, 2A'//trim(int2str(ns*11))//')') 'a  ','H  ','rho/3H^2-1','P_f/E_f   ', 'K_f/E_f   ', 'G_f/E_f   ', 'mean_fields ',  'rms_fields'
+       write(screen_file%unit,'(A9, 5A11, 2A'//trim(int2str(ns*11))//')') 'a  ','H  ','rho/3H^2 -1','P_f/E_f   ', 'K_f/E_f   ', 'G_f/E_f   ', 'mean_fields ',  'rms_fields'
     endif
     write(*,'(F10.5,'//trim(Int2str(2*ns+5))//'G11.3)')metric%a,effective_Hubble(),total_fields_energy()/effective_Hubble()**2/3/Mplsq-1._dl, potential_energy()/total_fields_energy(), fields_kinetic_energy()/total_fields_energy(), fields_gradient_energy()/total_fields_energy(), avef,flucf
     !! Use the line below only during troubleshooting of y, P_f and piy.
