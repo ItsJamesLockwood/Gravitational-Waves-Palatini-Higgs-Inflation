@@ -14,9 +14,10 @@ module model
   real(dl),parameter:: xi2 = xi**2
   real(dl),parameter:: xisqrt = xi**0.5 
   
-  real(dl),parameter:: a = lambda * Mplsq**2 / 4.d0 / xi2
+  real(dl),parameter:: coef = lambda * Mplsq**2 / 4.d0 / xi2
   real(dl),parameter:: b = xisqrt/Mpl
-!!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+  real(dl),parameter:: suppression = 1
+  !!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
 !!***************define macros here;************************
 !!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -32,13 +33,13 @@ module model
 !!Just define where you want to start the background evolution. Note this is NOT where you start the lattice simulation, which is defined in a subroutine "start_box_simulation" in this file.
  !!initial field values
   real(dl),dimension(ns)::init_fields=(/ &
-       3.5_dl *PlanckMass &
+       4.09d-4 *PlanckMass &
        /)
 
 !!Initial field momenta
  !! if set to be greater than or equal to Mplsq (square of reduced Planck Mass), the initial field momenta will be determined by slow-roll inflationary attractor
   !! Note again these are NOT the initial field momenta where you start the lattice simulation, the are the initial values that HLattice take to evolve the inflaton. 
-  real(dl),dimension(ns):: init_momenta = Mplsq
+  real(dl),dimension(ns):: init_momenta = Mplsq !(/ -1.d-8 * PlanckMass**2 /)
 
 
 !!put initial random Gaussian perturbations in the fields when you starts lattice simulation;
@@ -54,7 +55,7 @@ contains
   function potential(f)
     real(dl) f(ns)
     real(dl) potential
-    potential = a * TANH( b * PHI )**4 
+    potential = coef * TANH( b * PHI )**4 
   end function potential
 
 !! the derivative of pential w.r.t. to the fields
@@ -63,7 +64,7 @@ contains
     real(dl) f(ns)
     real(dl),dimension(ns):: dVdf
     dVdf = (/ &
-         4.d0 * a * b * TANH( b * PHI )**3 / COSH(b * PHI )**2 &
+         4.d0 * coef * b * TANH( b * PHI )**3 / COSH(b * PHI )**2 &
          /)
   end function dVdf
 
@@ -74,7 +75,7 @@ contains
     integer fld
     select case(fld)
     case(1)
-       mass_sq = 4.d0*a* b**2 * (3.d0*TANH(b*PHI)**2 / COSH(b*PHI)**4 - 2.d0*TANH(b*PHI)**4 / COSH(b*PHI)**2 )
+       mass_sq = 4.d0*coef* b**2 * (3.d0*TANH(b*PHI)**2 / COSH(b*PHI)**4 - 2.d0*TANH(b*PHI)**4 / COSH(b*PHI)**2 )
     case default
        stop "wrong argument fld in mass_sq"
     end select
@@ -116,7 +117,7 @@ contains
     logical,save::warning = .true.
     integer(IB) fld
     if(n*k*metric%dx .lt. const_pi) then
-      model_Power =0._dl
+      model_Power =0._dl * suppression
       return
     endif
     !check that k > k_min=a * H_init (note: k in code is defined as comoving momentum):
@@ -128,15 +129,15 @@ contains
          omega=sqrt(abs(omega))
          !TODO: why is this statement necessary?
          if(omega*metric%dx .le. const_2pi .and. omega*metric%dx*n .ge. const_2pi)then
-            model_Power(1) = 0.5_dl/omega
-            model_Power(2) = 0.5_dl*omega
+            model_Power(1) = 0.5_dl/omega * suppression
+            model_Power(2) = 0.5_dl*omega * suppression
             return
          endif
       !We now consider the tachyonic region (i.e. k_min < k < k_max)
       else
          !Set the initial conditions from arxiv:1902.10148. 
-         model_Power(1) = Mpl/k /metric%a**3
-         model_Power(2) = xisqrt/SQRT(lambda)* k/Mpl /metric%a**3
+         model_Power(1) = Mpl/k /metric%a**3 * suppression
+         model_Power(2) = xisqrt/SQRT(lambda)* k/Mpl /metric%a**3 * suppression
          if(warning)then
             write(*,*) "Tachyonic region initialization may be not correct"
             warning = .false.
@@ -145,11 +146,15 @@ contains
       endif
    !When k < k_min: no longer in tachyonic region
    else
-      model_Power(1) = 0.5_dl/k*(init_Hubble/k)**2
-      model_Power(2) = 0._dl
+      !model_Power = 0._dl * suppression
+      write(*,*) "effective k_min / Hubble = ", k_unit/metric%physdx/Init_Hubble
+      write(*,*) "NOTE: REGION OF k < k_min MAY NOT YIELD ACCURATE RESULTS"
+      !stop "Dit programma is nu gefucked"
+      model_Power(1) = 0.5_dl/k*(init_Hubble/k)**2 * suppression
+      model_Power(2) = 0._dl * suppression
       return
    endif
-   model_Power = 0._dl
+   model_Power = 0._dl * suppression
    return
    end function model_Power
 

@@ -16,7 +16,8 @@ module model
   
   real(dl),parameter:: coef = lambda * Mplsq**2 / 4.d0 / xi2
   real(dl),parameter:: b = xisqrt/Mpl
-!!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+  real(dl),parameter:: suppression = 1
+  !!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
 !!***************define macros here;************************
 !!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -116,7 +117,7 @@ contains
     logical,save::warning = .true.
     integer(IB) fld
     if(n*k*metric%dx .lt. const_pi) then
-      model_Power =0._dl
+      model_Power =0._dl * suppression
       return
     endif
     !check that k > k_min=a * H_init (note: k in code is defined as comoving momentum):
@@ -128,15 +129,15 @@ contains
          omega=sqrt(abs(omega))
          !TODO: why is this statement necessary?
          if(omega*metric%dx .le. const_2pi .and. omega*metric%dx*n .ge. const_2pi)then
-            model_Power(1) = 0.5_dl/omega
-            model_Power(2) = 0.5_dl*omega
+            model_Power(1) = 0.5_dl/omega * suppression
+            model_Power(2) = 0.5_dl*omega * suppression
             return
          endif
       !We now consider the tachyonic region (i.e. k_min < k < k_max)
       else
          !Set the initial conditions from arxiv:1902.10148. 
-         model_Power(1) = Mpl/k /metric%a**3
-         model_Power(2) = xisqrt/SQRT(lambda)* k/Mpl /metric%a**3
+         model_Power(1) = Mpl/k /metric%a**3 * suppression
+         model_Power(2) = xisqrt/SQRT(lambda)* k/Mpl /metric%a**3 * suppression
          if(warning)then
             write(*,*) "Tachyonic region initialization may be not correct"
             warning = .false.
@@ -145,15 +146,15 @@ contains
       endif
    !When k < k_min: no longer in tachyonic region
    else
-      model_Power = 0._dl
+      !model_Power = 0._dl * suppression
       write(*,*) "effective k_min / Hubble = ", k_unit/metric%physdx/Init_Hubble
       write(*,*) "NOTE: REGION OF k < k_min MAY NOT YIELD ACCURATE RESULTS"
       !stop "Dit programma is nu gefucked"
-      model_Power(1) = 0.5_dl/k*(init_Hubble/k)**2
-      model_Power(2) = 0._dl
+      model_Power(1) = 0.5_dl/k*(init_Hubble/k)**2 * suppression
+      model_Power(2) = 0._dl * suppression
       return
    endif
-   model_Power = 0._dl
+   model_Power = 0._dl * suppression
    return
    end function model_Power
 
