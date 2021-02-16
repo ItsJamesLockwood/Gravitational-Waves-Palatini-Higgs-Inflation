@@ -44,13 +44,20 @@ lf4_tkachev1 = "data/lf4-tkachev-coupling1_screen.log"
 lf4_tkachev2 = "data/lf4-tkachev-coupling2_screen.log"
 lf4_tkachev3 = "data/lf4-tkachev-coupling3_screen.log"
 file128 = "data/lf4-std-h2-128-run1_screen.log"
+ref1 = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\Dataset-Friday_screen.log"
 
 lfg0i = "D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\lfg0-test%i_screen.log"
-version = 1
+l0ts = "D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\l0-ts-run%i_screen.log"
+l6ts = "D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\l6-ts-run%i_screen.log"
 
-lfg = lfg0i%version
 
-filefile = lfg
+v4 = 2
+v6 = 6
+
+lf4 = l0ts%v4
+lf6 = l6ts%v6
+
+filefile = lf6
 pw_field_number =1 #Choose which field spectrum to plot (start: 1)
 form = 'log'
 rows=[1,10,20,30,40,50,60,70,80,90]
@@ -92,6 +99,7 @@ def plot_pw_k(df1,save_img=True,img_name='df1',trim=10):
     fig.show()
 
 def plot_fig1(data,error=True,save_img=True,img_name="img",truncate=0):
+    plt.figure()
     plt.yscale('log')
     plt.title('Reproduction of Fig.1: ratios of energies')
     plt.xlabel('a')
@@ -147,7 +155,7 @@ def n_k(pw_data1,pw_data2,L=64):
     ks = k_list(pw_data1,L=L)
     
     #Retrieve actual field eignemode values
-    fk_df = pw_a.multiply(a_list**2,axis=0) / ks**5
+    fk_df = pw_a / ks**5
     fkdot_df = pw_b / ks**3
     #fk_df = pw_a
     #fkdot_df = pw_b
@@ -256,6 +264,7 @@ def plot_tkachev2(ns,rows=[],save_img=False,img_name="Tkachev2"):
     plt.show()
 
 def plot_fig6(ns,rows=[],vlines=False,save_img=False,img_name="Fig 6"):
+    plt.figure()
     if rows==[]:
         rows.append(int(ns.shape[0])/2)
         colors = np.flip(cm.magma(np.linspace(0,1,len(rows))),axis=0)
@@ -265,10 +274,10 @@ def plot_fig6(ns,rows=[],vlines=False,save_img=False,img_name="Fig 6"):
     for j in range(len(rows)):
         #Retrieve k values from the column headers, discarding the 'a' in the last column
         xs = np.array(ns.columns[:-1]) / (2 * np.pi)
-        ys = ns.iloc[rows[j],:-1] * (2 )#* xs**4)
+        ys = ns.iloc[rows[j],:-1] * (2 * xs**4)
         plt.plot(xs,ys,label=ns['a'][rows[j]], color=colors[j])
     plt.yscale('log')
-    plt.xscale('log')
+    #plt.xscale('log')
     if vlines: 
         vert_lines = np.array([1.25, 1.8, 3.35])/ (2*np.pi) 
         for vl in vert_lines:
@@ -282,6 +291,64 @@ def plot_fig6(ns,rows=[],vlines=False,save_img=False,img_name="Fig 6"):
         plt.savefig(img_name + '_fig6_field_%i'%pw_field_number)
 
     plt.show()
+
+def plot_a(data):
+    plt.figure()
+    plt.plot(data.index, data['a'])
+    plt.title("Evolution of a with step j")
+    plt.show()
+    
+def plot_diff_a(data):
+    diffs = data['a'].diff()[1:]
+    plt.title("Increment of a for each step j")
+    return plt.plot(data.index[1:], diffs)
+
+    
+def mission_control(data,ns,rows=[],error=True):
+    fig, ax = plt.subplots(2,2)
+    fig.set_figwidth(10)
+    fig.set_figheight(9.5)
+    plt.subplots_adjust(top=.93)
+    #Subplt 0,0
+    ax[0,0].plot(data.index, data['mean1'])
+    
+    #Subplot 0,1
+    diffs = data['a'].diff()[1:]
+    ax[0,1].set_title("Increment of a for each step j")
+    ax[0,1].plot(data.index[1:], diffs)
+    
+    #Subplot 1,0
+    if rows==[]:
+        rows.append(int(ns.shape[0])/2)
+        colors = np.flip(cm.magma(np.linspace(0,1,len(rows))),axis=0)
+    else:
+        colors = np.flip(cm.magma(np.linspace(0,1,len(rows))),axis=0)
+    for j in range(len(rows)):
+        xs = np.array(ns.columns[:-1]) / (2 * np.pi)
+        ys = ns.iloc[rows[j],:-1] * (2 * xs**4)
+        ax[1,0].plot(xs,ys,label=ns['a'][rows[j]], color=colors[j])
+    ax[1,0].set_yscale('log')
+    #plt.xscale('log')    
+    ax[1,0].legend(title='Spectrum at $a=$',loc='lower right')
+    ax[1,0].set_title("Occupation number $n_k$")
+    ax[1,0].set_xlabel(r"$k\Delta / 2 \pi$")
+    ax[1,0].set_ylabel(r"$ k^4\; n_k /\; 2 \pi^2\; \rho}$")
+    
+    #Subplot 1,1
+    ax[1,1].set_yscale('log')
+    ax[1,1].set_title('Reproduction of Fig.1: ratios of energies')
+    ax[1,1].set_xlabel('a')
+    ax[1,1].set_ylabel('$\log_{10}(|E|/E_{tot})$')
+    ax[1,1].plot(data['a'],data['pratio'],linestyle='dashed',label='Potential energy')
+    ax[1,1].plot(data['a'],data['kratio'],linestyle='dashed',label='Kinetic energy')
+    ax[1,1].plot(data['a'],data['gratio'],'b',label='Gradient of field energy')
+    ax[1,1].legend()
+    
+    if error==True:
+        truncate =0
+        ax[1,1].plot(data['a'][truncate:],abs(1/(data['omega'][truncate:]+1)-1),linestyle='dashed',label='Fractional energy noises')
+        ax[1,1].legend()
+        
 
 #%% Main
 
@@ -306,7 +373,6 @@ n_df2 = n_k(pw_data12,pw_data22,L=L)
 my_rows = range(0,n_df.shape[0],10)
 my_rows2 = range(0,n_df2.shape[0],10)
 #my_rows= my_rows
-#plot_fig6(n_df, rows=my_rows, save_img=save_img,img_name=my_img_name)
 #plot_fig6(n_df2, rows=my_rows2, save_img=save_img,img_name=my_img_name)
 diff = data-data2
 n_diff = n_df/n_df2
@@ -315,7 +381,7 @@ n_diff = n_df/n_df2
 for i in range(0,n_diff.shape[0]-1,2):
     #plt.plot(n_diff.iloc[i,:-1])
     continue
-plot_fig6(n_df2,my_rows2, save_img=save_img,img_name=my_img_name)
+#plot_fig6(n_df2,my_rows2, save_img=save_img,img_name=my_img_name)
 #plt.yscale('log')
 
 tk_rows = sorted(tk_rows)
@@ -338,6 +404,19 @@ tk_rows = sorted(tk_rows)
 #df1,df2 = import_GW(GW_file)
 #plot_gw(df1,img_name='df1')
 #plot_gw(df2,img_name='df2')
+
+#%% Test the evolution of a
+
+#plot_a(data)
+#plot_diff_a(data)
+
+
+#%% Test the evolution of the energies
+#plot_fig1(data)
+#plot_fig6(n_df, rows=my_rows, save_img=save_img,img_name=my_img_name)
+
+#%% Run mission control panel
+mission_control(data,n_df,rows=my_rows)
 
 #%% Temp test of omega
 '''

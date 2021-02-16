@@ -1,4 +1,4 @@
-!!The model here is V=lambda/4 phi^4 
+!!The model here is V=lambda/6 phi^6 
 
 module model
   use define_fields
@@ -8,7 +8,7 @@ module model
 !!*******************define the couplings etc. for your model *************
 !!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !!the predefined constants that you can use: GeV, MPl (the reduced Planck Mass), PlanckMass (the Planck Mass), Mplsq (square of the reduced Planck Mass)
-  real(dl):: lambda =1.d-14
+  real(dl):: lambda =1.d-4
 !!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
 !!***************define macros here;************************
@@ -25,7 +25,7 @@ module model
 !!Just define where you want to start the background evolution. Note this is NOT where you start the lattice simulation, which is defined in a subroutine "start_box_simulation" in this file.
  !!initial field values
   real(dl),dimension(ns)::init_fields=(/ &
-       3.5_dl *PlanckMass &
+       1.d-3 *PlanckMass &
        /)
 
 !!Initial field momenta
@@ -47,7 +47,7 @@ contains
   function potential(f)
     real(dl) f(ns)
     real(dl) potential
-    potential = (lambda/4.d0) * PHI**4 
+    potential = (lambda/6.d0) * PHI**6 
   end function potential
 
 !! the derivative of pential w.r.t. to the fields
@@ -56,7 +56,7 @@ contains
     real(dl) f(ns)
     real(dl),dimension(ns):: dVdf
     dVdf = (/ &
-         lambda*PHI**3   &  
+         lambda*PHI**5   &  
          /)
   end function dVdf
 
@@ -67,7 +67,7 @@ contains
     integer fld
     select case(fld)
     case(1)
-       mass_sq = lambda*( 3._dl * PHI**2)
+       mass_sq = lambda*( 5._dl * PHI**4)
     case default
        stop "wrong argument fld in mass_sq"
     end select
