@@ -111,7 +111,8 @@ contains
        write(screen_file%unit,'(A9, 5A11, 2A'//trim(int2str(ns*11))//')') 'a  ','H  ','rho/3H^2 -1','P_f/E_f ', 'K_f/E_f ', 'G_f/E_f ', 'mean_fields',  'rms_fields'
     endif
     write(*,'(F10.5,'//trim(Int2str(2*ns+5))//'G11.3)')metric%a,effective_Hubble(),total_fields_energy()/effective_Hubble()**2/3/Mplsq-1._dl, potential_energy()/total_fields_energy(), fields_kinetic_energy()/total_fields_energy(), fields_gradient_energy()/total_fields_energy(), avef,flucf
-    write(*,*) "metric%y:",metric%y, "; P_f:", potential_energy(),"; piy:",metric%piy
+    !! Use the line below only during troubleshooting of y, P_f and piy.
+    !write(*,*) "metric%y:",metric%y, "; P_f:", potential_energy(),"; piy:",metric%piy
     write(screen_file%unit,'(F10.5,'//trim(Int2str(2*ns+5))//'G11.3)')metric%a,effective_Hubble(),total_fields_energy()/effective_Hubble()**2/3/Mplsq-1._dl, potential_energy()/total_fields_energy(), fields_kinetic_energy()/total_fields_energy(), fields_gradient_energy()/total_fields_energy(), avef,flucf
 #endif
 100    call model_output(3)

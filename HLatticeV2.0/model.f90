@@ -32,13 +32,13 @@ module model
 !!Just define where you want to start the background evolution. Note this is NOT where you start the lattice simulation, which is defined in a subroutine "start_box_simulation" in this file.
  !!initial field values
   real(dl),dimension(ns)::init_fields=(/ &
-       3.5_dl *PlanckMass &
+       4.09d-4 *PlanckMass &
        /)
 
 !!Initial field momenta
  !! if set to be greater than or equal to Mplsq (square of reduced Planck Mass), the initial field momenta will be determined by slow-roll inflationary attractor
   !! Note again these are NOT the initial field momenta where you start the lattice simulation, the are the initial values that HLattice take to evolve the inflaton. 
-  real(dl),dimension(ns):: init_momenta = Mplsq
+  real(dl),dimension(ns):: init_momenta = Mplsq !(/ -1.d-8 * PlanckMass**2 /)
 
 
 !!put initial random Gaussian perturbations in the fields when you starts lattice simulation;
@@ -145,8 +145,10 @@ contains
       endif
    !When k < k_min: no longer in tachyonic region
    else
+      model_Power = 0._dl
       write(*,*) "effective k_min / Hubble = ", k_unit/metric%physdx/Init_Hubble
-      stop "Dit programma is nu gefucked"
+      write(*,*) "NOTE: REGION OF k < k_min MAY NOT YIELD ACCURATE RESULTS"
+      !stop "Dit programma is nu gefucked"
       model_Power(1) = 0.5_dl/k*(init_Hubble/k)**2
       model_Power(2) = 0._dl
       return
