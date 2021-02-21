@@ -56,6 +56,8 @@ unstable4 = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\test-exit
 unstable5 = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\test-exit-r5_screen.log"
 unstable6 = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\test-exit-r6_screen.log"
 
+fiop = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\field-io-run%i_screen.log"
+
 
 l4s = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\l0-ts-run%i_screen.log"
 l6s = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\l6-ts-run%i_screen.log"
@@ -63,6 +65,7 @@ t4s = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\t4-ts-run%i_scr
 r4s = r"D:\Physics\MPhys Project\DatasetArcive\Remote tests\rl4-ts-run%i_screen.log"
 rt4 = r"D:\Physics\MPhys Project\DatasetArcive\Remote tests\rt4-ts-run%i_screen.log"
 
+fiov = 1
 l4i = 25
 l6i = 2
 t4i = 4
@@ -70,13 +73,16 @@ rl4i = 6
 rti = 2
 #1,2,4,7
 
+fiof = fiop%fiov
 lf4 = l4s%l4i
 lf6 = l6s%l6i
 th4 = t4s%t4i
 rl4 = r4s%rl4i 
 rth = rt4%rti
 
-filefile = rl4
+save = 'no2'
+
+filefile = fiof
 pw_field_number =1 #Choose which field spectrum to plot (start: 1)
 form = 'log'
 rows=[1,10,20,30,40,50,60,70,80,90]
@@ -413,8 +419,10 @@ loc_max = None
 #plot_gw(df2,img_name='df2')
 
 #%% Mission control
-mission_control(data,n_df,rows=my_rows,save_panel=True,save_plots=True,truncate=10)
-#mission_control(data,n_df,rows=my_rows)
+if save=='yes':
+    mission_control(data,n_df,rows=my_rows,save_panel=True,save_plots=True,truncate=10)
+elif save=='no':
+    mission_control(data,n_df,rows=my_rows)
 
 #%% Temp test of omega
 '''templ = [3.0818286343172027E-004,
@@ -441,3 +449,8 @@ plt.yscale('log')
 plt.xscale('log')
 plt.plot(xs,tl,'ro')
 '''
+fields_path = trim_name(filefile) + '_whole_field_%i.%s'%(pw_field_number,form)
+fdf = import_fields(fields_path)
+plot_fields(fdf)
+
+
