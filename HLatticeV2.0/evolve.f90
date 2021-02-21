@@ -14,6 +14,13 @@ contains
        if(use_checkpoint .and. mod(sipar%nsteps,checkpoint_steps).eq.0 .and. (sipar%nsteps.gt.0 .or. write_check_at_step0))call write_check()
        call step(n_feedback)
        if(sipar%nsteps .ge. stop_at_step .or. metric%a .ge. stop_at_a .or. isnan(metric%a))then
+          if(isnan(metric%a)) then
+            write(*,*) "Metric a is NaN. Exiting..."
+          else if(metric%a .ge. stop_at_a)then
+            write(*,*) "Reached max a at a=",metric%a," Exiting..."
+          else
+            write(*,*) "Reached max number of steps. Exiting..."
+          end if
           call final_output()
           exit
        endif
@@ -182,6 +189,8 @@ contains
 #if METRIC_OPTION == FRW_BACKGROUND
 #if USE_CONFORMAL_TIME
     metric%y = metric%y - metric%piy/Mplsq/6._dl *dt
+    !write(*,*) "metric%y:",metric%y, "; K_f:", fields_kinetic_energy()
+
 #else
     metric%y = metric%y - (3._dl/8._dl)*metric%piy/Mplsq *dt
 #endif
