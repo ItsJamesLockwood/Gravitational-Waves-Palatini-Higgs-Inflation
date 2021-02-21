@@ -46,3 +46,44 @@ def xvar(data,conformal=True,amp=False):
         const = (6 * lam * Mpl**2 / np.pi)**0.25
         xvar = const * np.sqrt(ts)
     return xvar
+
+def init_momenta(v,dvdf,field0, use_PM=False):
+    result = -dvdf(field0,*args) / np.sqrt( 3 * v(field0, *args))
+    if use_PM:
+        result *= (1/np.sqrt(8*np.pi)) **2
+
+def palatiniV(field0,l=10**-4,xi=-1,nstar=50,use_PM=False):
+    if xi==-1:
+        xi = 3.8*10**6 * nstar**2 * l
+    a = l / (4 * xi**2)
+    b = np.sqrt(xi)
+    eta = np.sqrt(8*np.pi)
+    
+    if use_PM:
+        a /= eta**4
+        b *= eta
+    
+    potential = a * np.tanh(b*field0)**4
+    return potential
+
+def palatiniDV(field0,l=10**-4,xi=-1,nstar=50,use_PM=False):
+    if xi==-1:
+        xi = 3.8*10**6 * nstar**2 * l
+    a = l / (4 * xi**2)
+    b = np.sqrt(xi)
+    eta = np.sqrt(8*np.pi)
+    
+    if use_PM:
+        a /= eta**4
+        b *= eta
+
+    dvdf = 4*a*b * np.tanh(b*field0)**3 / np.cosh(b*field0)**2
+    return dvdf
+    
+    
+    
+    
+    
+
+
+
