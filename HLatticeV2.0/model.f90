@@ -33,7 +33,7 @@ module model
 !!Just define where you want to start the background evolution. Note this is NOT where you start the lattice simulation, which is defined in a subroutine "start_box_simulation" in this file.
  !!initial field values
   real(dl),dimension(ns)::init_fields=(/ &
-       4.09d-4 *PlanckMass &
+       4.0d-4 *PlanckMass &
        /)
 
 !!Initial field momenta
@@ -88,9 +88,9 @@ contains
     logical start_box_simulation
     real(dl),dimension(ns)::f,p
 !!LatticeEasy default, i.e. d \phi/dt + H phi = 0 (or equivalently d(a\phi)/dt =0
-    start_box_simulation = (p(1) + sqrt((sum(p**2)/2.+potential(f))/3.)/Mpl*f(1) .lt. 0.)
+    !!start_box_simulation = (p(1) + sqrt((sum(p**2)/2.+potential(f))/3.)/Mpl*f(1) .lt. 0.)
 !! If you want to start the lattice simualtion immediately
-    !!start_box_simulation = .true.
+    start_box_simulation = .true.
 !! If you want to use DEFROST starting point, the end of inflation, i.e. \ddot a =0
     !!start_box_simulation = (potential(f) .le. sum(p**2) )
   end function start_box_simulation
