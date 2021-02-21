@@ -13,6 +13,10 @@ contains
        call output_to_screen()
        if(use_checkpoint .and. mod(sipar%nsteps,checkpoint_steps).eq.0 .and. (sipar%nsteps.gt.0 .or. write_check_at_step0))call write_check()
        call step(n_feedback)
+       call output_fields()
+       !! Troubleshooting statements: comment out if not testing initial values.
+       write(*,*) "Exiting after first lattice step due to TS-mode..."
+       exit
        if(sipar%nsteps .ge. stop_at_step .or. metric%a .ge. stop_at_a .or. isnan(metric%a))then
           if(isnan(metric%a)) then
             write(*,*) "Metric a is NaN. Exiting..."
