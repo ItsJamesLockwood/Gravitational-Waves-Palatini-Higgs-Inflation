@@ -84,9 +84,9 @@ contains
     logical start_box_simulation
     real(dl),dimension(ns)::f,p
 !!LatticeEasy default, i.e. d \phi/dt + H phi = 0 (or equivalently d(a\phi)/dt =0
-    start_box_simulation = (p(1) + sqrt((sum(p**2)/2.+potential(f))/3.)/Mpl*f(1) .lt. 0.)
+    !!start_box_simulation = (p(1) + sqrt((sum(p**2)/2.+potential(f))/3.)/Mpl*f(1) .lt. 0.)
 !! If you want to start the lattice simualtion immediately
-    !!start_box_simulation = .true.
+    start_box_simulation = .true.
 !! If you want to use DEFROST starting point, the end of inflation, i.e. \ddot a =0
     !!start_box_simulation = (potential(f) .le. sum(p**2) )
   end function start_box_simulation

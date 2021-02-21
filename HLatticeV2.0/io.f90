@@ -216,4 +216,22 @@ contains
     call close_file(fp)
   end subroutine print_settings_file
 
+   subroutine output_fields()
+      type(file_pointer) fp
+      integer(IB) nf,i,j
+      do nf=1, ns
+         fp = open_file("data/" // trim(run_name) // "_whole_field_"//trim(int2str(nf))//".log","a")
+         write(fp%unit,*) "SEPARATOR"
+         write(fp%unit,*) metric%a
+         do i=1,n 
+            do j=1,n
+               write(fp%unit,*) i,j
+               write(fp%unit,*) fields_f(nf,i,j,:)               
+            enddo
+         enddo
+         ! write(fp%unit,*) fields_f(nf,:,:,:)
+      enddo
+      call close_file(fp)
+   end subroutine output_fields
+
 end module io_utils

@@ -32,8 +32,12 @@ print("Current working dir: ",os.getcwd())
 
 def  trim_name(file):
     ind = file.index('_screen')
-    return file[5:ind]
+    return file[:ind]
 
+def trim_file_name(file):
+    ind1 = file.index('_screen')
+    ind2 = file.rindex('\\')+1
+    return file[ind2:ind1]
 #%% File management
 file_name = "data/run_with_GW_17_11_screen.log"
 GW_file = "data/run_with_GW_17_11_GW.log"
@@ -44,8 +48,43 @@ lf4_tkachev1 = "data/lf4-tkachev-coupling1_screen.log"
 lf4_tkachev2 = "data/lf4-tkachev-coupling2_screen.log"
 lf4_tkachev3 = "data/lf4-tkachev-coupling3_screen.log"
 file128 = "data/lf4-std-h2-128-run1_screen.log"
+fref = r"D:\Physics\MPhys Project\DatasetArcive\lf4-128-H2-M1-LH30_screen.log"
+unstable1 = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\test-exit-r1_screen.log"
+unstable2 = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\test-exit-r2_screen.log"
+unstable3 = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\test-exit-r3_screen.log"
+unstable4 = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\test-exit-r4_screen.log"
+unstable5 = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\test-exit-r5_screen.log"
+unstable6 = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\test-exit-r6_screen.log"
 
-filefile = file128
+fiop = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\field-io-run%i_screen.log"
+lf4iop = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\lf4-nsr-io-run%i_screen.log"
+
+l4s = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\l0-ts-run%i_screen.log"
+l6s = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\l6-ts-run%i_screen.log"
+t4s = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\t4-ts-run%i_screen.log"
+r4s = r"D:\Physics\MPhys Project\DatasetArcive\Remote tests\rl4-ts-run%i_screen.log"
+rt4 = r"D:\Physics\MPhys Project\DatasetArcive\Remote tests\rt4-ts-run%i_screen.log"
+
+fiov = 1
+lf4iov= 2
+l4i = 25
+l6i = 2
+t4i = 4
+rl4i = 6
+rti = 2
+#1,2,4,7
+
+fiof = fiop%fiov
+lf4iof = lf4iop%lf4iov
+lf4 = l4s%l4i
+lf6 = l6s%l6i
+th4 = t4s%t4i
+rl4 = r4s%rl4i 
+rth = rt4%rti
+
+save = 'no2'
+
+filefile = lf4iof
 pw_field_number =2 #Choose which field spectrum to plot (start: 1)
 form = 'log'
 rows=[1,10,20,30,40,50,60,70,80,90]
@@ -142,7 +181,7 @@ def n_k(pw_data1,pw_data2,L=64):
     ks = k_list(pw_data1,L=L)
     
     #Retrieve actual field eignemode values
-    fk_df = pw_a.multiply(a_list**2,axis=0) / ks**5
+    fk_df = pw_a / ks**5
     fkdot_df = pw_b / ks**3
     #fk_df = pw_a
     #fkdot_df = pw_b
@@ -278,22 +317,93 @@ def plot_fig6(ns,rows=[],vlines=False,save_img=False,img_name="Fig 6"):
 
     plt.show()
 
+def mission_control(data,ns,rows=[],error=True,save_panel=False,save_plots=False,path=filefile,truncate=0):
+    png_name = trim_file_name(path)
+    if truncate!=0:
+        png_name += '_trunc' + str(truncate)
+        truncate = np.searchsorted(data['a'],truncate)
+    else:
+        truncate = data.shape[0]-1
+    fig, ax = plt.subplots(2,2)
+    fig.set_figwidth(13)
+    fig.set_figheight(9.5)
+    plt.subplots_adjust(top=.93)
+    #Subplt 0,0
+    ax[0,0].plot(data['a'][:truncate], data['mean1'][:truncate])
+    ax[0,0].set_title("Inflaton field evolution")
+    #Subplot 0,1
+    diffs = data['a'].diff()[1:]
+    ax[0,1].set_title("Increment of a for each step j")
+    ax[0,1].plot(data.index[1:][:truncate], diffs[:truncate])
+    
+    #Subplot 1,0
+    if rows==[]:
+        rows.append(int(ns.shape[0])/2)
+        colors = np.flip(cm.magma(np.linspace(0,1,len(rows))),axis=0)
+    else:
+        colors = np.flip(cm.magma(np.linspace(0,1,len(rows))),axis=0)
+    for j in range(len(rows)):
+        xs = np.array(ns.columns[:-1]) / (2 * np.pi)
+        ys = ns.iloc[rows[j],:-1] * (2 * xs**4)
+        ax[1,0].plot(xs,ys,label=ns['a'][rows[j]], color=colors[j])
+    ax[1,0].set_yscale('log')
+    #plt.xscale('log')    
+    #ax[1,0].legend(title='Spectrum at $a=$',loc='lower right')
+    ax[1,0].set_title("Occupation number $n_k$")
+    ax[1,0].set_xlabel(r"$k\Delta / 2 \pi$")
+    ax[1,0].set_ylabel(r"$ k^4\; n_k /\; 2 \pi^2\; \rho}$")
+    
+    #Subplot 1,1
+    ax[1,1].set_yscale('log')
+    ax[1,1].set_title('Reproduction of Fig.1: ratios of energies')
+    ax[1,1].set_xlabel('a')
+    ax[1,1].set_ylabel('$\log_{10}(|E|/E_{tot})$')
+    ax[1,1].plot(data['a'][:truncate],data['pratio'][:truncate],linestyle='dashed',label='Potential energy')
+    ax[1,1].plot(data['a'][:truncate],data['kratio'][:truncate],linestyle='dashed',label='Kinetic energy')
+    ax[1,1].plot(data['a'][:truncate],data['gratio'][:truncate],'b',label='Gradient of field energy')
+    ax[1,1].legend()
+    
+    if error==True:
+        ax[1,1].plot(data['a'][:truncate],abs(1/(data['omega'][:truncate]+1)-1),linestyle='dashed',label='Fractional energy noises')
+        ax[1,1].legend()
+        
+
+    if save_panel==True:
+        print("Saving panel...")
+        fig.savefig(png_name + '_panel.png')
+    if save_plots==True:
+        print("Saving individual plots...")
+        #extent = ax[0,0].get_window_extent().transformed(fig.dpi_scale_trans.inverted())
+        extents = [ax[i,j].get_tightbbox(fig.canvas.renderer).transformed(fig.dpi_scale_trans.inverted()) for i in range(2) for j in range(2)]
+        
+        # Pad the saved area by 10% in the x-direction and 20% in the y-direction
+        padx = 1.05
+        pady = 1.1
+        fig.savefig(png_name + '_field.png', bbox_inches=extents[0].expanded(padx, pady))
+        fig.savefig(png_name + '_increments.png', bbox_inches=extents[1].expanded(padx, pady))
+        fig.savefig(png_name + '_n_k.png', bbox_inches=extents[2].expanded(padx, pady))
+        fig.savefig(png_name + '_energies.png', bbox_inches=extents[3].expanded(padx, pady))
+
 #%% Main
 
 data = import_screen(filefile)
-pw_data1, pw_data2 = import_pw('data/'+trim_name(filefile) + '_pw_%i.%s'%(pw_field_number,form))
+pw_data1, pw_data2 = import_pw(trim_name(filefile) + '_pw_%i.%s'%(pw_field_number,form))
 
 n_df = n_k(pw_data1,pw_data2,L=L)
 nred_df  = n_k_red(pw_data1,pw_data2,L=L)
 print(data['a'])
 #plot_n_t(n_df,cols=[1,4,5,20,30],save_img=save_img,img_name=my_img_name,data=data)
 my_rows = np.searchsorted(n_df['a'],my_rows)
-plot_fig6(n_df, rows=my_rows, save_img=save_img,img_name=my_img_name)
+my_rows = range(1,n_df.shape[0],2)
+#plot_fig6(n_df, rows=my_rows, save_img=save_img,img_name=my_img_name)
 tk_rows = sorted(tk_rows)
 #plot_tkachev2(n_df,rows=tk_rows,save_img=save_img,img_name=my_img_name)
 #plot_gw(pw_data1,trim=2,save_img=False)
+loc_min = 0
+loc_max = None
 
-
+#plt.plot(data['a'][loc_min:loc_max]**.5,data['mean1'][loc_min:loc_max])
+#plt.plot(data.diff()['a'][loc_min:loc_max])
 
 #plt.plot(pw_data1.iloc[4,:-1]**2)
 #plot_pw_k(pw_data1,save_img=True,trim=10)
@@ -310,8 +420,14 @@ tk_rows = sorted(tk_rows)
 #plot_gw(df1,img_name='df1')
 #plot_gw(df2,img_name='df2')
 
+#%% Mission control
+if save=='yes':
+    mission_control(data,n_df,rows=my_rows,save_panel=True,save_plots=True,truncate=10)
+elif save=='no':
+    mission_control(data,n_df,rows=my_rows)
+
 #%% Temp test of omega
-templ = [3.0818286343172027E-004,
+'''templ = [3.0818286343172027E-004,
          3.2058427750028849E-004,
          3.4025032220321951E-004,
          3.6601186544975902E-004,
@@ -334,3 +450,9 @@ xs = np.arange(1,len(tl)+1)
 plt.yscale('log')
 plt.xscale('log')
 plt.plot(xs,tl,'ro')
+'''
+fields_path = trim_name(filefile) + '_whole_field_%i.%s'%(pw_field_number,form)
+fdf = import_fields(fields_path)
+plot_fields(fdf)
+
+
