@@ -47,17 +47,26 @@ def xvar(data,conformal=True,amp=False):
         xvar = const * np.sqrt(ts)
     return xvar
 
-def init_momenta(v,dvdf,field0, use_PM=False):
-    result = -dvdf(field0,*args) / np.sqrt( 3 * v(field0, *args))
+def init_momenta(v,dvdf,field0, use_PM=True, **kwargs):
+    result = -dvdf(field0,**kwargs,use_PM=use_PM) / np.sqrt( 3 * v(field0, **kwargs,use_PM=use_PM))
     if use_PM:
         result *= (1/np.sqrt(8*np.pi)) **2
+    return result
 
-def palatiniV(field0,l=10**-4,xi=-1,nstar=50,use_PM=False):
-    if xi==-1:
-        xi = 3.8*10**6 * nstar**2 * l
-    a = l / (4 * xi**2)
-    b = np.sqrt(xi)
+def palatiniV(field0,use_PM=True,**kwargs):
+    default = {'l':10**-4,'xi':-1,'nstar':50}
+    ks = default
+    for k in default.keys():
+        if k in kwargs.keys():
+            ks[k] = kwargs[k]
+    #print(ks)
+
+    if ks['xi']==-1:
+        ks['xi'] = 3.8*10**6 * ks['nstar']**2 * ks['l']
+    a = ks['l'] / (4 * ks['xi']**2)
+    b = np.sqrt(ks['xi'])
     eta = np.sqrt(8*np.pi)
+
     
     if use_PM:
         a /= eta**4
@@ -66,11 +75,18 @@ def palatiniV(field0,l=10**-4,xi=-1,nstar=50,use_PM=False):
     potential = a * np.tanh(b*field0)**4
     return potential
 
-def palatiniDV(field0,l=10**-4,xi=-1,nstar=50,use_PM=False):
-    if xi==-1:
-        xi = 3.8*10**6 * nstar**2 * l
-    a = l / (4 * xi**2)
-    b = np.sqrt(xi)
+def palatiniDV(field0,use_PM=True, **kwargs):
+    default = {'l':10**-4,'xi':-1,'nstar':50}
+    ks = default
+    for k in default.keys():
+        if k in kwargs.keys():
+            ks[k] = kwargs[k]
+    #print(ks)
+
+    if ks['xi']==-1:
+        ks['xi'] = 3.8*10**6 * ks['nstar']**2 * ks['l']
+    a = ks['l'] / (4 * ks['xi']**2)
+    b = np.sqrt(ks['xi'])
     eta = np.sqrt(8*np.pi)
     
     if use_PM:
@@ -81,9 +97,12 @@ def palatiniDV(field0,l=10**-4,xi=-1,nstar=50,use_PM=False):
     return dvdf
     
     
-    
-    
-    
+
+if __name__=="__main__":
+    print('foo')
+    conds = {'l':10**-7}
+    p0 = init_momenta(palatiniV, palatiniDV, 5*10**-4, **conds)    
+    print(p0)
 
 
 
