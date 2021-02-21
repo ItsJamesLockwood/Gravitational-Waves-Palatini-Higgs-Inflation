@@ -17,7 +17,7 @@ contains
   subroutine initialize()
     real(dl) y(2*ns+1)
     real(dl) t, tnext, i_slow
-    logical ierror
+    logical ierror, do_slow_roll
     DEFINE_IND
 
     call fft_init()
@@ -36,19 +36,29 @@ contains
     LNA = 0._dl
 
     THE_FIELDS = init_fields
-    if(all(init_momenta.ge.Mplsq))then
-       THE_MOMENTA = - dVdf(THE_FIELDS) * Mpl/sqrt(3._dl * (potential(THE_FIELDS)) ) 
+    ! Although momenta of order +Mplsq should never be required, ensured it's possible by changing .ge. to .eq.
+    if(all(init_momenta.eq.Mplsq))then
+       write(*,*) "Selected Mplsq: Calculating the initial momenta..."
+       THE_MOMENTA = - dVdf(THE_FIELDS) * Mpl/sqrt(3._dl * (potential(THE_FIELDS)) )        
     else
        THE_MOMENTA = init_momenta
     endif
 
     i_slow=0
+    do_slow_roll = .false.
+    !! This statement checking for zero-gradients does not forcefully exit, which gives more freedom to the user.
+    if(all(dVdf(THE_FIELDS)==0))write(*,*) "WARNING: ALL GRADIENTS ARE ZERO. Program likely to run ad infinitum."
     do while(.not.Start_Box_Simulation(THE_FIELDS, THE_MOMENTA))
         i_slow= i_slow + 1
+        do_slow_roll = .true.
         tnext = t + 0.0005_dl * Mpl/sqrt((potential(THE_FIELDS)+sum(THE_MOMENTA**2)/2.)/3._dl)
-       call dverk(ode_background,t,y,tnext,1.e-7_dl)
+        call dverk(ode_background,t,y,tnext,1.e-7_dl)
     enddo
-    write(*,*) "Begin simulation after ",i_slow," itereations."    
+    if (do_slow_roll) then
+        write(*,*) "Begin simulation after ",i_slow," itereations."    
+    else
+        write(*,*) "Slow roll initialisation skipped. Beginning lattice simulation."
+    end if 
     init_fields = THE_FIELDS
     init_momenta = THE_MOMENTA
     call print_settings_file()
