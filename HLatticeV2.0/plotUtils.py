@@ -8,7 +8,7 @@ Created on Mon Nov 23 21:38:40 2020
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.widgets import Slider
+from matplotlib.widgets import Slider, Button, RadioButtons
 from mpl_toolkits.mplot3d import Axes3D
 
 def import_screen(file_name,print_logs=False):
@@ -103,18 +103,21 @@ def import_pw(pw_file):
     return df1,df2
 
 
-def import_fields(fields_file):
+def import_fields(fields_file,sep="SEPARATOR"):
     file = open(fields_file,'r')
     field_list = []
 
     l1 = file.readline()
+    if l1.strip()!=sep:
+        raise ValueError("Expected separator in first line. Instead found '"+sep+"'.")
+        
     while True:
         l2 = file.readline()
         if l1=='' or l2=='':
             break
         la = file.readline()
         lb = file.readline()
-        while la!="SEPARATOR" and lb!="SEPARATOR":
+        while la!=sep and lb!=sep:
             row = []
             if la=='' or lb=='':
                 break
@@ -135,9 +138,49 @@ def import_fields(fields_file):
     field_df = pd.DataFrame(field_list,columns=['a','x','y','zs'])
     return field_df
 
-def plot_fields(field_df,cond=['x', 1]):
+def import_mesh(fields_file,sep="SEPARATOR"):
+    '''
+    Import field which has been stored directly as a mesh - rather than the convoluted line by line output that
+    is read in by import_fields.
+    '''
+    file = open(fields_file,'r')
+    field_list = []
+
+    lres = file.readline().strip()
+    if lres==sep:
+        raise ValueError("Separator found in first line. Expected resolution. Check that file format corresponds to requirements for 'import_mesh'.")
+    res = int(lres)
+        
+    l1 = file.readline().strip()    
+    l2 = file.readline().strip()
+    l3 = file.readline().strip()
+    while l1!='':        
+        if l1!=sep:
+            raise ValueError("Expected separator in second line. Instead found '"+l1+"'.")    
+        if l2==sep or l3==sep:
+            raise ValueError("Expected either metric or field mesh in lines 2 and 3. Instead found the separator.")
+        a = float(l2)
+        mesh = list(map(float, l3.split()))
+        mesh = np.array(mesh).reshape(res,res,res).T
+        
+        field_list.append([a,mesh])
+        
+        l1 = file.readline().strip()
+        l2 = file.readline().strip()
+        l3 = file.readline().strip()
+    
+    mesh_df = pd.DataFrame(field_list, columns=['a','mesh'])
+    return mesh_df
+    
+
+def plot_fields(field_df,cond=['x', 1],use_FFT=False,use_contour=False):
     plane1 = field_df[field_df[cond[0]]==cond[1]]
     fvals = np.array(plane1.zs.values.tolist())
+    
+    if use_FFT:
+        fvals = np.log(np.absolute(np.fft.fft2(fvals)))
+    
+        
     if cond[0]=='x':
         anticond = 'y'
     elif cond[0]=='y':
@@ -150,26 +193,115 @@ def plot_fields(field_df,cond=['x', 1]):
     plt.subplots_adjust(left=0.25, bottom=0.25)    
     ax = fig.add_subplot(2,1,1)
     ax3 = fig.add_subplot(2,1,2,projection='3d')
-
-    ax.contourf(fvals)
+    ax.set_aspect(1)
+    if use_contour:
+        ax.contourf(fvals)
+    else:
+        ax.imshow(fvals)
     pl3d = ax3.plot_surface(X=X, Y=Y, Z=fvals, cmap='YlGnBu_r')
     cbar = fig.colorbar(pl3d, ax=ax3)
     
     axcolor = 'lightgoldenrodyellow'
     slid_ax = plt.axes([0.25, 0.1, 0.65, 0.03], facecolor=axcolor)
-    x_slider = Slider(slid_ax, 'X', 1, plane1[anticond].max(), valinit=1, valstep=1)
-    print(plane1[anticond].max())
+    x_slider = Slider(slid_ax, cond[0].upper(), 1, plane1[anticond].max(), valinit=cond[1], valstep=1)
+    
     def update(val):
         xv = x_slider.val
         plane1 = field_df[field_df[cond[0]]==xv]
-        print(plane1)
+        #print("Asked for update...")
         fvals = np.array(plane1.zs.values.tolist())
-        
+        if use_FFT:
+            fvals = np.log(np.absolute(np.fft.fft2(fvals)))
+    
+        #fvals = np.log(np.abs(fvals))
+        ax.cla()
         ax3.cla()
+        if use_contour:
+            ax.contourf(fvals)
+        else:
+            ax.imshow(fvals)
+        ax3.plot_surface(X=X, Y=Y, Z=fvals, cmap='YlGnBu_r')
+        fig.canvas.draw_idle()
+    x_slider.on_changed(update)
+
+    resetax = plt.axes([0.8, 0.025, 0.1, 0.04])    
+    button = Button(resetax, 'Reset', color=axcolor, hovercolor='0.975')     
+    def reset(event):
+        print("Reset requested...")
+        x_slider.reset()
+        
+    button.on_clicked(reset)
+    resetax._button = button
+    return fvals
+
+def plot_mesh(field_df,a_ind=0,cond=['x',0],use_FFT=False,use_contour=False):
+    the_mesh = field_df.iloc[a_ind,:].mesh
+    
+    if cond[0]=='x':
+        plane1 = the_mesh[cond[1],:,:]
+    elif cond[0]=='y':
+        plane1 = the_mesh[:,cond[1],:]
+    elif cond[0]=='z':
+        plane1 = the_mesh[:,:,cond[1]]
+    else:
+        raise ValueError("Coordinate '%s' not recognised."%cond[0])
+    print(plane1.shape)
+    fvals = plane1
+    if use_FFT:
+        fvals = np.log(np.absolute(np.fft.fft2(fvals)))
+    X, Y = np.meshgrid(np.linspace(1,plane1.shape[0],plane1.shape[0]),np.linspace(1,plane1.shape[1],plane1.shape[1]))
+    fig = plt.figure()
+    plt.subplots_adjust(left=0.25, bottom=0.25)    
+    ax = fig.add_subplot(2,1,1)
+    ax3 = fig.add_subplot(2,1,2,projection='3d')
+    ax.set_aspect(1)
+    #ax.contourf(fvals)
+    if use_contour:
+        ax.contourf(fvals)
+    else:
+        ax.imshow(fvals)
+    pl3d = ax3.plot_surface(X=X, Y=Y, Z=fvals, cmap='YlGnBu_r')
+    cbar = fig.colorbar(pl3d, ax=ax3)
+    
+    axcolor = 'lightgoldenrodyellow'
+    slid_ax = plt.axes([0.25, 0.1, 0.65, 0.03], facecolor=axcolor)
+    x_slider = Slider(slid_ax, cond[0].upper(), 1, plane1.shape[0], valinit=cond[1], valstep=1)
+    
+  
+    def update(val):
+        xv = int(x_slider.val)
+        if cond[0]=='x':
+            plane1 = the_mesh[xv-1,:,:]
+        elif cond[0]=='y':
+            plane1 = the_mesh[:,xv-1,:]
+        elif cond[0]=='z':
+            plane1 = the_mesh[:,:,xv-1]
+        else:
+            raise("Code is broken: this else should not be reachable.")
+        #print("Asked for update...")
+        fvals = plane1
+        if use_FFT:
+            fvals = np.log(np.absolute(np.fft.fft2(fvals)))
+        
+        ax.cla()
+        ax3.cla()
+        if use_contour:
+            ax.contourf(fvals)
+        else:
+            ax.imshow(fvals)
         ax3.plot_surface(X=X, Y=Y, Z=fvals, cmap='YlGnBu_r')
         fig.canvas.draw_idle()
         
     x_slider.on_changed(update)
     
-    
+    resetax = plt.axes([0.8, 0.025, 0.1, 0.04])    
+    button = Button(resetax, 'Reset', color=axcolor, hovercolor='0.975')     
+    def reset(event):
+        print("Reset requested...")
+        x_slider.reset()
+        
+    button.on_clicked(reset)
+    resetax._button = button
+    return fvals
+        
     

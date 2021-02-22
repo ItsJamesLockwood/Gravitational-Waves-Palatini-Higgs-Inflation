@@ -57,7 +57,7 @@ unstable5 = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\test-exit
 unstable6 = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\test-exit-r6_screen.log"
 
 fiop = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\field-io-run%i_screen.log"
-
+lf4iop = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\lf4-nsr-io-run%i_screen.log"
 
 l4s = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\l0-ts-run%i_screen.log"
 l6s = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\l6-ts-run%i_screen.log"
@@ -66,6 +66,7 @@ r4s = r"D:\Physics\MPhys Project\DatasetArcive\Remote tests\rl4-ts-run%i_screen.
 rt4 = r"D:\Physics\MPhys Project\DatasetArcive\Remote tests\rt4-ts-run%i_screen.log"
 
 fiov = 1
+lf4iov= 2
 l4i = 25
 l6i = 2
 t4i = 4
@@ -73,7 +74,9 @@ rl4i = 6
 rti = 2
 #1,2,4,7
 
+
 fiof = fiop%fiov
+lf4iof = lf4iop%lf4iov
 lf4 = l4s%l4i
 lf6 = l6s%l6i
 th4 = t4s%t4i
@@ -83,6 +86,7 @@ rth = rt4%rti
 save = 'no2'
 
 filefile = fiof
+#filefile = fiof
 pw_field_number =1 #Choose which field spectrum to plot (start: 1)
 form = 'log'
 rows=[1,10,20,30,40,50,60,70,80,90]
@@ -389,7 +393,7 @@ pw_data1, pw_data2 = import_pw(trim_name(filefile) + '_pw_%i.%s'%(pw_field_numbe
 
 n_df = n_k(pw_data1,pw_data2,L=L)
 nred_df  = n_k_red(pw_data1,pw_data2,L=L)
-print(data['a'])
+#print(data['a'])
 #plot_n_t(n_df,cols=[1,4,5,20,30],save_img=save_img,img_name=my_img_name,data=data)
 my_rows = np.searchsorted(n_df['a'],my_rows)
 my_rows = range(1,n_df.shape[0],2)
@@ -449,8 +453,36 @@ plt.yscale('log')
 plt.xscale('log')
 plt.plot(xs,tl,'ro')
 '''
+'''
+#Test the speed of float conversion
+from time import time
+
+def timer(lst):
+    methods = [[],[], []]
+    for _ in range(100):
+        start1 = time()
+        l1 = list(map(float,lst))
+        end1=time() - start1
+        
+        start2 = time()
+        l2 = np.array(lst,dtype=np.float32)
+        end2 = time() - start2
+        
+        start3 = time()
+        l3 = np.array(lst,dtype=np.float64)
+        end3 = time()-start3
+        
+        methods[0].append(end1)
+        methods[1].append(end2)
+        methods[2].append(end3)
+    for i in range(3):
+        print("Avg%i: "%i,np.mean(methods[i]),"\t;\t Std%i: "%i,np.std(methods[i]))
+'''
+
 fields_path = trim_name(filefile) + '_whole_field_%i.%s'%(pw_field_number,form)
 fdf = import_fields(fields_path)
-plot_fields(fdf)
-
+#fd2= import_mesh(fields_path[:-19] + '2' + fields_path[-18:])
+#print(fd2)
+plot_fields(fdf,cond=['x',1],use_FFT=True)
+#plot_mesh(fd2,cond=['y',0],use_FFT=True)
 
