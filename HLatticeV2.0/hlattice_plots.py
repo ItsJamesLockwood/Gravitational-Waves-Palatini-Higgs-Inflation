@@ -58,6 +58,8 @@ unstable6 = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\test-exit
 
 fiop = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\field-io-run%i_screen.log"
 lf4iop = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\lf4-nsr-io-run%i_screen.log"
+t4iop = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\t4-nsr-io-run%i_screen.log"
+
 
 l4s = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\l0-ts-run%i_screen.log"
 l6s = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\l6-ts-run%i_screen.log"
@@ -67,6 +69,7 @@ rt4 = r"D:\Physics\MPhys Project\DatasetArcive\Remote tests\rt4-ts-run%i_screen.
 
 fiov = 1
 lf4iov= 2
+t4iov= 3
 l4i = 25
 l6i = 2
 t4i = 4
@@ -77,6 +80,7 @@ rti = 2
 
 fiof = fiop%fiov
 lf4iof = lf4iop%lf4iov
+t4iof = t4iop%t4iov
 lf4 = l4s%l4i
 lf6 = l6s%l6i
 th4 = t4s%t4i
@@ -85,7 +89,7 @@ rth = rt4%rti
 
 save = 'no2'
 
-filefile = fiof
+filefile = t4iof
 #filefile = fiof
 pw_field_number =1 #Choose which field spectrum to plot (start: 1)
 form = 'log'
@@ -480,9 +484,13 @@ def timer(lst):
 '''
 
 fields_path = trim_name(filefile) + '_whole_field_%i.%s'%(pw_field_number,form)
-fdf = import_fields(fields_path)
-#fd2= import_mesh(fields_path[:-19] + '2' + fields_path[-18:])
-#print(fd2)
-plot_fields(fdf,cond=['x',1],use_FFT=True)
-#plot_mesh(fd2,cond=['y',0],use_FFT=True)
+momenta_path = trim_name(filefile) + '_momenta_%i.%s'%(pw_field_number,form)
+slice_f_path=  trim_name(filefile) + '_slice_f_%i.%s'%(pw_field_number,form)
+slice_p_path=  trim_name(filefile) + '_slice_p_%i.%s'%(pw_field_number,form)
 
+#fdf = import_mesh(fields_path)
+#pdf = import_mesh(momenta_path)
+sfdf = import_slice(slice_f_path)
+spdf = import_slice(slice_p_path)
+#plot_mesh(pdf,cond=['z',0],use_FFT=True)
+plot_slices(spdf,use_FFT=True)

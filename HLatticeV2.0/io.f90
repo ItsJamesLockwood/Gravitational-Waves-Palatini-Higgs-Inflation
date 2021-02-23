@@ -221,17 +221,82 @@ contains
       integer(IB) nf,i,j
       do nf=1, ns
          fp = open_file("data/" // trim(run_name) // "_whole_field_"//trim(int2str(nf))//".log","a")
+         if (sipar%nsteps.eq.0) then
+            write(fp%unit,*) n
+         endif
          write(fp%unit,*) "SEPARATOR"
          write(fp%unit,*) metric%a
-         do i=1,n 
-            do j=1,n
-               write(fp%unit,*) i,j
-               write(fp%unit,*) fields_f(nf,i,j,:)               
-            enddo
-         enddo
-         ! write(fp%unit,*) fields_f(nf,:,:,:)
+         ! do i=1,n 
+         !    do j=1,n
+         !       write(fp%unit,*) i,j
+         !       write(fp%unit,*) fields_f(nf,i,j,:)               
+         !    enddo
+         ! enddo
+         write(fp%unit,*) fields_f(nf,:,:,:)
       enddo
       call close_file(fp)
    end subroutine output_fields
 
+   subroutine output_momenta()
+      type(file_pointer) fp
+      integer(IB) nf,i,j
+      do nf=1, ns
+         fp = open_file("data/" // trim(run_name) // "_momenta_"//trim(int2str(nf))//".log","a")
+         if (sipar%nsteps.eq.0) then
+            write(fp%unit,*) n
+         endif
+         write(fp%unit,*) "SEPARATOR"
+         write(fp%unit,*) metric%a
+         ! do i=1,n 
+         !    do j=1,n
+         !       write(fp%unit,*) i,j
+         !       write(fp%unit,*) fields_f(nf,i,j,:)               
+         !    enddo
+         ! enddo
+         write(fp%unit,*) fields_p(nf,:,:,:)
+      enddo
+      call close_file(fp)
+   end subroutine output_momenta
+
+   subroutine output_field_slice()
+      type(file_pointer) fp
+      integer(IB) nf,i,j
+      do nf=1, ns
+         fp = open_file("data/" // trim(run_name) // "_slice_f_"//trim(int2str(nf))//".log","a")
+         if (sipar%nsteps.eq.0) then
+            write(fp%unit,*) n
+         endif
+         write(fp%unit,*) "SEPARATOR"
+         write(fp%unit,*) metric%a
+         ! do i=1,n 
+         !    do j=1,n
+         !       write(fp%unit,*) i,j
+         !       write(fp%unit,*) fields_f(nf,i,j,:)               
+         !    enddo
+         ! enddo
+         write(fp%unit,*) fields_f(nf,yz_lattice_slice,:,:)
+      enddo
+      call close_file(fp)
+   end subroutine output_field_slice
+
+   subroutine output_momentum_slice()
+      type(file_pointer) fp
+      integer(IB) nf,i,j
+      do nf=1, ns
+         fp = open_file("data/" // trim(run_name) // "_slice_p_"//trim(int2str(nf))//".log","a")
+         if (sipar%nsteps.eq.0) then
+            write(fp%unit,*) n
+         endif
+         write(fp%unit,*) "SEPARATOR"
+         write(fp%unit,*) metric%a
+         ! do i=1,n 
+         !    do j=1,n
+         !       write(fp%unit,*) i,j
+         !       write(fp%unit,*) fields_f(nf,i,j,:)               
+         !    enddo
+         ! enddo
+         write(fp%unit,*) fields_p(nf,yz_lattice_slice,:,:)
+      enddo
+      call close_file(fp)
+   end subroutine output_momentum_slice
 end module io_utils

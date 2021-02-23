@@ -9,6 +9,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider, Button, RadioButtons
+import matplotlib.animation as animation
 from mpl_toolkits.mplot3d import Axes3D
 
 def import_screen(file_name,print_logs=False):
@@ -69,6 +70,7 @@ def import_GW(GW_file):
     
     df1['a'] = pd.Series(a)
     df2['a'] = pd.Series(a)
+    file.close()
     return df1,df2
 
 def import_pw(pw_file):
@@ -100,6 +102,7 @@ def import_pw(pw_file):
     
     df1['a'] = pd.Series(a)
     df2['a'] = pd.Series(a)
+    file.close()
     return df1,df2
 
 
@@ -136,6 +139,7 @@ def import_fields(fields_file,sep="SEPARATOR"):
             raise ValueError("The second line was a separator when a list of coordinates was expected. Check file formatting.")
     
     field_df = pd.DataFrame(field_list,columns=['a','x','y','zs'])
+    file.close()
     return field_df
 
 def import_mesh(fields_file,sep="SEPARATOR"):
@@ -170,6 +174,7 @@ def import_mesh(fields_file,sep="SEPARATOR"):
         l3 = file.readline().strip()
     
     mesh_df = pd.DataFrame(field_list, columns=['a','mesh'])
+    file.close()
     return mesh_df
     
 
@@ -303,5 +308,115 @@ def plot_mesh(field_df,a_ind=0,cond=['x',0],use_FFT=False,use_contour=False):
     button.on_clicked(reset)
     resetax._button = button
     return fvals
+
+def import_slice(slice_file,sep="SEPARATOR"):
+    '''
+    Import slice of field which has been stored directly as a mesh. 
+    '''
+    file = open(slice_file,'r')
+    field_list = []
+
+    lres = file.readline().strip()
+    if lres==sep:
+        raise ValueError("Separator found in first line. Expected resolution. Check that file format corresponds to requirements for 'import_mesh'.")
+    res = int(lres)
         
+    l1 = file.readline().strip()    
+    l2 = file.readline().strip()
+    l3 = file.readline().strip()
+    while l1!='':        
+        if l1!=sep:
+            raise ValueError("Expected separator in second line. Instead found '"+l1+"'.")    
+        if l2==sep or l3==sep:
+            raise ValueError("Expected either metric or field mesh in lines 2 and 3. Instead found the separator.")
+        a = float(l2)
+        mesh = list(map(float, l3.split()))
+        mesh = np.array(mesh).reshape(res,res).T
+        
+        field_list.append([a,mesh])
+        
+        l1 = file.readline().strip()
+        l2 = file.readline().strip()
+        l3 = file.readline().strip()
     
+    mesh_df = pd.DataFrame(field_list, columns=['a','mesh'])
+    file.close()
+    return mesh_df
+
+def plot_slices(slice_df,a_ind=0,use_FFT=False,use_contour=False):
+    the_mesh = slice_df.iloc[a_ind,:].mesh
+    fvals = the_mesh
+    if use_FFT:
+        fvals = np.log(np.absolute(np.fft.fft2(fvals)))
+    X, Y = np.meshgrid(np.linspace(1,fvals.shape[0],fvals.shape[0]),np.linspace(1,fvals.shape[1],fvals.shape[1]))
+    fig = plt.figure()
+    plt.subplots_adjust(left=0.25, bottom=0.25)    
+    ax = fig.add_subplot(2,1,1)
+    ax3 = fig.add_subplot(2,1,2,projection='3d')
+    ax.set_aspect(1)
+    #ax.contourf(fvals)
+    if use_contour:
+        ax.contourf(fvals)
+    else:
+        ax.imshow(fvals)
+    pl3d = ax3.plot_surface(X=X, Y=Y, Z=fvals, cmap='YlGnBu_r')
+    cbar = fig.colorbar(pl3d, ax=ax3)
+    
+    axcolor = 'lightgoldenrodyellow'
+    slid_ax = plt.axes([0.25, 0.1, 0.65, 0.03], facecolor=axcolor)
+    a_slider = Slider(slid_ax, 'A', 0, slice_df.shape[0]-1, valinit=a_ind, valstep=1)
+    
+  
+    def update(val):
+        av = int(a_slider.val) 
+        the_mesh = slice_df.iloc[av,:].mesh
+        fvals = the_mesh
+        if use_FFT:
+            fvals = np.log(np.absolute(np.fft.fft2(fvals)))
+        
+        ax.cla()
+        ax3.cla()
+        if use_contour:
+            ax.contourf(fvals)
+        else:
+            ax.imshow(fvals)
+        ax3.plot_surface(X=X, Y=Y, Z=fvals, cmap='YlGnBu_r')
+        fig.canvas.draw_idle()
+        
+    a_slider.on_changed(update)
+    
+    resetax = plt.axes([0.8, 0.025, 0.1, 0.04])    
+    button = Button(resetax, 'Reset', color=axcolor, hovercolor='0.975')   
+    
+    playax = plt.axes([0.4, 0.025, 0.18, 0.04])    
+    playButton = Button(playax, 'Play animation', color=axcolor, hovercolor='0.975')   
+    
+    def reset(event):
+        print("Reset requested...")
+        a_slider.reset()
+
+    def draw_update(curr):
+        the_mesh = slice_df.iloc[curr,:].mesh
+        fvals = the_mesh
+        if use_FFT:
+            fvals = np.log(np.absolute(np.fft.fft2(fvals)))
+        
+        ax.cla()
+        ax3.cla()
+        if use_contour:
+            ax.contourf(fvals)
+        else:
+            ax.imshow(fvals)
+        ax3.plot_surface(X=X, Y=Y, Z=fvals, cmap='YlGnBu_r')
+        
+    def play(event):
+        print("Play animation...")
+        anim = animation.FuncAnimation(fig, draw_update, frames=fvals.shape[0],interval=50, repeat=False)
+        fig.canvas.draw()
+        
+    button.on_clicked(reset)
+    playButton.on_clicked(play)
+    
+    resetax._button = button
+    playax._button = playButton
+    return fvals

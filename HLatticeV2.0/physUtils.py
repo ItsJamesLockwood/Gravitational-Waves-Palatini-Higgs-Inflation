@@ -96,13 +96,19 @@ def palatiniDV(field0,use_PM=True, **kwargs):
     dvdf = 4*a*b * np.tanh(b*field0)**3 / np.cosh(b*field0)**2
     return dvdf
     
-    
+def slow_roll(v,dv):
+    return (dv/v)**2 / (16 * np.pi)
 
 if __name__=="__main__":
     print('foo')
-    conds = {'l':10**-7}
+    conds = {'l':10**-4}
     p0 = init_momenta(palatiniV, palatiniDV, 5*10**-4, **conds)    
     print(p0)
-
+    xs = np.linspace(0,10**-5,1000)
+    import matplotlib.pyplot as plt
+    
+    v = palatiniV(xs)
+    dv = palatiniDV(xs)
+    plt.plot(xs, slow_roll(v, dv))
 
 

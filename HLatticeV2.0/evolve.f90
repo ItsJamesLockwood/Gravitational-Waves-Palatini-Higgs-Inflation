@@ -9,14 +9,33 @@ module evolution
 contains
 
   subroutine evolve()
+    logical save_slices, save_fields
+    save_fields = .false.
+    save_slices = .false.
+#if WANTFIELDS
+  save_fields= .true.
+#endif
+#if WANTSLICES
+  save_slices = .true.
+#endif
     do
-       call output_to_screen()
-       if(use_checkpoint .and. mod(sipar%nsteps,checkpoint_steps).eq.0 .and. (sipar%nsteps.gt.0 .or. write_check_at_step0))call write_check()
-       call step(n_feedback)
-       call output_fields()
-       !! Troubleshooting statements: comment out if not testing initial values.
-       write(*,*) "Exiting after first lattice step due to TS-mode..."
-       exit
+      call output_to_screen()
+      if (save_fields) then
+        write(*,*) "Saving fields at step ",sipar%nsteps, "..."
+        call output_fields()
+        call output_momenta()
+      endif 
+      if (save_slices) then 
+        write(*,*) "Saving slices at step ",sipar%nsteps, "..."
+        call output_field_slice()
+        call output_momentum_slice()
+      endif
+      if(use_checkpoint .and. mod(sipar%nsteps,checkpoint_steps).eq.0 .and. (sipar%nsteps.gt.0 .or. write_check_at_step0))then
+        call write_check()
+      endif
+      call step(n_feedback)
+      
+      !! Troubleshooting statements: comment out if not testing initial values.
        if(sipar%nsteps .ge. stop_at_step .or. metric%a .ge. stop_at_a .or. isnan(metric%a))then
           if(isnan(metric%a)) then
             write(*,*) "Metric a is NaN. Exiting..."
@@ -29,6 +48,8 @@ contains
           exit
        endif
        call coor_trans()
+       !write(*,*) "Exiting after first lattice step due to TS-mode..."
+       !exit
     enddo
     return
   end subroutine evolve

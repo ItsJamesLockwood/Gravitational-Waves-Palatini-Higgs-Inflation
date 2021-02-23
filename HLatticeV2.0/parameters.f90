@@ -65,6 +65,11 @@ module parameters
 !!when you run HLattice without passing a prefix to it, a default prefix will be used. It's defined here:
   character(LEN=256)::run_name="test" !! *
 
+!!============================ output of field/momenta slices =====================================
+  !! Probably a bit redundant, but section available for future use 
+  integer(IB),parameter :: yz_lattice_slice = YZ_SLICE 
+  
+    
 
 !!============================ do not change things below =========================================
 !! n/2

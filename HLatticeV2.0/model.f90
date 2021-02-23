@@ -16,7 +16,7 @@ module model
   
   real(dl),parameter:: coef = lambda * Mplsq**2 / 4.d0 / xi2
   real(dl),parameter:: b = xisqrt/Mpl
-  real(dl),parameter:: suppression = 1
+  real(dl),parameter:: suppression = 10.**(-0)
   !!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
 !!***************define macros here;************************
@@ -33,7 +33,7 @@ module model
 !!Just define where you want to start the background evolution. Note this is NOT where you start the lattice simulation, which is defined in a subroutine "start_box_simulation" in this file.
  !!initial field values
   real(dl),dimension(ns)::init_fields=(/ &
-       4.0d-4 *PlanckMass &
+       4.0d-2 *PlanckMass &
        /)
 
 !!Initial field momenta
@@ -44,7 +44,7 @@ module model
 
 !!put initial random Gaussian perturbations in the fields when you starts lattice simulation;
 !!the amplitude of fluctuations are defined in subroutine model_Power
-  logical,dimension(ns)::do_init = (/ .true. /)
+  logical,dimension(ns)::do_init =  .true. 
 
 !!Important note: init_fields and init_momenta will be changed after the initialization. After the subroutine init() is called, they will equal to the the fields and field momenta AT THE BEGINNING OF LATTICE SIMULATION. In addition, the Hubble parameter at the beginning of lattice simulation will be saved to a global variable "init_Hubble".
 !!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -63,9 +63,7 @@ contains
   function dVdf(f)
     real(dl) f(ns)
     real(dl),dimension(ns):: dVdf
-    dVdf = (/ &
-         4.d0 * coef * b * TANH( b * PHI )**3 / COSH(b * PHI )**2 &
-         /)
+    dVdf = 4.d0 * coef * b * TANH( b * PHI )**3 / COSH(b * PHI )**2 
   end function dVdf
 
 !!d^2 V / d f_{fld}^2,, here fld can be 1,2,..., ns

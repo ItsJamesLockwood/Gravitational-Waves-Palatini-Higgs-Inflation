@@ -86,6 +86,12 @@
 !!Note that the scale factor is normalized to be 1 at the beginning of lattice simulation
 #define MAX_SCALE_FACTOR 93.
 
+!!Determine which y-z slice of the lattice should be output for the fields and momenta
+!!By default, set to the first slice
+#define YZ_SLICE 1
+#define WANTFIELDS NO
+#define WANTSLICES YES
+
 !!*** below are some settings that you can, but usually do not need to change *****
 
 !!how often to write feedback to the screen (# of steps, recommended value is between 5 and 50)
