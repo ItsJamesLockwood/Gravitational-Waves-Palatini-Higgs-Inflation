@@ -7,7 +7,7 @@ module mutils
   
   logical::need_recalculate=.true.
   real(dl)::last_potential_energy, last_fields_kinetic_energy, last_fields_gradient_energy, last_gravity_kinetic_energy, last_gravity_gradient_energy, last_total_detg, last_effective_Hubble
-
+  real(dl),dimension(n):: FPE_mesh, FKE_mesh, FGE_mesh
 contains
 
   !!the total potential energy of the scalar fields
@@ -24,6 +24,7 @@ contains
     cach(k) = cach(k) + potential(fields_f(:,i,j,k))*DETG(i,j,k)
     ENDLOOP      
     !$omp end parallel do
+    FPE_mesh = cach / nsquare
     potential_energy = sum(cach)/ncube
     return
   end function potential_energy
@@ -43,8 +44,13 @@ contains
     cach(k) = cach(k) + sum(fields_p(:,i,j,k)**2)/DETG(i,j,k)
     ENDLOOP
     !$omp end parallel do
+    FKE_mesh = cach
     fields_kinetic_energy = sum(cach) / 2._dl /ncube
 #else
+    !FKE_mesh = 0.
+    do k=1, n
+        FKE_mesh(k)=sum(fields_p(:,:,:,k)**2)/nsquare/2._dl
+    enddo
     fields_kinetic_energy = sum(fields_p**2)/2._dl/ncube
 #if METRIC_OPTION == FRW_BACKGROUND
     fields_kinetic_energy = fields_kinetic_energy/scale_factor()**6
@@ -104,6 +110,7 @@ contains
 #endif
     ENDLOOP
     !$omp end parallel do
+    FGE_mesh = cach / (metric%physdx)**2 / nsquare
 #if DIS_SCHEME == LATTICEEASY
     fields_gradient_energy = sum(cach) /ncube/ (metric%physdx)**2 / 2._dl
 #elif DIS_SCHEME == HLATTICE1

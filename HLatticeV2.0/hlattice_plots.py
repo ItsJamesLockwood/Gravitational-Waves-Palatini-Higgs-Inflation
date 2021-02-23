@@ -69,7 +69,7 @@ rt4 = r"D:\Physics\MPhys Project\DatasetArcive\Remote tests\rt4-ts-run%i_screen.
 
 fiov = 1
 lf4iov= 2
-t4iov= 3
+t4iov= 10
 l4i = 25
 l6i = 2
 t4i = 4
@@ -87,10 +87,11 @@ th4 = t4s%t4i
 rl4 = r4s%rl4i 
 rth = rt4%rti
 
-save = 'no2'
+save = 'no'
+energies = 'yes'
 
 filefile = t4iof
-#filefile = fiof
+#filefile = fref
 pw_field_number =1 #Choose which field spectrum to plot (start: 1)
 form = 'log'
 rows=[1,10,20,30,40,50,60,70,80,90]
@@ -488,9 +489,16 @@ momenta_path = trim_name(filefile) + '_momenta_%i.%s'%(pw_field_number,form)
 slice_f_path=  trim_name(filefile) + '_slice_f_%i.%s'%(pw_field_number,form)
 slice_p_path=  trim_name(filefile) + '_slice_p_%i.%s'%(pw_field_number,form)
 
-#fdf = import_mesh(fields_path)
-#pdf = import_mesh(momenta_path)
-sfdf = import_slice(slice_f_path)
-spdf = import_slice(slice_p_path)
-#plot_mesh(pdf,cond=['z',0],use_FFT=True)
-plot_slices(spdf,use_FFT=True)
+if energies== 'yes':
+    pe_path = trim_name(filefile) + '_FPE_%i.%s'%(pw_field_number,form)
+    #fdf = import_mesh(fields_path)
+    #pdf = import_mesh(momenta_path)
+    sfdf = import_slice(slice_f_path)
+    spdf = import_slice(slice_p_path)
+    pedf, kedf, gedf = import_energy(pe_path)
+    tedf =pedf
+    tedf.mesh += kedf.mesh + gedf.mesh
+    plot_energy(kedf,0,title='Gradient',use_FFT=False,use_log=True)
+    #plot_mesh(pdf,cond=['z',0],use_FFT=True)
+    #plot_slices(sfdf,use_FFT=True)
+    #plot_slices(spdf,use_FFT=True)

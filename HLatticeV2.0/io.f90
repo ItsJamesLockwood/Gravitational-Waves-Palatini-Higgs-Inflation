@@ -299,4 +299,22 @@ contains
       enddo
       call close_file(fp)
    end subroutine output_momentum_slice
+
+   subroutine output_energy()
+      type(file_pointer) fp
+      integer(IB) nf,i,j
+      do nf=1, ns
+         fp = open_file("data/" // trim(run_name) // "_FPE_"//trim(int2str(nf))//".log","a")
+         if (sipar%nsteps.eq.0) then
+            write(fp%unit,*) n
+         endif
+         write(fp%unit,*) "SEPARATOR"
+         write(fp%unit,*) metric%a
+         write(fp%unit,*) FPE_mesh
+         write(fp%unit,*) FKE_mesh
+         write(fp%unit,*) FGE_mesh
+      enddo
+      call close_file(fp)
+   end subroutine output_energy
+
 end module io_utils

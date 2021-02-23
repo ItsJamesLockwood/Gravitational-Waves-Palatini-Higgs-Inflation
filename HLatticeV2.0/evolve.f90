@@ -20,6 +20,7 @@ contains
 #endif
     do
       call output_to_screen()
+      call output_energy()
       if (save_fields) then
         write(*,*) "Saving fields at step ",sipar%nsteps, "..."
         call output_fields()

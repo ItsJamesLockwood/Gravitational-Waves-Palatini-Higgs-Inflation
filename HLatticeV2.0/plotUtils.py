@@ -320,7 +320,7 @@ def import_slice(slice_file,sep="SEPARATOR"):
     if lres==sep:
         raise ValueError("Separator found in first line. Expected resolution. Check that file format corresponds to requirements for 'import_mesh'.")
     res = int(lres)
-        
+
     l1 = file.readline().strip()    
     l2 = file.readline().strip()
     l3 = file.readline().strip()
@@ -420,3 +420,144 @@ def plot_slices(slice_df,a_ind=0,use_FFT=False,use_contour=False):
     resetax._button = button
     playax._button = playButton
     return fvals
+
+def import_energy(energy_file,sep="SEPARATOR"):
+    '''
+    Import energy of field in z axis, which has been stored directly as a mesh. 
+    The x/y values have been averaged out for each z.
+    '''
+    file = open(energy_file,'r')
+    PE_list = []
+    KE_list = []
+    GE_list = []
+    
+    lres = file.readline().strip()
+    if lres==sep:
+        raise ValueError("Separator found in first line. Expected resolution. Check that file format corresponds to requirements for 'import_mesh'.")
+    res = int(lres)
+        
+    l1 = file.readline().strip()    
+    l2 = file.readline().strip()
+    l3 = file.readline().strip()
+    l4 = file.readline().strip()
+    l5 = file.readline().strip()
+
+    while l1!='' and l2!='' and l3!='' and l4!='' and l5!='':        
+        if l1!=sep:
+            raise ValueError("Expected separator in second line. Instead found '"+l1+"'.")    
+        if l2==sep or l3==sep or l4==sep or l5==sep:
+            raise ValueError("Expected either metric or field mesh in lines 2 and 3. Instead found the separator.")
+        a = float(l2)
+        mesh_PE = list(map(float, l3.split()))
+        mesh_KE = list(map(float, l4.split()))
+        mesh_GE = list(map(float, l5.split()))
+        
+        mesh_PE = np.array(mesh_PE)#.reshape(res,res).T
+        mesh_KE = np.array(mesh_KE)
+        mesh_GE = np.array(mesh_GE)
+        
+        PE_list.append([a,mesh_PE])
+        KE_list.append([a,mesh_KE])
+        GE_list.append([a,mesh_GE])
+        
+        l1 = file.readline().strip()
+        l2 = file.readline().strip()
+        l3 = file.readline().strip()
+        l4 = file.readline().strip()
+        l5 = file.readline().strip()
+    
+    df_PE = pd.DataFrame(PE_list, columns=['a','mesh'])
+    df_KE = pd.DataFrame(KE_list, columns=['a','mesh'])
+    df_GE = pd.DataFrame(GE_list, columns=['a','mesh'])
+    
+    file.close()
+    return df_PE,df_KE,df_GE
+
+def plot_energy(edf,a_ind=0,use_FFT=False,use_contour=False,title='',use_log=False):
+    fig = plt.figure()
+    plt.subplots_adjust(left=0.25, bottom=0.25)    
+    ax = fig.add_subplot(1,1,1)
+    ax.set_title("Evolution of the %s Energy for constant x/y"%title)
+    ax.set_xlabel("Z coordinate")
+    ax.set_ylabel("%s Energy"%title)
+    fvals = edf.iloc[a_ind,:].mesh
+    ymin = edf.mesh.apply(np.min).min()
+    ymax = edf.mesh.apply(np.max).max()
+    if use_log:
+        ax.set_yscale('log')
+    if use_FFT:
+        fvals = np.log(np.absolute(np.fft.fft(fvals)))
+        mesh_series = edf.mesh.apply(lambda x: np.log(np.absolute(np.fft.fft(x))))
+        ymin = mesh_series.apply(np.min).min()
+        ymax = mesh_series.apply(np.max).max()
+    print("Y limits: ",ymin, ymax)
+    ax.plot(np.arange(0,fvals.shape[0]),fvals)
+    frame_box = ax.text(.9,.9,"a_index: %i\na: %.1f"%(a_ind,edf.a[a_ind]),horizontalAlignment='center',transform=ax.transAxes)
+    
+    axcolor = 'lightgoldenrodyellow'
+    playax = plt.axes([0.4, 0.025, 0.18, 0.04])    
+    playButton = Button(playax, 'Play animation', color=axcolor, hovercolor='0.975')
+    
+    ax.set_xlim([0,fvals.shape[0]])
+    ax.set_ylim([ymin,ymax])
+    
+    
+    slid_ax = plt.axes([0.25, 0.1, 0.65, 0.03], facecolor=axcolor)
+    a_slider = Slider(slid_ax, 'A', 0, edf.shape[0]-1, valinit=a_ind, valstep=1)
+    
+    resetax = plt.axes([0.8, 0.025, 0.1, 0.04])    
+    button = Button(resetax, 'Reset', color=axcolor, hovercolor='0.975')   
+
+    def update(val):
+        av = int(a_slider.val) 
+        fvals = edf.iloc[av,:].mesh
+        if use_FFT:
+            fvals = np.log(np.absolute(np.fft.fft2(fvals)))
+        ax.cla()
+        if use_log:
+            ax.set_yscale('log')
+        ax.set_xlim([0,fvals.shape[0]])
+        ax.set_ylim([ymin,ymax])
+        ax.set_title("Evolution of the %s Energy for constant x/y"%title)
+        ax.set_xlabel("Z coordinate")
+        ax.set_ylabel("%s Energy"%title)
+        
+        ax.plot(np.arange(0,fvals.shape[0]),fvals)
+
+    a_slider.on_changed(update)
+    def reset(event):
+        print("Reset requested...")
+        a_slider.reset()
+    button.on_clicked(reset)
+    resetax._button = button
+    
+    
+    def draw_update(curr):
+        fvals = edf.iloc[curr,:].mesh
+        if use_FFT:
+            fvals = np.log(np.absolute(np.fft.fft(fvals)))
+        
+        ax.cla()
+        if use_log:
+            ax.set_yscale('log')
+
+        ax.set_xlim([0,fvals.shape[0]])
+        ax.set_ylim([ymin,ymax])
+        ax.set_title("Evolution of the %s Energy for constant x/y"%title)
+        ax.set_xlabel("Z coordinate")
+        ax.set_ylabel("%s Energy"%title)
+        
+        ax.plot(np.arange(0,fvals.shape[0]),fvals)
+        frame_box = ax.text(.9,.9,"a_index: %i\na: %.1f"%(curr,edf.a[curr]),horizontalAlignment='center',transform=ax.transAxes)
+        
+    def play(event):
+        print("Play animation...")
+        print(edf.index)
+        anim = animation.FuncAnimation(fig, draw_update, frames=edf.index,interval=50, repeat=False)
+        fig.canvas.draw()
+    
+    playButton.on_clicked(play)
+    playax._button = playButton
+    return fvals
+
+    
