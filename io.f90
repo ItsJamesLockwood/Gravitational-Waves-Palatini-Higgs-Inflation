@@ -5,7 +5,7 @@
 #include "configure.h"
    Type(File_Pointer)::gw_file,screen_file
 contains
-
+  
   subroutine write_check()
     type(file_pointer) chkfile
     DEFINE_IND
@@ -23,6 +23,8 @@ contains
     call fields_dump()
     call output_pw()
     call metric_dump()
+
+
 
 #if ! METRIC_PERTURB && WANTGW
 #if USE_CONFORMAL_TIME
@@ -80,7 +82,15 @@ contains
 
   subroutine output_to_screen()
     DEFINE_IND
+    character (len=20):: formatString
+    character (len=100):: totalFormat
+    character (len=10):: parentheses
+    character (len=20):: lastTerm
     real(dl) avef(ns),flucf(ns)
+    formatString =',2x,G12.5'
+    totalFormat ='(F10.5'
+    lastTerm=',2x,G11.3'
+    parentheses=')'
     screen_file = open_file("data/"//trim(run_name)//"_screen.log","a")
     call get_energy()
     do i=1,ns
@@ -89,6 +99,10 @@ contains
     do i=1,ns
        flucf(i)=sqrt(sum((fields_f(i,:,:,:)-avef(i))**2)/ncube)
     enddo
+    do i=1, 2*ns+4
+       totalFormat=trim(totalFormat)//trim(formatString)
+    enddo
+    totalFormat=trim(totalFormat)//trim(lastTerm)//trim(parentheses)
     avef=avef/Mpl
     flucf=flucf/Mpl
 #if FEEDBACK_ONLYAH
@@ -108,14 +122,14 @@ contains
 #else
     if(sipar%nsteps.eq.0)then
        
-       write(*,'(A9, 5A14,2A'//trim(int2str(ns*11))//')') 'a  ','H    ','rho/3H^2-1 ','P_f/E_f   ', 'K_f/E_f    ', 'G_f/E_f ', 'mean_fields',  'rms_fields'
+       write(*,'(A9, 5A12,2A'//trim(int2str(ns*11))//')') 'a  ','H    ','rho/3H^2-1 ','P_f/E_f   ', 'K_f/E_f    ', 'G_f/E_f ', 'mean_fields',  'rms_fields'
        
        write(screen_file%unit,'(A9, 5A14, 2A'//trim(int2str(ns*11))//')') 'a  ','H  ','rho/3H^2 -1','P_f/E_f ', 'K_f/E_f ', 'G_f/E_f ', 'mean_fields',  'rms_fields'
     endif
     
-    write(*,'(F10.5,3x,G11.5,3x,G11.5,3x,G11.5,3x,G11.5,3x,G11.5,3x,G11.5,3x,G11.3)')metric%a,effective_Hubble(),total_fields_energy()/effective_Hubble()**2/3/Mplsq-1._dl, potential_energy()/total_fields_energy(), fields_kinetic_energy()/total_fields_energy(), fields_gradient_energy()/total_fields_energy(), avef,flucf
+    write(*,(totalFormat))metric%a,effective_Hubble(),total_fields_energy()/effective_Hubble()**2/3/Mplsq-1._dl, potential_energy()/total_fields_energy(), fields_kinetic_energy()/total_fields_energy(), fields_gradient_energy()/total_fields_energy(), avef,flucf
     
-    write(screen_file%unit,'(F10.5,3x,G11.5,3x,G11.5,3x,G11.5,3x,G11.5,3x,G11.5,3x,G11.5,3x,G11.3)')metric%a,effective_Hubble(),total_fields_energy()/effective_Hubble()**2/3/Mplsq-1._dl, potential_energy()/total_fields_energy(), fields_kinetic_energy()/total_fields_energy(), fields_gradient_energy()/total_fields_energy(), avef,flucf
+    write(screen_file%unit,(totalFormat))metric%a,effective_Hubble(),total_fields_energy()/effective_Hubble()**2/3/Mplsq-1._dl, potential_energy()/total_fields_energy(), fields_kinetic_energy()/total_fields_energy(), fields_gradient_energy()/total_fields_energy(), avef,flucf
 #endif
 100    call model_output(3)
     call close_file(screen_file)
