@@ -41,7 +41,6 @@ module model
 !!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
 contains
-  
 !! the potential of the scalar fields
   function potential(f)
     real(dl) f(ns)
@@ -110,16 +109,18 @@ contains
        model_Power =0._dl
        return
     endif
-    omega=sqrt(omega)
-    if(omega.gt.Init_Hubble)then 
-       !!put in 1/2 particle per phase space volume
-       !!note this is just an approximation. If you care about time scale of one or two oscillations. The quantum->classical transition should be calculated analytically.
-       model_Power(1) = 0.5_dl/omega
-       model_Power(2) = 0.5_dl*omega
-       return
-    endif
     model_Power = 0._dl
-    return
+    return 
+    ! omega=sqrt(omega)
+    ! if(omega.gt.Init_Hubble)then 
+    !    !!put in 1/2 particle per phase space volume
+    !    !!note this is just an approximation. If you care about time scale of one or two oscillations. The quantum->classical transition should be calculated analytically.
+    !    model_Power(1) = 0.5_dl/omega
+    !    model_Power(2) = 0.5_dl*omega
+    !    return
+    ! endif
+    ! model_Power = 0._dl
+    ! return
   end function model_Power
 
 
