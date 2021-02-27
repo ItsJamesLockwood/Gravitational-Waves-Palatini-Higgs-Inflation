@@ -75,7 +75,8 @@ tmax = 1000
 steps = 100*tmax
 u, t  = rk4(V, init_vals , 0. , tmax , steps)
 x1, x2, v1 = u.T
-plt.plot(t, x1)
+plt.plot(t**.5, x1)
+plt.plot(t**1, x1)
 #plt.plot(t,1/t)
 #plt.plot(t,x2)
 plt.grid('on')

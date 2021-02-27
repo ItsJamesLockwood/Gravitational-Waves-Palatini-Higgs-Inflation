@@ -16,7 +16,8 @@ contains
 #define THE_MOMENTA y(ns+1:2*ns)  
   subroutine initialize()
     real(dl) y(2*ns+1)
-    real(dl) t, tnext, i_slow
+    real(dl) t, tnext
+    integer(IB) i_slow
     logical ierror, do_slow_roll
     DEFINE_IND
 
@@ -45,12 +46,16 @@ contains
     endif
 
     i_slow=0
-    do_slow_roll = .false.
+    do_slow_roll = Start_Box_Simulation(THE_FIELDS, THE_MOMENTA)
     !! This statement checking for zero-gradients does not forcefully exit, which gives more freedom to the user.
-    if(all(dVdf(THE_FIELDS)==0))write(*,*) "WARNING: ALL GRADIENTS ARE ZERO. Program likely to run ad infinitum."
+    if(all(dVdf(THE_FIELDS)==0))then
+        write(*,*) "WARNING: ALL GRADIENTS ARE ZERO. Program likely to run ad infinitum."
+    else
+        write(*,*) "INFO: found non-zero gradients. Theoretically safe to run slow-roll initialisation."
+    endif 
     do while(.not.Start_Box_Simulation(THE_FIELDS, THE_MOMENTA))
         i_slow= i_slow + 1
-        do_slow_roll = .true.
+        if (mod(i_slow,100000).eq.0) write(*,*) "ith step:",i_slow, all(dVdf(THE_FIELDS)==0), tnext
         tnext = t + 0.0005_dl * Mpl/sqrt((potential(THE_FIELDS)+sum(THE_MOMENTA**2)/2.)/3._dl)
         call dverk(ode_background,t,y,tnext,1.e-7_dl)
     enddo

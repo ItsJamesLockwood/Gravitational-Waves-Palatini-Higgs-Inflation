@@ -33,13 +33,13 @@ module model
 !!Just define where you want to start the background evolution. Note this is NOT where you start the lattice simulation, which is defined in a subroutine "start_box_simulation" in this file.
  !!initial field values
   real(dl),dimension(ns)::init_fields=(/ &
-       5.9d-4 *PlanckMass &
+       3.d-4 *PlanckMass &
        /)
 
 !!Initial field momenta
  !! if set to be greater than or equal to Mplsq (square of reduced Planck Mass), the initial field momenta will be determined by slow-roll inflationary attractor
   !! Note again these are NOT the initial field momenta where you start the lattice simulation, the are the initial values that HLattice take to evolve the inflaton. 
-  real(dl),dimension(ns):: init_momenta =  -3.16d-10 * PlanckMass**2 
+  real(dl),dimension(ns):: init_momenta =  Mplsq !-1.d-9 * PlanckMass**2 
 
 
 !!put initial random Gaussian perturbations in the fields when you starts lattice simulation;
@@ -86,9 +86,9 @@ contains
     logical start_box_simulation
     real(dl),dimension(ns)::f,p
 !!LatticeEasy default, i.e. d \phi/dt + H phi = 0 (or equivalently d(a\phi)/dt =0
-    !!start_box_simulation = (p(1) + sqrt((sum(p**2)/2.+potential(f))/3.)/Mpl*f(1) .lt. 0.)
+    start_box_simulation = (p(1) + sqrt((sum(p**2)/2.+potential(f))/3.)/Mpl*f(1) .lt. 0.)
 !! If you want to start the lattice simualtion immediately
-    start_box_simulation = .true.
+    !!start_box_simulation = .true.
 !! If you want to use DEFROST starting point, the end of inflation, i.e. \ddot a =0
     !!start_box_simulation = (potential(f) .le. sum(p**2) )
   end function start_box_simulation
@@ -116,9 +116,12 @@ contains
     logical,save::kmin_warning = .true.
     integer(IB) fld
     if(n*k*metric%dx .lt. const_pi) then
+      write(*,*) "k:",k,"Zero due to: n*k*dx < pi"
       model_Power =0._dl * suppression
       return
     endif
+    model_Power = 0._dl
+    return 
     !check that k > k_min=a * H_init (note: k in code is defined as comoving momentum):
     if(k.gt.Init_Hubble)then 
       !define omega^2:
@@ -126,22 +129,22 @@ contains
       !check if omega / effective mass squared is positive
       if(omega.gt.0.)then
          omega=sqrt(abs(omega))
-         write(*,*) "k:",k,"parametric" 
          !TODO: why is this statement necessary?
          if(omega*metric%dx .le. const_2pi .and. omega*metric%dx*n .ge. const_2pi)then
             model_Power(1) = 0.5_dl/omega * suppression
             model_Power(2) = 0.5_dl*omega * suppression
+            write(*,*) "k:",k,"parametric ","model_power:",model_Power
             return
          endif
       !We now consider the tachyonic region (i.e. k_min < k < k_max)
       else
-        write(*,*) "k:",k,"tachyonic" 
         !Set the initial conditions from arxiv:1902.10148. 
          !!model_Power(1) = Mpl/k /metric%a**3 * suppression
          !!model_Power(2) = xisqrt/SQRT(lambda)* k/Mpl /metric%a**3 * suppression
           model_Power(1) = 0.5_dl/k *suppression
           model_Power(2) = 0.5_dl*k *suppression
-         if(warning)then
+          write(*,*) "k:",k,"tachyonic ","model_power:", model_Power
+          if(warning)then
             write(*,*) "Tachyonic region initialization may be not correct"
             warning = .false.
          endif
@@ -149,20 +152,20 @@ contains
       endif
    !When k < k_min: no longer in tachyonic region
    else
-      write(*,*) "k:",k,"" 
       !model_Power = 0._dl * suppression
       if (kmin_warning) then
         write(*,*) "effective k_min / Hubble = ", k_unit/metric%physdx/Init_Hubble
         write(*,*) "NOTE: REGION OF k < k_min MAY NOT YIELD ACCURATE RESULTS"
         kmin_warning = .false.
       endif
-      !stop "Dit programma is nu gefucked"
+      !stop "This simulation is now botched due to k<k_min"
       model_Power(1) = 0.5_dl/k*(init_Hubble/k)**2 * suppression
       model_Power(2) = 0._dl * suppression
+      write(*,*) "k:",k,"k<k_min ","model_power:", model_Power
       return
    endif
-   write(*,*) "k", k, "parametric, but metric incorrect size (?)"
    model_Power = 0._dl * suppression
+   write(*,*) "k", k, "parametric, but metric incorrect size (?)","model_power:",model_Power
    return
    end function model_Power
 

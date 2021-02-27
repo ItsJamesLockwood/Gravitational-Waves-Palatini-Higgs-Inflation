@@ -67,9 +67,12 @@ t4s = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\t4-ts-run%i_scr
 r4s = r"D:\Physics\MPhys Project\DatasetArcive\Remote tests\rl4-ts-run%i_screen.log"
 rt4 = r"D:\Physics\MPhys Project\DatasetArcive\Remote tests\rt4-ts-run%i_screen.log"
 
+simpt4p = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\simple-t4-run%i_screen.log"
+simpv = 2
+
 fiov = 1
 lf4iov= 2
-t4iov= 10
+t4iov= 15
 l4i = 25
 l6i = 2
 t4i = 4
@@ -77,7 +80,7 @@ rl4i = 6
 rti = 2
 #1,2,4,7
 
-
+simpf = simpt4p%simpv
 fiof = fiop%fiov
 lf4iof = lf4iop%lf4iov
 t4iof = t4iop%t4iov
@@ -88,9 +91,16 @@ rl4 = r4s%rl4i
 rth = rt4%rti
 
 save = 'no'
-energies = 'yes'
+energies = 'yes1'
+slices = 'yes1'
 
-filefile = t4iof
+
+my_fft = False
+if my_fft:
+    print("FFT baby",save)
+    save='no'
+    
+filefile = simpf
 #filefile = fref
 pw_field_number =1 #Choose which field spectrum to plot (start: 1)
 form = 'log'
@@ -429,7 +439,7 @@ loc_max = None
 
 #%% Mission control
 if save=='yes':
-    mission_control(data,n_df,rows=my_rows,save_panel=True,save_plots=True,truncate=10)
+    mission_control(data,n_df,rows=my_rows,save_panel=True,save_plots=True)
 elif save=='no':
     mission_control(data,n_df,rows=my_rows)
 
@@ -489,16 +499,17 @@ momenta_path = trim_name(filefile) + '_momenta_%i.%s'%(pw_field_number,form)
 slice_f_path=  trim_name(filefile) + '_slice_f_%i.%s'%(pw_field_number,form)
 slice_p_path=  trim_name(filefile) + '_slice_p_%i.%s'%(pw_field_number,form)
 
-if energies== 'yes':
-    pe_path = trim_name(filefile) + '_FPE_%i.%s'%(pw_field_number,form)
-    #fdf = import_mesh(fields_path)
-    #pdf = import_mesh(momenta_path)
+if slices=='yes':
     sfdf = import_slice(slice_f_path)
     spdf = import_slice(slice_p_path)
+    plot_slices(sfdf,use_FFT=my_fft,title="field")
+    plot_slices(spdf,use_FFT=my_fft,title="momenta")
+
+if energies== 'yes':
+    pe_path = trim_name(filefile) + '_FPE_%i.%s'%(pw_field_number,form)
     pedf, kedf, gedf = import_energy(pe_path)
     tedf =pedf
     tedf.mesh += kedf.mesh + gedf.mesh
-    plot_energy(kedf,0,title='Gradient',use_FFT=False,use_log=True)
+    plot_energy(gedf,0,title='Gradient',use_FFT=False,use_log=True)
     #plot_mesh(pdf,cond=['z',0],use_FFT=True)
-    #plot_slices(sfdf,use_FFT=True)
     #plot_slices(spdf,use_FFT=True)

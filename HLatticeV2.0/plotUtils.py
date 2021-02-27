@@ -343,10 +343,12 @@ def import_slice(slice_file,sep="SEPARATOR"):
     file.close()
     return mesh_df
 
-def plot_slices(slice_df,a_ind=0,use_FFT=False,use_contour=False):
+def plot_slices(slice_df,a_ind=0,use_FFT=False,use_contour=False, title=''):
     the_mesh = slice_df.iloc[a_ind,:].mesh
     fvals = the_mesh
+    fft_str=''
     if use_FFT:
+        fft_str='\n(log of modulus of FFT)'
         fvals = np.log(np.absolute(np.fft.fft2(fvals)))
     X, Y = np.meshgrid(np.linspace(1,fvals.shape[0],fvals.shape[0]),np.linspace(1,fvals.shape[1],fvals.shape[1]))
     fig = plt.figure()
@@ -354,6 +356,10 @@ def plot_slices(slice_df,a_ind=0,use_FFT=False,use_contour=False):
     ax = fig.add_subplot(2,1,1)
     ax3 = fig.add_subplot(2,1,2,projection='3d')
     ax.set_aspect(1)
+    ax.set_title("Heatmaps of the %s perturbations for constant x "%title + fft_str)
+    ax.set_xlabel("Y coordinate")
+    ax.set_ylabel("Z coordinate")
+
     #ax.contourf(fvals)
     if use_contour:
         ax.contourf(fvals)
@@ -375,6 +381,10 @@ def plot_slices(slice_df,a_ind=0,use_FFT=False,use_contour=False):
             fvals = np.log(np.absolute(np.fft.fft2(fvals)))
         
         ax.cla()
+        ax.set_title("Heatmaps of the %s perturbations for constant x "%title + fft_str)
+        ax.set_xlabel("Y coordinate")
+        ax.set_ylabel("Z coordinate")
+
         ax3.cla()
         if use_contour:
             ax.contourf(fvals)
@@ -403,6 +413,10 @@ def plot_slices(slice_df,a_ind=0,use_FFT=False,use_contour=False):
         
         ax.cla()
         ax3.cla()
+        ax.set_title("Heatmaps of the %s perturbations for constant x "%title + fft_str)
+        ax.set_xlabel("Y coordinate")
+        ax.set_ylabel("Z coordinate")
+
         if use_contour:
             ax.contourf(fvals)
         else:
@@ -543,7 +557,7 @@ def plot_energy(edf,a_ind=0,use_FFT=False,use_contour=False,title='',use_log=Fal
 
         ax.set_xlim([0,fvals.shape[0]])
         ax.set_ylim([ymin,ymax])
-        ax.set_title("Evolution of the %s Energy for constant x/y"%title)
+        ax.set_title("Evolution of the %s Energy for averaged x/y"%title)
         ax.set_xlabel("Z coordinate")
         ax.set_ylabel("%s Energy"%title)
         
