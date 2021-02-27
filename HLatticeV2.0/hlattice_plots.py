@@ -70,6 +70,9 @@ rt4 = r"D:\Physics\MPhys Project\DatasetArcive\Remote tests\rt4-ts-run%i_screen.
 simpt4p = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\simple-t4-run%i_screen.log"
 simpv = 2
 
+simpl4 =  r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\simp-lf4-run%i_screen.log"
+simp4v = 1
+
 fiov = 1
 lf4iov= 2
 t4iov= 15
@@ -81,6 +84,8 @@ rti = 2
 #1,2,4,7
 
 simpf = simpt4p%simpv
+simp4f = simpl4%simp4v
+
 fiof = fiop%fiov
 lf4iof = lf4iop%lf4iov
 t4iof = t4iop%t4iov
@@ -100,7 +105,7 @@ if my_fft:
     print("FFT baby",save)
     save='no'
     
-filefile = simpf
+filefile = simp4f
 #filefile = fref
 pw_field_number =1 #Choose which field spectrum to plot (start: 1)
 form = 'log'
