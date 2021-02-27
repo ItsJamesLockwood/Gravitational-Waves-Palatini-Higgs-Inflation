@@ -121,51 +121,51 @@ contains
       return
     endif
     model_Power = 0._dl
-    return 
-    !check that k > k_min=a * H_init (note: k in code is defined as comoving momentum):
-    if(k.gt.Init_Hubble)then 
-      !define omega^2:
-      omega=k**2+mass_sq(init_fields,fld)
-      !check if omega / effective mass squared is positive
-      if(omega.gt.0.)then
-         omega=sqrt(abs(omega))
-         !TODO: why is this statement necessary?
-         if(omega*metric%dx .le. const_2pi .and. omega*metric%dx*n .ge. const_2pi)then
-            model_Power(1) = 0.5_dl/omega * suppression
-            model_Power(2) = 0.5_dl*omega * suppression
-            write(*,*) "k:",k,"parametric ","model_power:",model_Power
-            return
-         endif
-      !We now consider the tachyonic region (i.e. k_min < k < k_max)
-      else
-        !Set the initial conditions from arxiv:1902.10148. 
-         !!model_Power(1) = Mpl/k /metric%a**3 * suppression
-         !!model_Power(2) = xisqrt/SQRT(lambda)* k/Mpl /metric%a**3 * suppression
-          model_Power(1) = 0.5_dl/k *suppression
-          model_Power(2) = 0.5_dl*k *suppression
-          write(*,*) "k:",k,"tachyonic ","model_power:", model_Power
-          if(warning)then
-            write(*,*) "Tachyonic region initialization may be not correct"
-            warning = .false.
-         endif
-         return
-      endif
-   !When k < k_min: no longer in tachyonic region
-   else
-      !model_Power = 0._dl * suppression
-      if (kmin_warning) then
-        write(*,*) "effective k_min / Hubble = ", k_unit/metric%physdx/Init_Hubble
-        write(*,*) "NOTE: REGION OF k < k_min MAY NOT YIELD ACCURATE RESULTS"
-        kmin_warning = .false.
-      endif
-      !stop "This simulation is now botched due to k<k_min"
-      model_Power(1) = 0.5_dl/k*(init_Hubble/k)**2 * suppression
-      model_Power(2) = 0._dl * suppression
-      write(*,*) "k:",k,"k<k_min ","model_power:", model_Power
-      return
-   endif
-   model_Power = 0._dl * suppression
-   write(*,*) "k", k, "parametric, but metric incorrect size (?)","model_power:",model_Power
+  !   return 
+  !   !check that k > k_min=a * H_init (note: k in code is defined as comoving momentum):
+  !   if(k.gt.Init_Hubble)then 
+  !     !define omega^2:
+  !     omega=k**2+mass_sq(init_fields,fld)
+  !     !check if omega / effective mass squared is positive
+  !     if(omega.gt.0.)then
+  !        omega=sqrt(abs(omega))
+  !        !TODO: why is this statement necessary?
+  !        if(omega*metric%dx .le. const_2pi .and. omega*metric%dx*n .ge. const_2pi)then
+  !           model_Power(1) = 0.5_dl/omega * suppression
+  !           model_Power(2) = 0.5_dl*omega * suppression
+  !           write(*,*) "k:",k,"parametric ","model_power:",model_Power
+  !           return
+  !        endif
+  !     !We now consider the tachyonic region (i.e. k_min < k < k_max)
+  !     else
+  !       !Set the initial conditions from arxiv:1902.10148. 
+  !        !!model_Power(1) = Mpl/k /metric%a**3 * suppression
+  !        !!model_Power(2) = xisqrt/SQRT(lambda)* k/Mpl /metric%a**3 * suppression
+  !         model_Power(1) = 0.5_dl/k *suppression
+  !         model_Power(2) = 0.5_dl*k *suppression
+  !         write(*,*) "k:",k,"tachyonic ","model_power:", model_Power
+  !         if(warning)then
+  !           write(*,*) "Tachyonic region initialization may be not correct"
+  !           warning = .false.
+  !        endif
+  !        return
+  !     endif
+  !  !When k < k_min: no longer in tachyonic region
+  !  else
+  !     !model_Power = 0._dl * suppression
+  !     if (kmin_warning) then
+  !       write(*,*) "effective k_min / Hubble = ", k_unit/metric%physdx/Init_Hubble
+  !       write(*,*) "NOTE: REGION OF k < k_min MAY NOT YIELD ACCURATE RESULTS"
+  !       kmin_warning = .false.
+  !     endif
+  !     !stop "This simulation is now botched due to k<k_min"
+  !     model_Power(1) = 0.5_dl/k*(init_Hubble/k)**2 * suppression
+  !     model_Power(2) = 0._dl * suppression
+  !     write(*,*) "k:",k,"k<k_min ","model_power:", model_Power
+  !     return
+  !  endif
+  !  model_Power = 0._dl * suppression
+  !  write(*,*) "k", k, "parametric, but metric incorrect size (?)","model_power:",model_Power
    return
    end function model_Power
 
