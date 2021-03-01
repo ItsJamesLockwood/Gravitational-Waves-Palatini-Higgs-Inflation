@@ -63,7 +63,7 @@ contains
   function dVdf(f)
     real(dl) f(ns)
     real(dl),dimension(ns):: dVdf
-    dVdf = 4.d0 * coef * b * TANH( b * PHI )**3 / COSH(b * PHI )**2 
+    dVdf = 4._dl * coef * b * TANH( b * PHI )**3 / COSH(b * PHI )**2 
   end function dVdf
 
 !!d^2 V / d f_{fld}^2,, here fld can be 1,2,..., ns
@@ -73,7 +73,7 @@ contains
     integer fld
     select case(fld)
     case(1)
-       mass_sq = 4.d0*coef* b**2 * (3.d0*TANH(b*PHI)**2 / COSH(b*PHI)**4 - 2.d0*TANH(b*PHI)**4 / COSH(b*PHI)**2 )
+       mass_sq = 4._dl*coef* (b**2) * (3._dl*TANH(b*PHI)**2 / COSH(b*PHI)**4 - 2._dl*TANH(b*PHI)**4 / COSH(b*PHI)**2 )
     case default
        stop "wrong argument fld in mass_sq"
     end select

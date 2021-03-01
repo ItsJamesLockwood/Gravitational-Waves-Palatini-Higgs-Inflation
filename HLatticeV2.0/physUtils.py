@@ -95,6 +95,33 @@ def palatiniDV(field0,use_PM=True, **kwargs):
 
     dvdf = 4*a*b * np.tanh(b*field0)**3 / np.cosh(b*field0)**2
     return dvdf
+
+def lf4V(field0,use_PM=True, **kwargs):
+    default = {'l':10**-4}
+    ks = default
+    for k in default.keys():
+        if k in kwargs.keys():
+            ks[k] = kwargs[k]
+    eta = np.sqrt(8*np.pi)
+
+    potential = ks['l'] * field0**4 /4
+    if use_PM:
+        potential /= eta**4
+    return potential
+
+def lf4DV(field0,use_PM=True, **kwargs):
+    default = {'l':10**-4}
+    ks = default
+    for k in default.keys():
+        if k in kwargs.keys():
+            ks[k] = kwargs[k]
+    eta = np.sqrt(8*np.pi)
+
+    dvdf = ks['l'] * field0**3 
+    if use_PM:
+        dvdf /= eta**3
+    return dvdf
+    
     
 def slow_roll(v,dv):
     return (dv/v)**2 / (16 * np.pi)
@@ -109,6 +136,10 @@ if __name__=="__main__":
     
     v = palatiniV(xs)
     dv = palatiniDV(xs)
-    plt.plot(xs, slow_roll(v, dv))
+    plt.plot(xs,lf4DV(xs))
+    #plt.plot(xs,lf4V(xs)*10**5)
+    #plt.yscale('log')
+    #plt.xscale('log')
+    #plt.plot(xs, slow_roll(v, dv))
 
 

@@ -17,7 +17,9 @@ from physUtils import *
 from itertools import chain
 
 #%% Define variables 
-global lam, Mpl, g
+global lam, Mpl, g, RESOLUTION, PM
+RESOLUTION = 64
+
 lam = 10**-2
 Mpl = 1024
 Nstar= 50
@@ -66,9 +68,18 @@ l6s = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\l6-ts-run%i_scr
 t4s = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\t4-ts-run%i_screen.log"
 r4s = r"D:\Physics\MPhys Project\DatasetArcive\Remote tests\rl4-ts-run%i_screen.log"
 rt4 = r"D:\Physics\MPhys Project\DatasetArcive\Remote tests\rt4-ts-run%i_screen.log"
+rslf = r"D:\Physics\MPhys Project\DatasetArcive\Remote tests\rsimp-lf4-run%i%s_screen.log"
+rsth = r"D:\Physics\MPhys Project\DatasetArcive\Remote tests\rsimp-tanh-run%i_screen.log"
 
 simpt4p = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\simple-t4-run%i_screen.log"
-simpv = 2
+simpv = 7
+
+
+simpl4 =  r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\simp-lf4-run%i_screen.log"
+simp4v = 1
+
+rstv = 1
+modifier = ''
 
 fiov = 1
 lf4iov= 2
@@ -81,6 +92,10 @@ rti = 2
 #1,2,4,7
 
 simpf = simpt4p%simpv
+simp4f = simpl4%simp4v
+rsimpf = rslf%(rstv,modifier)
+rstanhf = rsth%rstv
+
 fiof = fiop%fiov
 lf4iof = lf4iop%lf4iov
 t4iof = t4iop%t4iov
@@ -100,8 +115,9 @@ if my_fft:
     print("FFT baby",save)
     save='no'
     
-filefile = simpf
+filefile = rsimpf
 #filefile = fref
+ts_mode= True
 pw_field_number =1 #Choose which field spectrum to plot (start: 1)
 form = 'log'
 rows=[1,10,20,30,40,50,60,70,80,90]
@@ -334,7 +350,7 @@ def plot_fig6(ns,rows=[],vlines=False,save_img=False,img_name="Fig 6"):
 
     plt.show()
 
-def mission_control(data,ns,rows=[],error=True,save_panel=False,save_plots=False,path=filefile,truncate=0):
+def mission_control(data,ns,rows=[],error=True,save_panel=False,save_plots=False,path=filefile,truncate=0,ts=False):
     png_name = trim_file_name(path)
     if truncate!=0:
         png_name += '_trunc' + str(truncate)
@@ -352,23 +368,50 @@ def mission_control(data,ns,rows=[],error=True,save_panel=False,save_plots=False
     diffs = data['a'].diff()[1:]
     ax[0,1].set_title("Increment of a for each step j")
     ax[0,1].plot(data.index[1:][:truncate], diffs[:truncate])
-    
+    if ts:
+        ax[0,1].plot(data.index[1:][:truncate], diffs[:truncate],'r.')
+        ewidth = (data.kratio-0.5*(4*data.pratio+2*data.gratio)).max() - (data.kratio-0.5*(4*data.pratio+2*data.gratio)).min()
+        emid= (data.kratio-0.5*(4*data.pratio + 2*data.gratio)).min() + ewidth/2
+        eavg = (data.kratio-0.5*(4*data.pratio + 2*data.gratio)).mean()
+        dwidth, davg = diffs.max()-diffs.min(), diffs.mean()
+        dmid = diffs.min() + dwidth/2
+        print(dwidth,ewidth)
+        print(davg,eavg)
+        print(dmid,emid)
+        energies = (data.kratio-0.5*(4*data.pratio+2*data.gratio)-emid)*dwidth/ewidth + dmid
+        ax[0,1].plot(data.index[1:][:truncate], energies[1:][:truncate],alpha=0.5)
+        ax[0,1].axhline(dmid-emid*dwidth/ewidth,linestyle='dashed',color='grey')
     #Subplot 1,0
-    if rows==[]:
-        rows.append(int(ns.shape[0])/2)
-        colors = np.flip(cm.magma(np.linspace(0,1,len(rows))),axis=0)
+    if not ts:
+        if rows==[]:
+            rows.append(int(ns.shape[0])/2)
+            colors = np.flip(cm.magma(np.linspace(0,1,len(rows))),axis=0)
+        else:
+            colors = np.flip(cm.magma(np.linspace(0,1,len(rows))),axis=0)
+        for j in range(len(rows)):
+            xs = np.array(ns.columns[:-1]) / (2 * np.pi)
+            ys = ns.iloc[rows[j],:-1] * (2 * xs**4)
+            ax[1,0].plot(xs,ys,label=ns['a'][rows[j]], color=colors[j])
+        ax[1,0].set_yscale('log')
+        #plt.xscale('log')    
+        #ax[1,0].legend(title='Spectrum at $a=$',loc='lower right')
+        ax[1,0].set_title("Occupation number $n_k$")
+        ax[1,0].set_xlabel(r"$k\Delta / 2 \pi$")
+        ax[1,0].set_ylabel(r"$ k^4\; n_k /\; 2 \pi^2\; \rho}$")
+      
+    #Alt Subplot 1,0
     else:
-        colors = np.flip(cm.magma(np.linspace(0,1,len(rows))),axis=0)
-    for j in range(len(rows)):
-        xs = np.array(ns.columns[:-1]) / (2 * np.pi)
-        ys = ns.iloc[rows[j],:-1] * (2 * xs**4)
-        ax[1,0].plot(xs,ys,label=ns['a'][rows[j]], color=colors[j])
-    ax[1,0].set_yscale('log')
-    #plt.xscale('log')    
-    #ax[1,0].legend(title='Spectrum at $a=$',loc='lower right')
-    ax[1,0].set_title("Occupation number $n_k$")
-    ax[1,0].set_xlabel(r"$k\Delta / 2 \pi$")
-    ax[1,0].set_ylabel(r"$ k^4\; n_k /\; 2 \pi^2\; \rho}$")
+        dmetric = data['a'].diff()[1:]
+        dfield = data['mean1'].diff()[1:]/dmetric
+        ax[1,0].plot(data['a'][1:], dfield)
+        ax[1,0].set_title("Derivative $d\phi/da$ of the inflaton")
+        Etot = 3* data['h']**2 * Mpl**2 * (data['omega']+1) 
+        #ax[1,0].set_yscale('log')
+        #ax[1,0].set_xscale('log')
+        
+        fp = np.sqrt(2*RESOLUTION**3 * data['a']**0 * data['kratio']*Etot)
+        ax[1,0].plot(data['a'],fp)
+        
     
     #Subplot 1,1
     ax[1,1].set_yscale('log')
@@ -439,9 +482,9 @@ loc_max = None
 
 #%% Mission control
 if save=='yes':
-    mission_control(data,n_df,rows=my_rows,save_panel=True,save_plots=True)
+    mission_control(data,n_df,rows=my_rows,save_panel=True,save_plots=True,ts=ts_mode)
 elif save=='no':
-    mission_control(data,n_df,rows=my_rows)
+    mission_control(data,n_df,rows=my_rows,ts=ts_mode)
 
 #%% Temp test of omega
 '''templ = [3.0818286343172027E-004,

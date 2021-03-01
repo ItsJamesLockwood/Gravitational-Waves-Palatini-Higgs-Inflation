@@ -331,8 +331,11 @@ def import_slice(slice_file,sep="SEPARATOR"):
             raise ValueError("Expected either metric or field mesh in lines 2 and 3. Instead found the separator.")
         a = float(l2)
         mesh = list(map(float, l3.split()))
-        mesh = np.array(mesh).reshape(res,res).T
-        
+        try:
+            mesh = np.array(mesh).reshape(res,res).T
+        except ValueError:
+            print("WARNING: The line for a=",a," is the wrong size (", len(mesh),"). Please check file: ",slice_file)
+            break
         field_list.append([a,mesh])
         
         l1 = file.readline().strip()
