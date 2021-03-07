@@ -36,6 +36,12 @@ contains
     t = 0._dl
     LNA = 0._dl
 
+    !! TS: print initial values
+    write(*,*) "Initial Field (Mpl): "
+    write(*,*) init_fields / Mpl 
+    write(*,*) "Initial Momentum (Mplsq 10^{-8}): "
+    write(*,*) init_momenta / Mplsq / 1.d-8
+
     THE_FIELDS = init_fields
     ! Although momenta of order +Mplsq should never be required, ensured it's possible by changing .ge. to .eq.
     if(all(init_momenta.eq.Mplsq))then

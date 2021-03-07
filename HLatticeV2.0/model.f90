@@ -32,19 +32,17 @@ module model
 !!To be self consistent you may want to get the background \phi and \dot\phi by solving the background equations from inflation. HLattice will do that for you.
 !!Just define where you want to start the background evolution. Note this is NOT where you start the lattice simulation, which is defined in a subroutine "start_box_simulation" in this file.
  !!initial field values
-  real(dl),dimension(ns)::init_fields=(/ &
-       3.d-4 *PlanckMass &
-       /)
+  real(dl),dimension(ns)::init_fields= 0._dl !!-1.71633d-3 * Mpl
 
 !!Initial field momenta
  !! if set to be greater than or equal to Mplsq (square of reduced Planck Mass), the initial field momenta will be determined by slow-roll inflationary attractor
   !! Note again these are NOT the initial field momenta where you start the lattice simulation, the are the initial values that HLattice take to evolve the inflaton. 
-  real(dl),dimension(ns):: init_momenta =  Mplsq !-1.d-9 * PlanckMass**2 
+  real(dl),dimension(ns):: init_momenta =  +7.1786d-9 * Mplsq !-1.d-9 * PlanckMass**2 
 
 
 !!put initial random Gaussian perturbations in the fields when you starts lattice simulation;
 !!the amplitude of fluctuations are defined in subroutine model_Power
-  logical,dimension(ns)::do_init =  .true. 
+  logical,dimension(ns)::do_init =  .false. 
 
 !!Important note: init_fields and init_momenta will be changed after the initialization. After the subroutine init() is called, they will equal to the the fields and field momenta AT THE BEGINNING OF LATTICE SIMULATION. In addition, the Hubble parameter at the beginning of lattice simulation will be saved to a global variable "init_Hubble".
 !!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -86,9 +84,9 @@ contains
     logical start_box_simulation
     real(dl),dimension(ns)::f,p
 !!LatticeEasy default, i.e. d \phi/dt + H phi = 0 (or equivalently d(a\phi)/dt =0
-    start_box_simulation = (p(1) + sqrt((sum(p**2)/2.+potential(f))/3.)/Mpl*f(1) .lt. 0.)
+    !!start_box_simulation = (p(1) + sqrt((sum(p**2)/2.+potential(f))/3.)/Mpl*f(1) .lt. 0.)
 !! If you want to start the lattice simualtion immediately
-    !!start_box_simulation = .true.
+    start_box_simulation = .true.
 !! If you want to use DEFROST starting point, the end of inflation, i.e. \ddot a =0
     !!start_box_simulation = (potential(f) .le. sum(p**2) )
   end function start_box_simulation
@@ -99,7 +97,7 @@ contains
     real(dl) model_dt_per_step
 #if USE_CONFORMAL_TIME
     !!when metric backreaction is off, just use conformal time; Easy and very stable;
-    model_dt_per_step = metric%dx/32._dl
+    model_dt_per_step = metric%dx/32._dl / 40
 #else
     !!when metric backreaction is on, a bit tricky for this model cz HLattice use synchronous gauge (and physical time t).
     !!Better not continuously change dt; Use step functions.

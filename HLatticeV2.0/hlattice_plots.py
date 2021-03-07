@@ -70,6 +70,11 @@ r4s = r"D:\Physics\MPhys Project\DatasetArcive\Remote tests\rl4-ts-run%i_screen.
 rt4 = r"D:\Physics\MPhys Project\DatasetArcive\Remote tests\rt4-ts-run%i_screen.log"
 rslf = r"D:\Physics\MPhys Project\DatasetArcive\Remote tests\rsimp-lf4-run%i%s_screen.log"
 rsth = r"D:\Physics\MPhys Project\DatasetArcive\Remote tests\rsimp-tanh-run%i_screen.log"
+tanh_math = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\tanh-math-test%i%s_screen.log"
+
+t_math_v = 6
+t_math_s = 'c'
+t_math_f = tanh_math % (t_math_v , t_math_s)
 
 simpt4p = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\simple-t4-run%i_screen.log"
 simpv = 7
@@ -115,7 +120,7 @@ if my_fft:
     print("FFT baby",save)
     save='no'
     
-filefile = rsimpf
+filefile = t_math_f
 #filefile = fref
 ts_mode= True
 pw_field_number =1 #Choose which field spectrum to plot (start: 1)
@@ -364,6 +369,8 @@ def mission_control(data,ns,rows=[],error=True,save_panel=False,save_plots=False
     #Subplt 0,0
     ax[0,0].plot(data['a'][:truncate], data['mean1'][:truncate])
     ax[0,0].set_title("Inflaton field evolution")
+    if ts and False:
+        ax[0,0].plot(data['a'][:truncate], data['mean1'][:truncate],'r.')
     #Subplot 0,1
     diffs = data['a'].diff()[1:]
     ax[0,1].set_title("Increment of a for each step j")
@@ -381,6 +388,12 @@ def mission_control(data,ns,rows=[],error=True,save_panel=False,save_plots=False
         energies = (data.kratio-0.5*(4*data.pratio+2*data.gratio)-emid)*dwidth/ewidth + dmid
         ax[0,1].plot(data.index[1:][:truncate], energies[1:][:truncate],alpha=0.5)
         ax[0,1].axhline(dmid-emid*dwidth/ewidth,linestyle='dashed',color='grey')
+        ax[0,1].set_yscale('log')
+        ax[0,1].set_xscale('log')
+        xpower = np.linspace(data.index.min(),data.index.max(),100)
+        ypower = xpower **(2/3) * 10**-5
+        #ax[0,1].plot(xpower,ypower)
+        
     #Subplot 1,0
     if not ts:
         if rows==[]:
@@ -403,14 +416,15 @@ def mission_control(data,ns,rows=[],error=True,save_panel=False,save_plots=False
     else:
         dmetric = data['a'].diff()[1:]
         dfield = data['mean1'].diff()[1:]/dmetric
-        ax[1,0].plot(data['a'][1:], dfield)
+        ax[1,0].plot(data['a'][1:], dfield,label="Derivative from the field")
         ax[1,0].set_title("Derivative $d\phi/da$ of the inflaton")
         Etot = 3* data['h']**2 * Mpl**2 * (data['omega']+1) 
         #ax[1,0].set_yscale('log')
         #ax[1,0].set_xscale('log')
         
         fp = np.sqrt(2*RESOLUTION**3 * data['a']**0 * data['kratio']*Etot)
-        ax[1,0].plot(data['a'],fp)
+        ax[1,0].plot(data['a'],fp,label="$f_p$ from $E_{tot}$")
+        ax[1,0].legend()
         
     
     #Subplot 1,1
