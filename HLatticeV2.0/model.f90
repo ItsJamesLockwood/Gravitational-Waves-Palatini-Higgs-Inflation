@@ -16,7 +16,8 @@ module model
   
   real(dl),parameter:: coef = lambda * Mplsq**2 / 4.d0 / xi2
   real(dl),parameter:: b = xisqrt/Mpl
-  real(dl),parameter:: suppression = 1.d0
+  real(dl),parameter:: suppression = 1.d0 
+  real(dl),parameter:: time_suppression = 80._dl
   !!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
 !!***************define macros here;************************
@@ -32,17 +33,17 @@ module model
 !!To be self consistent you may want to get the background \phi and \dot\phi by solving the background equations from inflation. HLattice will do that for you.
 !!Just define where you want to start the background evolution. Note this is NOT where you start the lattice simulation, which is defined in a subroutine "start_box_simulation" in this file.
  !!initial field values
-  real(dl),dimension(ns)::init_fields= 0._dl !!-1.71633d-3 * Mpl
+  real(dl),dimension(ns)::init_fields= +0.00514349_dl  * Mpl !!-1.71633d-3 * Mpl
 
 !!Initial field momenta
  !! if set to be greater than or equal to Mplsq (square of reduced Planck Mass), the initial field momenta will be determined by slow-roll inflationary attractor
   !! Note again these are NOT the initial field momenta where you start the lattice simulation, the are the initial values that HLattice take to evolve the inflaton. 
-  real(dl),dimension(ns):: init_momenta =  +7.1786d-9 * Mplsq !-1.d-9 * PlanckMass**2 
+  real(dl),dimension(ns):: init_momenta =  -1.d-10 * Mplsq !-1.d-9 * PlanckMass**2 
 
 
 !!put initial random Gaussian perturbations in the fields when you starts lattice simulation;
 !!the amplitude of fluctuations are defined in subroutine model_Power
-  logical,dimension(ns)::do_init =  .false. 
+  logical,dimension(ns)::do_init =  .true. 
 
 !!Important note: init_fields and init_momenta will be changed after the initialization. After the subroutine init() is called, they will equal to the the fields and field momenta AT THE BEGINNING OF LATTICE SIMULATION. In addition, the Hubble parameter at the beginning of lattice simulation will be saved to a global variable "init_Hubble".
 !!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -97,11 +98,11 @@ contains
     real(dl) model_dt_per_step
 #if USE_CONFORMAL_TIME
     !!when metric backreaction is off, just use conformal time; Easy and very stable;
-    model_dt_per_step = metric%dx/32._dl / 40
+    model_dt_per_step = metric%dx/32._dl / time_suppression
 #else
     !!when metric backreaction is on, a bit tricky for this model cz HLattice use synchronous gauge (and physical time t).
     !!Better not continuously change dt; Use step functions.
-    model_dt_per_step = metric%dx/64._dl*ceiling(metric%a/5._dl)
+    model_dt_per_step = metric%dx/64._dl*ceiling(metric%a/5._dl) / time_suppression
 #endif
   end function model_dt_per_step
 
@@ -118,52 +119,50 @@ contains
       model_Power =0._dl * suppression
       return
     endif
-    model_Power = 0._dl
-  !   return 
-  !   !check that k > k_min=a * H_init (note: k in code is defined as comoving momentum):
-  !   if(k.gt.Init_Hubble)then 
-  !     !define omega^2:
-  !     omega=k**2+mass_sq(init_fields,fld)
-  !     !check if omega / effective mass squared is positive
-  !     if(omega.gt.0.)then
-  !        omega=sqrt(abs(omega))
-  !        !TODO: why is this statement necessary?
-  !        if(omega*metric%dx .le. const_2pi .and. omega*metric%dx*n .ge. const_2pi)then
-  !           model_Power(1) = 0.5_dl/omega * suppression
-  !           model_Power(2) = 0.5_dl*omega * suppression
-  !           write(*,*) "k:",k,"parametric ","model_power:",model_Power
-  !           return
-  !        endif
-  !     !We now consider the tachyonic region (i.e. k_min < k < k_max)
-  !     else
-  !       !Set the initial conditions from arxiv:1902.10148. 
-  !        !!model_Power(1) = Mpl/k /metric%a**3 * suppression
-  !        !!model_Power(2) = xisqrt/SQRT(lambda)* k/Mpl /metric%a**3 * suppression
-  !         model_Power(1) = 0.5_dl/k *suppression
-  !         model_Power(2) = 0.5_dl*k *suppression
-  !         write(*,*) "k:",k,"tachyonic ","model_power:", model_Power
-  !         if(warning)then
-  !           write(*,*) "Tachyonic region initialization may be not correct"
-  !           warning = .false.
-  !        endif
-  !        return
-  !     endif
-  !  !When k < k_min: no longer in tachyonic region
-  !  else
-  !     !model_Power = 0._dl * suppression
-  !     if (kmin_warning) then
-  !       write(*,*) "effective k_min / Hubble = ", k_unit/metric%physdx/Init_Hubble
-  !       write(*,*) "NOTE: REGION OF k < k_min MAY NOT YIELD ACCURATE RESULTS"
-  !       kmin_warning = .false.
-  !     endif
-  !     !stop "This simulation is now botched due to k<k_min"
-  !     model_Power(1) = 0.5_dl/k*(init_Hubble/k)**2 * suppression
-  !     model_Power(2) = 0._dl * suppression
-  !     write(*,*) "k:",k,"k<k_min ","model_power:", model_Power
-  !     return
-  !  endif
-  !  model_Power = 0._dl * suppression
-  !  write(*,*) "k", k, "parametric, but metric incorrect size (?)","model_power:",model_Power
+    !check that k > k_min=a * H_init (note: k in code is defined as comoving momentum):
+    if(k.gt.Init_Hubble)then 
+      !define omega^2:
+      omega=k**2+mass_sq(init_fields,fld)
+      !check if omega / effective mass squared is positive
+      if(omega.gt.0.)then
+         omega=sqrt(abs(omega))
+         !TODO: why is this statement necessary?
+         if(omega*metric%dx .le. const_2pi .and. omega*metric%dx*n .ge. const_2pi)then
+            model_Power(1) = 0.5_dl/omega * suppression
+            model_Power(2) = 0.5_dl*omega * suppression
+            write(*,*) "k:",k,"parametric ","model_power:",model_Power
+            return
+         endif
+      !We now consider the tachyonic region (i.e. k_min < k < k_max)
+      else
+        !Set the initial conditions from arxiv:1902.10148. 
+         !!model_Power(1) = Mpl/k /metric%a**3 * suppression
+         !!model_Power(2) = xisqrt/SQRT(lambda)* k/Mpl /metric%a**3 * suppression
+          model_Power(1) = 0.5_dl/k *suppression
+          model_Power(2) = 0.5_dl*k *suppression
+          write(*,*) "k:",k,"tachyonic ","model_power:", model_Power
+          if(warning)then
+            write(*,*) "Tachyonic region initialization may be not correct"
+            warning = .false.
+         endif
+         return
+      endif
+   !When k < k_min: no longer in tachyonic region
+   else
+      !model_Power = 0._dl * suppression
+      if (kmin_warning) then
+        write(*,*) "effective k_min / Hubble = ", k_unit/metric%physdx/Init_Hubble
+        write(*,*) "NOTE: REGION OF k < k_min MAY NOT YIELD ACCURATE RESULTS"
+        kmin_warning = .false.
+      endif
+      !stop "This simulation is now botched due to k<k_min"
+      model_Power(1) = 0.5_dl/k*(init_Hubble/k)**2 * suppression
+      model_Power(2) = 0._dl * suppression
+      write(*,*) "k:",k,"k<k_min ","model_power:", model_Power
+      return
+   endif
+   model_Power = 0._dl * suppression
+   write(*,*) "k", k, "parametric, but metric incorrect size (?)","model_power:",model_Power
    return
    end function model_Power
 

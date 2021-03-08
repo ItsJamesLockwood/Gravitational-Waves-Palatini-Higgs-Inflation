@@ -85,9 +85,9 @@ contains
     character (len=10):: parentheses
     character (len=20):: lastTerm
     real(dl) avef(ns),flucf(ns)
-    formatString =',2x,G12.5'
-    totalFormat ='(F10.5'
-    lastTerm=',2x,G11.5'
+    formatString =',4x,G16.7'
+    totalFormat ='(F16.7'
+    lastTerm=',4x,E16.7'
     parentheses=')'
     screen_file = open_file("data/"//trim(run_name)//"_screen.log","a")
     call get_energy()

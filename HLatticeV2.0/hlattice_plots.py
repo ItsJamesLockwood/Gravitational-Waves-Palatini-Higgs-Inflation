@@ -72,8 +72,8 @@ rslf = r"D:\Physics\MPhys Project\DatasetArcive\Remote tests\rsimp-lf4-run%i%s_s
 rsth = r"D:\Physics\MPhys Project\DatasetArcive\Remote tests\rsimp-tanh-run%i_screen.log"
 tanh_math = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\tanh-math-test%i%s_screen.log"
 
-t_math_v = 6
-t_math_s = 'c'
+t_math_v = 12
+t_math_s = ''
 t_math_f = tanh_math % (t_math_v , t_math_s)
 
 simpt4p = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\simple-t4-run%i_screen.log"
@@ -122,7 +122,7 @@ if my_fft:
     
 filefile = t_math_f
 #filefile = fref
-ts_mode= True
+ts_mode= False
 pw_field_number =1 #Choose which field spectrum to plot (start: 1)
 form = 'log'
 rows=[1,10,20,30,40,50,60,70,80,90]
@@ -388,8 +388,8 @@ def mission_control(data,ns,rows=[],error=True,save_panel=False,save_plots=False
         energies = (data.kratio-0.5*(4*data.pratio+2*data.gratio)-emid)*dwidth/ewidth + dmid
         ax[0,1].plot(data.index[1:][:truncate], energies[1:][:truncate],alpha=0.5)
         ax[0,1].axhline(dmid-emid*dwidth/ewidth,linestyle='dashed',color='grey')
-        ax[0,1].set_yscale('log')
-        ax[0,1].set_xscale('log')
+        #ax[0,1].set_yscale('log')
+        #ax[0,1].set_xscale('log')
         xpower = np.linspace(data.index.min(),data.index.max(),100)
         ypower = xpower **(2/3) * 10**-5
         #ax[0,1].plot(xpower,ypower)
@@ -407,7 +407,7 @@ def mission_control(data,ns,rows=[],error=True,save_panel=False,save_plots=False
             ax[1,0].plot(xs,ys,label=ns['a'][rows[j]], color=colors[j])
         ax[1,0].set_yscale('log')
         #plt.xscale('log')    
-        #ax[1,0].legend(title='Spectrum at $a=$',loc='lower right')
+        ax[1,0].legend(title='Spectrum at $a=$',loc='lower right')
         ax[1,0].set_title("Occupation number $n_k$")
         ax[1,0].set_xlabel(r"$k\Delta / 2 \pi$")
         ax[1,0].set_ylabel(r"$ k^4\; n_k /\; 2 \pi^2\; \rho}$")

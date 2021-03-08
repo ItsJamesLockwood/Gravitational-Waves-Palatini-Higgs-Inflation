@@ -96,12 +96,11 @@ def import_pw(pw_file):
         a.append(d1)
         psf.append(d2)
         psdf.append(d3)
-        
+
     df1 = pd.DataFrame(psf)
     df2 = pd.DataFrame(psdf)
-    
-    df1['a'] = pd.Series(a)
-    df2['a'] = pd.Series(a)
+    df1['a'] = pd.Series(a,dtype=np.float64)
+    df2['a'] = pd.Series(a,dtype=np.float64)
     file.close()
     return df1,df2
 

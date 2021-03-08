@@ -110,7 +110,7 @@
 #define SUB_INTEGRATOR_STEPS 10
 
 !!Reduced Planck Mass, it can be any number. To achieve better performance you may want to define it ~ (Planck Mass / Energy Scale of your problem), so the numbers in the simulation can have order ~ 1. (Since HLattice uses double precision numbers, this usually is not a big issue.)
-#define REDUCED_PLANCK_MASS 1.
+#define REDUCED_PLANCK_MASS 1024.
 
 !!use k^{std} instead of k^{eff} in the TT projector;
 #define USE_STANDARD_WAVENUMBER NO
