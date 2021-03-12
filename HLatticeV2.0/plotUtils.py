@@ -12,6 +12,16 @@ from matplotlib.widgets import Slider, Button, RadioButtons
 import matplotlib.animation as animation
 from mpl_toolkits.mplot3d import Axes3D
 
+
+def  trim_name(file):
+    ind = file.index('_screen')
+    return file[:ind]
+
+def trim_file_name(file):
+    ind1 = file.index('_screen')
+    ind2 = file.rindex('\\')+1
+    return file[ind2:ind1]
+
 def import_screen(file_name,print_logs=False):
     #old_col_names = [chr(i) for i in range(ord('a'),ord('a')+10)]
     col_names = ['a',
@@ -575,5 +585,34 @@ def plot_energy(edf,a_ind=0,use_FFT=False,use_contour=False,title='',use_log=Fal
     playButton.on_clicked(play)
     playax._button = playButton
     return fvals
+
+
+
+#%% Get information from the sim_settings file.
+def sim_settings(filefile,delim=':'):
+    # Relies on finding the colon ':' in any given line.
+    sim_file = trim_name(filefile) + '_sim_settings.log'
+    file = open(sim_file,'r')
+    descriptors = []
+    values = []
+    
+    l1 = file.readline().strip()
+    while l1!='':
+        pos = l1.find(delim)
+        if pos!=-1:
+            descriptors.append(l1[:pos])
+            val_str = l1[pos+1:].strip()
+            if int(float(val_str)) == float(val_str):
+                values.append(int(float(val_str)))
+            else:
+                values.append(float(val_str))
+        else:
+            descriptors.append(l1)
+            values.append('n/a')
+        l1 = file.readline().strip()
+    return (descriptors,values)
+        
+
+
 
     

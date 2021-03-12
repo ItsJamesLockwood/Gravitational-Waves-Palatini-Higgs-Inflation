@@ -241,7 +241,19 @@ def n_palatini(pw1,pw2,data, L=64, skip=2,h0=-1,LH=6,use_ks=True):
     df : pd.DataFrame
         Contains the full time-evolution of the perturbation for all modes.
 
-    """
+    """    
+    # Due to mismatches due to downloads during runtime of simulation: trim to correct size
+    data_size = data[::skip].shape[0]
+    pw_size = pw1.shape[0]
+    min_size,max_size = min(data_size,pw_size),max(data_size,pw_size)
+    if (int(min_size*1.1) > max_size or min_size!=max_size or True):
+        data = data[:min_size*skip]
+        pw1 = pw1[:min_size]
+        pw2 = pw2[:min_size]
+        print("Trimmed data, pw1 and pw2: ",data.shape,pw1.shape,pw2.shape)
+    else:
+        raise ValueError("data and pw1/pw2 have two large a discrepancy in shapes: ",data.shape,pw1.shape)
+
     pw_a = pw1.drop('a',axis=1)
     pw_b = pw2.drop('a',axis=1)
     a_list = pw1['a']
@@ -264,6 +276,8 @@ def n_palatini(pw1,pw2,data, L=64, skip=2,h0=-1,LH=6,use_ks=True):
     ks_a_matrix = np.einsum('a,b->ba',ks**2, 1/a_list**2)
     # Column containing the U''(chi) terms for the different values of 'a'.
     d2v_column = np.array(palatiniD2V(data[::skip]['mean1'],use_PM=False))
+    
+    
     # Assemble into an omega matrix (which will multiply the second term in the square brackets in Rubio, eq.4.20).
     omegas = ks_a_matrix + d2v_column.reshape(-1,1)
     # For information: print information about tachyonic modes. 

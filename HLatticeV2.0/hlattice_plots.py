@@ -19,13 +19,14 @@ from itertools import chain
 #%% Define variables 
 global lam, Mpl, g, RESOLUTION, PM
 RESOLUTION = 64
+SKIP =  50
 
 lam = 10**-2
 Mpl = 1024
 Nstar= 50
 xi = 3.8*10**6 * lam * Nstar**2
 g = np.sqrt(3 * lam) #TODO: ?
-L = 128
+L = RESOLUTION
 LH = 30
 
 #wd = os.getcwd()
@@ -33,14 +34,6 @@ wd_path = "D:/Physics/MPhys Project/gw-local-repo/HLatticeV2.0/"
 os.chdir(wd_path)
 print("Current working dir: ",os.getcwd())
 
-def  trim_name(file):
-    ind = file.index('_screen')
-    return file[:ind]
-
-def trim_file_name(file):
-    ind1 = file.index('_screen')
-    ind2 = file.rindex('\\')+1
-    return file[ind2:ind1]
 #%% File management
 file_name = "data/run_with_GW_17_11_screen.log"
 GW_file = "data/run_with_GW_17_11_GW.log"
@@ -115,7 +108,7 @@ th4 = t4s%t4i
 rl4 = r4s%rl4i 
 rth = rt4%rti
 
-save = 'no'
+save = 'yes'
 energies = 'yes1'
 slices = 'yes1'
 
@@ -144,6 +137,10 @@ my_img_name =  trim_name(filefile) + '_img'
 save_img = False
 
 
+#%% Get sim settings variables
+strs, vals = sim_settings(filefile)
+RESOLUTION = vals[6] 
+SKIP = int(vals[11]/vals[10] )
 
 #%% Function definitions
 
@@ -508,10 +505,10 @@ elif save=='no1':
     plot_line(data,save=False,conf=conf_type)
 
 #%% Palatini perturbation energy density 
-n_pal = n_palatini(pw_data1,pw_data2,data,L=128,use_ks=True) 
+n_pal = n_palatini(pw_data1,pw_data2,data,L=L,use_ks=True,skip=SKIP) 
 pert = integrate_perturbation(n_pal)
 
-if ts:
+if ts_mode:
     plt.plot(pw_data1.a, pert,'r')
     plt.yscale('log')
     
