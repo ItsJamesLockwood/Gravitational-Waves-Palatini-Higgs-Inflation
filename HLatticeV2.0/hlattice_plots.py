@@ -25,7 +25,8 @@ Mpl = 1024
 Nstar= 50
 xi = 3.8*10**6 * lam * Nstar**2
 g = np.sqrt(3 * lam) #TODO: ?
-L = 64
+L = 128
+LH = 30
 
 #wd = os.getcwd()
 wd_path = "D:/Physics/MPhys Project/gw-local-repo/HLatticeV2.0/"
@@ -71,10 +72,14 @@ rt4 = r"D:\Physics\MPhys Project\DatasetArcive\Remote tests\rt4-ts-run%i_screen.
 rslf = r"D:\Physics\MPhys Project\DatasetArcive\Remote tests\rsimp-lf4-run%i%s_screen.log"
 rsth = r"D:\Physics\MPhys Project\DatasetArcive\Remote tests\rsimp-tanh-run%i_screen.log"
 tanh_math = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\tanh-math-test%i%s_screen.log"
+r_math = r"D:\Physics\MPhys Project\DatasetArcive\Remote tests\rtanh-math-test%i%s_screen.log"
+r_math_dispo = r"D:\Physics\MPhys Project\DatasetArcive\Remote tests\rtanh-math-test-dispo_screen.log"
 
-t_math_v = 12
-t_math_s = ''
+t_math_v = 9
+t_math_s = 'e'
 t_math_f = tanh_math % (t_math_v , t_math_s)
+
+r_math_f = r_math% (t_math_v, t_math_s)
 
 simpt4p = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\simple-t4-run%i_screen.log"
 simpv = 7
@@ -120,9 +125,11 @@ if my_fft:
     print("FFT baby",save)
     save='no'
     
-filefile = t_math_f
+filefile = r_math_f
+#filefile = r_math_dispo
 #filefile = fref
 ts_mode= False
+conf_type = True
 pw_field_number =1 #Choose which field spectrum to plot (start: 1)
 form = 'log'
 rows=[1,10,20,30,40,50,60,70,80,90]
@@ -139,7 +146,6 @@ save_img = False
 
 
 #%% Function definitions
-
 
 def plot_pw_t(df1,save_img=True,img_name='df1',trim=10):
     dfs = df1.iloc[:,:trim]
@@ -205,50 +211,8 @@ def plot_fig2_tchakev(data):
 
     plt.show()
  
-def k_list(pw_data1,L=64):
-    ki = 2 * np.pi / L
-    #Note: We only want to create ks for the spectrum values and not for the a column
-    #Save as np.array for extra functionality
-    return np.array([ki * i for i in range(1,pw_data1.shape[1])]) 
 
-def n_k(pw_data1,pw_data2,L=64):
-    pw_a = pw_data1.drop(['a'],axis=1)
-    pw_b = pw_data2.drop(['a'],axis=1)
-    a_list = pw_data1['a'] # By construction, this is the same as pw_data2['a']
-    
-    ks = k_list(pw_data1,L=L)
-    
-    #Retrieve actual field eignemode values
-    fk_df = pw_a / ks**5
-    fkdot_df = pw_b / ks**3
-    #fk_df = pw_a
-    #fkdot_df = pw_b
-    
-    #Some pretty cool element-wise multiplication between vector ks and dataframes fk_df and fkdot_df!
-    ns = 1/(2*ks) * (ks**2 * fk_df + fkdot_df)
-    #Store ks in the column headers
-    ns.columns = ks
-    #Add a values back for plotting purposes
-    ns['a'] = a_list
-    return ns
 
-def n_k_red(pw_data1,pw_data2,L=64):
-    pw_a = pw_data1.drop(['a'],axis=1)
-    pw_b = pw_data2.drop(['a'],axis=1)
-    a_list = pw_data1['a'] # By construction, this is the same as pw_data2['a']
-
-    ks = k_list(pw_data1,L=L)
-    #Retrieve actual field eignemode values
-    fk_df = pw_a.multiply(a_list**2,axis=0) 
-    fkdot_df = pw_b
-
-    #Some pretty cool element-wise multiplication between vector ks and dataframes fk_df and fkdot_df!
-    ns = 1/2 * (fk_df + fkdot_df)
-    #Store ks in the column headers
-    ns.columns = ks
-    #Add a values back for plotting purposes
-    ns['a'] = a_list
-    return ns
 
 def plot_n_t(ns,cols=[],save_img=False,img_name='Fig3_rubio',data=[]):
     if cols==[]:
@@ -365,16 +329,27 @@ def mission_control(data,ns,rows=[],error=True,save_panel=False,save_plots=False
     fig, ax = plt.subplots(2,2)
     fig.set_figwidth(13)
     fig.set_figheight(9.5)
+    fig.suptitle(png_name)
     plt.subplots_adjust(top=.93)
     #Subplt 0,0
-    ax[0,0].plot(data['a'][:truncate], data['mean1'][:truncate])
     ax[0,0].set_title("Inflaton field evolution")
-    if ts and False:
+    ax[0,0].plot(data['a'][:truncate], data['mean1'][:truncate])
+    if ts:
         ax[0,0].plot(data['a'][:truncate], data['mean1'][:truncate],'r.')
+    c2 = np.flip(cm.magma(np.linspace(0,1,len(ns.columns)-1)),axis=0)
+    ax_twin =  ax[0,0].twinx()
+    for j in range(len(ns.columns)-1):
+        #pass
+        ax_twin.plot(ns['a'][:truncate],np.log(pw_data1[:truncate].iloc[:,j]/pw_data1[:truncate].iloc[0,j]),
+                     color=c2[j],
+                     alpha=1)
+    
+        
     #Subplot 0,1
     diffs = data['a'].diff()[1:]
     ax[0,1].set_title("Increment of a for each step j")
     ax[0,1].plot(data.index[1:][:truncate], diffs[:truncate])
+    #ax[0,1].plot(data.a[1:][:truncate], diffs[:truncate])
     if ts:
         ax[0,1].plot(data.index[1:][:truncate], diffs[:truncate],'r.')
         ewidth = (data.kratio-0.5*(4*data.pratio+2*data.gratio)).max() - (data.kratio-0.5*(4*data.pratio+2*data.gratio)).min()
@@ -400,6 +375,9 @@ def mission_control(data,ns,rows=[],error=True,save_panel=False,save_plots=False
             rows.append(int(ns.shape[0])/2)
             colors = np.flip(cm.magma(np.linspace(0,1,len(rows))),axis=0)
         else:
+            if len(rows)>14: 
+                step = int(np.floor(len(rows)/10))
+                rows = rows[::step]
             colors = np.flip(cm.magma(np.linspace(0,1,len(rows))),axis=0)
         for j in range(len(rows)):
             xs = np.array(ns.columns[:-1]) / (2 * np.pi)
@@ -407,7 +385,8 @@ def mission_control(data,ns,rows=[],error=True,save_panel=False,save_plots=False
             ax[1,0].plot(xs,ys,label=ns['a'][rows[j]], color=colors[j])
         ax[1,0].set_yscale('log')
         #plt.xscale('log')    
-        ax[1,0].legend(title='Spectrum at $a=$',loc='lower right')
+        if len(rows)<14:
+            ax[1,0].legend(title='Spectrum at $a=$',loc='lower right')
         ax[1,0].set_title("Occupation number $n_k$")
         ax[1,0].set_xlabel(r"$k\Delta / 2 \pi$")
         ax[1,0].set_ylabel(r"$ k^4\; n_k /\; 2 \pi^2\; \rho}$")
@@ -437,6 +416,10 @@ def mission_control(data,ns,rows=[],error=True,save_panel=False,save_plots=False
     ax[1,1].plot(data['a'][:truncate],data['gratio'][:truncate],'b',label='Gradient of field energy')
     ax[1,1].legend()
     
+    c2 = np.flip(cm.magma(np.linspace(0,1,len(ns.columns)-1)),axis=0)
+    for j in range(len(ns.columns)-1):
+        #pass
+        ax[1,1].plot(ns['a'][:truncate],ns[:truncate].iloc[:,j]/ns[:truncate].drop('a',axis=1).min().min(),color=c2[j])
     if error==True:
         ax[1,1].plot(data['a'][:truncate],abs(1/(data['omega'][:truncate]+1)-1),linestyle='dashed',label='Fractional energy noises')
         ax[1,1].legend()
@@ -499,57 +482,41 @@ if save=='yes':
     mission_control(data,n_df,rows=my_rows,save_panel=True,save_plots=True,ts=ts_mode)
 elif save=='no':
     mission_control(data,n_df,rows=my_rows,ts=ts_mode)
+    
+#%% Comparing conformal vs. physical times
 
-#%% Temp test of omega
-'''templ = [3.0818286343172027E-004,
-         3.2058427750028849E-004,
-         3.4025032220321951E-004,
-         3.6601186544975902E-004,
-         3.9668311112553732E-004,
-         4.3121769069237337E-004,
-         4.6876252409028659E-004,
-         5.0865146449070083E-004,
-         5.5037507372443560E-004,
-         5.9354657132985465E-004,
-         6.3787204360222561E-004,
-         6.8312689655197897E-004,
-         7.2913810124543754E-004,
-         7.7577109104069513E-004,
-         8.2292016733869411E-004,
-         8.7050147561197339E-004,
-         9.1844784140641727E-004,
-         9.6670494818077574E-004]
-tl = np.array(templ)
-xs = np.arange(1,len(tl)+1)
-plt.yscale('log')
-plt.xscale('log')
-plt.plot(xs,tl,'ro')
-'''
-'''
-#Test the speed of float conversion
-from time import time
+def plot_line(data,conf=True,save=True,path=filefile):
+    f,ax = plt.subplots()
+    if conf: time_type = 'conformal'
+    else: time_type = 'physical' 
+    xs = data.index
+    if conf:
+        ys = xs/xs.max() + data.a.max()-1
+    else:
+        ys =xs/xs.max() +1
+    ax.plot(xs,data.a,label="Metric $a$ at step $j$")
+    ax.plot(xs,ys,label="Straight line")
+    ax.legend()
+    ax.set_title("Metric evolution in %s time"%time_type)
+    ax.set_xlabel("Step $j$")
+    ax.set_ylabel("$a(j)$")
+    if save:
+        f.savefig(trim_file_name(path)+'_time_comparison.jpg')
+if save=='yes':
+    plot_line(data,save=True,conf=conf_type)
+elif save=='no1':
+    plot_line(data,save=False,conf=conf_type)
 
-def timer(lst):
-    methods = [[],[], []]
-    for _ in range(100):
-        start1 = time()
-        l1 = list(map(float,lst))
-        end1=time() - start1
-        
-        start2 = time()
-        l2 = np.array(lst,dtype=np.float32)
-        end2 = time() - start2
-        
-        start3 = time()
-        l3 = np.array(lst,dtype=np.float64)
-        end3 = time()-start3
-        
-        methods[0].append(end1)
-        methods[1].append(end2)
-        methods[2].append(end3)
-    for i in range(3):
-        print("Avg%i: "%i,np.mean(methods[i]),"\t;\t Std%i: "%i,np.std(methods[i]))
-'''
+#%% Palatini perturbation energy density 
+n_pal = n_palatini(pw_data1,pw_data2,data,L=128,use_ks=True) 
+pert = integrate_perturbation(n_pal)
+
+if ts:
+    plt.plot(pw_data1.a, pert,'r')
+    plt.yscale('log')
+    
+
+#%% Lattice slices
 
 fields_path = trim_name(filefile) + '_whole_field_%i.%s'%(pw_field_number,form)
 momenta_path = trim_name(filefile) + '_momenta_%i.%s'%(pw_field_number,form)
