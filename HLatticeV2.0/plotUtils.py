@@ -4,14 +4,17 @@ Created on Mon Nov 23 21:38:40 2020
 
 @author: James
 """
-
+import os
+import scipy
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from math import ceil
 from matplotlib.widgets import Slider, Button, RadioButtons
 import matplotlib.animation as animation
 from mpl_toolkits.mplot3d import Axes3D
 
+from physUtils import *
 
 def  trim_name(file):
     ind = file.index('_screen')
@@ -22,18 +25,27 @@ def trim_file_name(file):
     ind2 = file.rindex('\\')+1
     return file[ind2:ind1]
 
+def max_field_number(screenfile):
+    file_exists = True
+    fld = 0
+    while file_exists:        
+        fld +=1
+        path = trim_name(screenfile) + '_pw_%i.log'%fld
+        file_exists = os.path.exists(path)
+    return (fld-1)
+    
 def import_screen(file_name,print_logs=False):
     #old_col_names = [chr(i) for i in range(ord('a'),ord('a')+10)]
+    fld = max_field_number(file_name)
     col_names = ['a',
     			'h',
     			'omega',
     			'pratio',
     			'kratio',
-    			'gratio',
-    			'mean1',
-    			'mean2',
-    			'rms1',
-    			'rms2']
+    			'gratio']
+    means = ['mean%i'%i for i in range(1,fld+1)]
+    rmss = ['rms%i'%i for i in range(1,fld+1)]
+    col_names += means + rmss
     
     data = pd.read_csv(file_name,delim_whitespace=True,skiprows=1,names=col_names,index_col=False)
     try:
@@ -586,8 +598,58 @@ def plot_energy(edf,a_ind=0,use_FFT=False,use_contour=False,title='',use_log=Fal
     playax._button = playButton
     return fvals
 
-
-
+#%% Animating the results
+def animate_potential(data,t_max=25):
+    #t_max given in seconds
+    anim_running = True
+    
+    #Work out the interval and fps to optimise the animation
+    fps = 25
+    interval = 1000/fps  #Time per frame: 1 second / frames per second
+    step = ceil(data.shape[0]/t_max / fps) #How large a step between rows to ensure fps and t_max are met
+    
+    fig = plt.figure()
+    fig.set_figwidth(8)
+    fig.set_figheight(6)
+    phi_max = np.abs(data['mean1']).max() * 1.02 #Provide 2% extra margin
+    xs = np.linspace(-phi_max,phi_max,1000)
+    ys = palatiniV(xs)
+    v_phi_interp = scipy.interpolate.PchipInterpolator(xs, ys, extrapolate=False)
+    
+    def onClick(event):
+        nonlocal anim_running
+        if anim_running:
+            anim.event_source.stop()
+            anim_running = False
+        else:
+            anim.event_source.start()
+            anim_running = True
+            
+    xp0 = data['mean1'][0]
+    yp0 = palatiniV(xp0)
+    def anim_data():
+        nonlocal step
+        for i in range(0,data.shape[0],step):
+            yield [data['mean1'][i],data['a'][i],i]
+            
+    def animate(anim_data):
+        xp = anim_data[0]
+        yp = palatiniV(xp)
+        p1.set_data(xp,yp)
+        time_text.set_text(time_template%(anim_data[1],anim_data[2]))
+    
+    ax = fig.add_subplot(111)
+    p0, = ax.plot(xs,ys)
+    p1, = ax.plot(xp0,yp0,'ro')
+    time_template = "Metric $a$= %.7f \nRow: %i "
+    time_text = ax.text(0.05,0.87,'', transform=ax.transAxes)
+    time_text.set_text(time_template%(data['a'][0],0))
+    
+    anim = animation.FuncAnimation(fig,animate,anim_data,interval=interval)
+    fig.canvas.mpl_connect('button_press_event', onClick)
+        
+data = import_screen(r'D:\Physics\MPhys Project\DatasetArcive\Remote tests\rtanh-math-test12_screen.log')
+animate_potential(data,t_max=50)
 #%% Get information from the sim_settings file.
 def sim_settings(filefile,delim=':'):
     # Relies on finding the colon ':' in any given line.

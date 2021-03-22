@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """
 Created on Tue Nov 17 13:02:21 2020
-
 @author: James
 """
 
@@ -30,13 +29,13 @@ L = RESOLUTION
 LH = 30
 
 #wd = os.getcwd()
-wd_path = "D:/Physics/MPhys Project/gw-local-repo/HLatticeV2.0/"
-os.chdir(wd_path)
+wd_path = r"C:/Users/eliot/OneDrive/Documents/physics 4th year/Mphys project/semester 2"
+#os.chdir(wd_path)
 print("Current working dir: ",os.getcwd())
 
 #%% File management
 file_name = "data/run_with_GW_17_11_screen.log"
-GW_file = "data/run_with_GW_17_11_GW.log"
+GW_file = r"C:\Users\eliot\OneDrive\Documents\physics 4th year\Mphys project\semester 2\data\GW_LH=6_checkpoint5_GW.log"
 eliot_file = "data/lf4-std-run1_screen.log"
 higgs_file = "data/higgs-vev-run1_screen.log"
 tanhfile = "data/higgs-tanh4-run1_screen.log"
@@ -68,6 +67,8 @@ tanh_math = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\tanh-math
 r_math = r"D:\Physics\MPhys Project\DatasetArcive\Remote tests\rtanh-math-test%i%s_screen.log"
 r_math_dispo = r"D:\Physics\MPhys Project\DatasetArcive\Remote tests\rtanh-math-test-dispo_screen.log"
 
+test_file=r"C:\Users\eliot\OneDrive\Documents\physics 4th year\Mphys project\semester 2\data\GW_LH=6_checkpoint5_screen.log"
+test_GW=r"C:\Users\eliot\OneDrive\Documents\physics 4th year\Mphys project\semester 2\data\GW_LH=6_checkpoint5_GW.log"
 t_math_v = 12
 t_math_s = ''
 t_math_f = tanh_math % (t_math_v , t_math_s)
@@ -127,6 +128,7 @@ pw_field_number =1 #Choose which field spectrum to plot (start: 1)
 form = 'log'
 rows=[1,10,20,30,40,50,60,70,80,90]
 rsmall = [1,5,10,15,20,25,30,35,40,45]
+rverysmall=[1,1.05,1.1,1.15,1.2,1.25,1.3,1.35,1.4,1.45,1.5]
 tk1 = [1,20,50,75,100] + list(range(2,19,3))
 tk2 = range(0,22,3)
 rmid = [1,10,90] + list(range(30,60,3))
@@ -141,8 +143,7 @@ save_img = False
 strs, vals = sim_settings(filefile)
 RESOLUTION = vals[6] 
 SKIP = int(vals[11]/vals[10] )
-BOXSIZE_H = vals[1] 
-Mpl = vals[14]
+
 #%% Function definitions
 
 def plot_pw_t(df1,save_img=True,img_name='df1',trim=10):
@@ -316,17 +317,15 @@ def plot_fig6(ns,rows=[],vlines=False,save_img=False,img_name="Fig 6"):
         plt.savefig(img_name + '_fig6_field_%i'%pw_field_number)
 
     plt.show()
-    
 def plot_gw(df1, df2, rows=[]):
     frequencies=df1.drop(['a'],axis=1)
     grav_intensity=df2.drop(['a'],axis=1)
     a_list=df1['a']
     if rows==[]:
-        rows.append(int(df1.shape[0]/2))
+        rows.append(int(df1.shape[0])/2)
         colors = np.flip(cm.magma(np.linspace(0,1,len(rows))),axis=0)
     else:
         colors = np.flip(cm.magma(np.linspace(0,1,len(rows))),axis=0)
-    print(rows)
     for j in range(len(rows)):
         #Retrieve k values from the column headers, discarding the 'a' in the last column
         #xs = np.array(df1.columns[:-1]) 
@@ -340,18 +339,14 @@ def plot_gw(df1, df2, rows=[]):
     plt.title("Gravitational waves spectrum at different scale factors $a$ ")
     plt.xlabel(r"Frequency spectrum in Hz")
     plt.ylabel("(Omega_{gw}h^2)")
-
-def mission_control(data,ns,rows=[],error=True,save_panel=False,save_plots=False,path=filefile,truncate=0,ts=False):
+    
+def mission_control(data,ns,df_1,df_2,rows=[], error=True,save_panel=False,save_plots=False,path=filefile,truncate=0,ts=False):
     png_name = trim_file_name(path)
     if truncate!=0:
         png_name += '_trunc' + str(truncate)
         truncate = np.searchsorted(data['a'],truncate)
     else:
         truncate = data.shape[0]-1
-    #Default colors    
-    prop_cycle = plt.rcParams['axes.prop_cycle']
-    prop_colors = prop_cycle.by_key()['color']
-    
     fig, ax = plt.subplots(2,3)
     fig.set_figwidth(13)
     fig.set_figheight(9.5)
@@ -417,7 +412,7 @@ def mission_control(data,ns,rows=[],error=True,save_panel=False,save_plots=False
         ax[1,0].set_xlabel(r"$k\Delta / 2 \pi$")
         ax[1,0].set_ylabel(r"$ k^4\; n_k /\; 2 \pi^2\; \rho}$")
       
-    #Alternative Subplot 1,0
+    #Alt Subplot 1,0
     else:
         dmetric = data['a'].diff()[1:]
         dfield = data['mean1'].diff()[1:]/dmetric
@@ -433,7 +428,6 @@ def mission_control(data,ns,rows=[],error=True,save_panel=False,save_plots=False
         
     
     #Subplot 1,1
-    etot = 3* data['h'][:truncate]**2 * Mpl**2 * (data['omega'][:truncate]+1)
     ax[1,1].set_yscale('log')
     ax[1,1].set_title('Reproduction of Fig.1: ratios of energies')
     ax[1,1].set_xlabel('a')
@@ -441,8 +435,6 @@ def mission_control(data,ns,rows=[],error=True,save_panel=False,save_plots=False
     ax[1,1].plot(data['a'][:truncate],data['pratio'][:truncate],linestyle='dashed',label='Potential energy')
     ax[1,1].plot(data['a'][:truncate],data['kratio'][:truncate],linestyle='dashed',label='Kinetic energy')
     ax[1,1].plot(data['a'][:truncate],data['gratio'][:truncate],'b',label='Gradient of field energy')
-    ax[1,1].plot(data['a'][:truncate],data['gratio'][:truncate]*etot,color='orange',label='Gradient energy (net)')
-    ax[1,1].plot(data['a'][:truncate],etot/etot[0],color='purple',label='Total energy $E^{tot}/E_0^{tot}$')
     ax[1,1].legend()
     
     c2 = np.flip(cm.magma(np.linspace(0,1,len(ns.columns)-1)),axis=0)
@@ -452,58 +444,27 @@ def mission_control(data,ns,rows=[],error=True,save_panel=False,save_plots=False
     if error==True:
         ax[1,1].plot(data['a'][:truncate],abs(1/(data['omega'][:truncate]+1)-1),linestyle='dashed',label='Fractional energy noises')
         ax[1,1].legend()
-    
-    #Subplot 0,2
+    #subplot(0,2)
+    ax[0,2].set_title("Gravitational waves spectrum at different scale factors $a$ ")
+    ax[0,2].set_xlabel("Frequency spectrum in Hz")
+    ax[0,2].set_ylabel("(Omega_{gw}h^2)")
     ax[0,2].set_yscale('log')    
     ax[0,2].set_xscale('log')
     
-    gw1, gw2 = import_GW(trim_name(filefile) + '_GW.log')
-    frequencies = gw1.drop(['a'],axis=1)
-    grav_intensity = gw2.drop(['a'],axis=1)
-    a_list = gw1['a']
-    if rows==[]:
-        #rows.append(int(gw1.shape[0]/2))
-        #colors = np.flip(cm.magma(np.linspace(0,1,len(rows))),axis=0)
-        rows.append(int(gw1.shape[0]/2))
-        colors = np.flip(cm.magma(np.linspace(0,1,gw1.shape[0])),axis=0)
-    else:
-        #colors = np.flip(cm.magma(np.linspace(0,1,len(rows))),axis=0)
-        colors = np.flip(cm.magma(np.linspace(0,1,gw1.shape[0])),axis=0)
+    for j in range(len(rows)):
+        #xs = np.array(df1.columns[:-1]) 
+        xs1=df_1.iloc[rows[j],:-1]
+        ys1= df_2.iloc[rows[j],:-1] 
+        ax[0,2].plot(xs1,ys1,color=colors[j])
+        #plt.plot(xs,ys,label=df1['a'][rows[j]], color=colors[j])
 
-    print(rows)
-    # Plot all of the spectra, but only label those in the selected rows
-    for j in range(gw1.shape[0]):
-        #Retrieve k values from the column headers, discarding the 'a' in the last column
-        xs= gw1.iloc[j,:-1]
-        ys = gw2.iloc[j,:-1]
-        if j in rows:
-            ax[0,2].plot(xs,ys,color=colors[j], label=a_list[j])
-        else:
-            ax[0,2].plot(xs,ys,color=colors[j])
-            
-    ax[0,2].legend(title='Spectrum at $a=$',loc='lower right')
-    ax[0,2].set_title("Gravitational waves spectrum at different scale factors $a$ ")
-    ax[0,2].set_xlabel(r"Frequency spectrum in Hz")
-    ax[0,2].set_ylabel("(Omega_{gw}h^2)")
-
-    
-    #Subplot 1,2
-    ax_twin = ax[1,2].twinx()
-    p1, = ax[1,2].plot(data['a'], data['mean1']**2 + data['rms1']**2,label=r"$\langle \phi^{2} \rangle $")
-    p2, = ax_twin.plot(data['a'],data['mean1'],color=prop_colors[1],label=r"$\rangle \phi \langle")
-    lns = [p1,p2]
-    ax[1,2].legend(handles=lns)
-    ax[1,2].set_title("Comparison of the average field and squared field values")
-    
-    
-    #End of function: save figures if requested
     if save_panel==True:
         print("Saving panel...")
         fig.savefig(png_name + '_panel.png')
     if save_plots==True:
         print("Saving individual plots...")
         #extent = ax[0,0].get_window_extent().transformed(fig.dpi_scale_trans.inverted())
-        extents = [ax[i,j].get_tightbbox(fig.canvas.renderer).transformed(fig.dpi_scale_trans.inverted()) for i in range(ax.shape[0]) for j in range(ax.shape[1])]
+        extents = [ax[i,j].get_tightbbox(fig.canvas.renderer).transformed(fig.dpi_scale_trans.inverted()) for i in range(2) for j in range(2)]
         
         # Pad the saved area by 10% in the x-direction and 20% in the y-direction
         padx = 1.05
@@ -512,8 +473,7 @@ def mission_control(data,ns,rows=[],error=True,save_panel=False,save_plots=False
         fig.savefig(png_name + '_increments.png', bbox_inches=extents[1].expanded(padx, pady))
         fig.savefig(png_name + '_n_k.png', bbox_inches=extents[2].expanded(padx, pady))
         fig.savefig(png_name + '_energies.png', bbox_inches=extents[3].expanded(padx, pady))
-    
-    
+
 #%% Main
 
 data = import_screen(filefile)
@@ -531,6 +491,7 @@ tk_rows = sorted(tk_rows)
 #plot_gw(pw_data1,trim=2,save_img=False)
 loc_min = 0
 loc_max = None
+#df1,df2 = import_GW(filefile)
 
 #plt.plot(data['a'][loc_min:loc_max]**.5,data['mean1'][loc_min:loc_max])
 #plt.plot(data.diff()['a'][loc_min:loc_max])
@@ -546,15 +507,15 @@ loc_max = None
 #plot_fig1(data,error=True,img_name=my_img_name)
 #plot_fig2_tchakev(data)
 
-#df1,df2 = import_GW(GW_file)
+df1,df2 = import_GW(trim_name(filefile)+ "_GW.log")
 #plot_gw(df1,img_name='df1')
 #plot_gw(df2,img_name='df2')
 
 #%% Mission control
 if save=='yes':
-    mission_control(data,n_df,rows=my_rows,save_panel=True,save_plots=True,ts=ts_mode)
+    mission_control(data,n_df,df1, df2,rows=my_rows,save_panel=True,save_plots=True,ts=ts_mode)
 elif save=='no':
-    mission_control(data,n_df,rows=my_rows,ts=ts_mode)
+    mission_control(data,n_df,df1,df2,rows=my_rows,ts=ts_mode)
     
 #%% Comparing conformal vs. physical times
 
@@ -581,15 +542,13 @@ elif save=='no1':
     plot_line(data,save=False,conf=conf_type)
 
 #%% Palatini perturbation energy density 
-n_pal = n_palatini(pw_data1,pw_data2,data,L=L,use_ks=True,skip=SKIP,LH=BOXSIZE_H) 
+n_pal = n_palatini(pw_data1,pw_data2,data,L=L,use_ks=True,skip=SKIP) 
 pert = integrate_perturbation(n_pal)
 
 if ts_mode:
     plt.plot(pw_data1.a, pert,'r')
     plt.yscale('log')
     
-#%% Import GW
-gw1, gw2 = import_GW(trim_name(filefile) + '_GW.log')
 
 #%% Lattice slices
 
@@ -612,3 +571,4 @@ if energies== 'yes':
     plot_energy(gedf,0,title='Gradient',use_FFT=False,use_log=True)
     #plot_mesh(pdf,cond=['z',0],use_FFT=True)
     #plot_slices(spdf,use_FFT=True)
+plt.show()

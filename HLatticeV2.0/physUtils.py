@@ -8,7 +8,6 @@ import numpy as np
 import pandas as pd
 import scipy.special as sp
 from scipy import interpolate, signal,misc, integrate
-from plotUtils import *    
 
 def phi_amplitude(data):
     '''Deprecated: was designed for a time-dependent inflaton amplitude. 
@@ -211,7 +210,34 @@ def n_k(pw_data1,pw_data2,L=64):
     ns['a'] = a_list
     return ns
 
-
+def omegas(pw1,data,L=64,skip=50,LH=0.8,h0=-1):
+    data_size = data[::skip].shape[0]
+    pw_size = pw1.shape[0]
+    min_size,max_size = min(data_size,pw_size),max(data_size,pw_size)
+    if (int(min_size*1.1) > max_size):
+        data = data[:min_size*skip]
+        pw1 = pw1[:min_size]
+        
+    else:
+        raise ValueError("data and pw1/pw2 have two large a discrepancy in shapes: ",data.shape,pw1.shape)
+    
+    ks = k_list(pw1,L=L)
+    a_list = pw1.a
+    if h0==-1:
+        h0 = data.h[0]
+    ks *= (L*h0)/LH
+    
+    ks_a_matrix = np.einsum('a,b->ba',ks**2, 1/a_list**2)
+    # Column containing the U''(chi) terms for the different values of 'a'.
+    d2v_column = np.array(palatiniD2V(data[::skip]['mean1'],use_PM=False))
+    
+    # Assemble into an omega matrix (which will multiply the second term in the square brackets in Rubio, eq.4.20).
+    omegas = ks_a_matrix + d2v_column.reshape(-1,1)
+    # For information: print information about tachyonic modes. 
+    print("Tachyonic modes present: ", (omegas<0).any())
+    if (omegas<0).any(): print("Number of tachyonic modes: ", np.count_nonzero(omegas<0))
+    return ks_a_matrix, d2v_column.reshape(-1,1)
+    
 def n_palatini(pw1,pw2,data, L=64, skip=2,h0=-1,LH=6,use_ks=True):
     """
     Generate the 'number density' object found in the integral of the perturbation energy density.
@@ -246,7 +272,7 @@ def n_palatini(pw1,pw2,data, L=64, skip=2,h0=-1,LH=6,use_ks=True):
     data_size = data[::skip].shape[0]
     pw_size = pw1.shape[0]
     min_size,max_size = min(data_size,pw_size),max(data_size,pw_size)
-    if (int(min_size*1.1) > max_size or min_size!=max_size or True):
+    if (int(min_size*1.1) > max_size):
         data = data[:min_size*skip]
         pw1 = pw1[:min_size]
         pw2 = pw2[:min_size]
