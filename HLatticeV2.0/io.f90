@@ -90,6 +90,7 @@ contains
     lastTerm=',4x,E16.7'
     parentheses=')'
     screen_file = open_file("data/"//trim(run_name)//"_screen.log","a")
+    write(*,*) "Screen file unit:", screen_file%unit
     call get_energy()
     do i=1,ns
        avef(i)=sum(fields_f(i,:,:,:))/ncube
@@ -206,30 +207,30 @@ contains
   end subroutine output_pw
 
   subroutine print_settings_file()
-    type(file_pointer) fp
-    fp = open_file("data/"//trim(run_name)//"_sim_settings.log", "w")
-    write(fp%unit,*) "Number of fields: ", ns
-    write(fp%unit,*) "Initial boxsize times H: ", boxsize_H
-    write(fp%unit,*) "Discretisatin scheme [1-3]: ", DIS_SCHEME 
-    write(fp%unit,*) "GW turned on? [0/1]: ", WANTGW 
-    write(fp%unit,*) "Metric [1-4]: ", METRIC_OPTION
-    write(fp%unit,*) "Integrator [1-3]: ", INTEGRATOR
-    write(fp%unit,*) "Lattice points on side: ", n
-    write(fp%unit,*) "Conformal time used [0/1]: ", USE_CONFORMAL_TIME
-    write(fp%unit,*) "Max scale factor: ", stop_at_a
-    write(fp%unit,*) "Max steps: ", MAX_STEPS
-    write(fp%unit,*) "Feedback interval (for evolving h_ij): ", FEEDBACK_INTERVAL
-    write(fp%unit,*) "Checkpoints (for gauge scaling): ", CHECKPOINT_AND_GW_INTERVAL
-    write(fp%unit,*) "\n<Non-standard settings>"
-    write(fp%unit,*) "Sub integrator steps: ", SUB_INTEGRATOR_STEPS
-    write(fp%unit,*) "Reduced Planck mass: ", REDUCED_PLANCK_MASS
-    write(fp%unit,*) "Use standard wavenumber (i.e. not k_eff): ",USE_STANDARD_WAVENUMBER
-    write(fp%unit,*) "Only print a and H [0/1]: ", FEEDBACK_ONLYAH 
-    call close_file(fp)
+    type(file_pointer) settings_file
+    settings_file = open_file("data/"//trim(run_name)//"_sim_settings.log", "w")
+    write(settings_file%unit,*) "Number of fields: ", ns
+    write(settings_file%unit,*) "Initial boxsize times H: ", boxsize_H
+    write(settings_file%unit,*) "Discretisatin scheme [1-3]: ", DIS_SCHEME 
+    write(settings_file%unit,*) "GW turned on? [0/1]: ", WANTGW 
+    write(settings_file%unit,*) "Metric [1-4]: ", METRIC_OPTION
+    write(settings_file%unit,*) "Integrator [1-3]: ", INTEGRATOR
+    write(settings_file%unit,*) "Lattice points on side: ", n
+    write(settings_file%unit,*) "Conformal time used [0/1]: ", USE_CONFORMAL_TIME
+    write(settings_file%unit,*) "Max scale factor: ", stop_at_a
+    write(settings_file%unit,*) "Max steps: ", MAX_STEPS
+    write(settings_file%unit,*) "Feedback interval (for evolving h_ij): ", FEEDBACK_INTERVAL
+    write(settings_file%unit,*) "Checkpoints (for gauge scaling): ", CHECKPOINT_AND_GW_INTERVAL
+    write(settings_file%unit,*) "\n<Non-standard settings>"
+    write(settings_file%unit,*) "Sub integrator steps: ", SUB_INTEGRATOR_STEPS
+    write(settings_file%unit,*) "Reduced Planck mass: ", REDUCED_PLANCK_MASS
+    write(settings_file%unit,*) "Use standard wavenumber (i.e. not k_eff): ",USE_STANDARD_WAVENUMBER
+    write(settings_file%unit,*) "Only print a and H [0/1]: ", FEEDBACK_ONLYAH 
+    call close_file(settings_file)
   end subroutine print_settings_file
 
    subroutine output_fields()
-      type(file_pointer) fp
+      type(file_pointer) 
       integer(IB) nf,i,j
       do nf=1, ns
          fp = open_file("data/" // trim(run_name) // "_whole_field_"//trim(int2str(nf))//".log","a")
@@ -245,8 +246,9 @@ contains
          !    enddo
          ! enddo
          write(fp%unit,*) fields_f(nf,:,:,:)
+         call close_file(fp)
       enddo
-      call close_file(fp)
+      
    end subroutine output_fields
 
    subroutine output_momenta()
@@ -266,8 +268,9 @@ contains
          !    enddo
          ! enddo
          write(fp%unit,*) fields_p(nf,:,:,:)
+         call close_file(fp)
       enddo
-      call close_file(fp)
+      
    end subroutine output_momenta
 
    subroutine output_field_slice()
@@ -287,8 +290,9 @@ contains
          !    enddo
          ! enddo
          write(fp%unit,*) fields_f(nf,yz_lattice_slice,:,:)
+         call close_file(fp)
       enddo
-      call close_file(fp)
+      
    end subroutine output_field_slice
 
    subroutine output_momentum_slice()
@@ -308,8 +312,9 @@ contains
          !    enddo
          ! enddo
          write(fp%unit,*) fields_p(nf,yz_lattice_slice,:,:)
+         call close_file(fp)
       enddo
-      call close_file(fp)
+      
    end subroutine output_momentum_slice
 
    subroutine output_energy()
@@ -325,8 +330,8 @@ contains
          write(fp%unit,*) FPE_mesh
          write(fp%unit,*) FKE_mesh
          write(fp%unit,*) FGE_mesh
-      enddo
-      call close_file(fp)
+         call close_file(fp)
+      enddo  
    end subroutine output_energy
 
 end module io_utils
