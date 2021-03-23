@@ -648,8 +648,6 @@ def animate_potential(data,t_max=25):
     anim = animation.FuncAnimation(fig,animate,anim_data,interval=interval)
     fig.canvas.mpl_connect('button_press_event', onClick)
         
-data = import_screen(r'D:\Physics\MPhys Project\DatasetArcive\Remote tests\rtanh-math-test12_screen.log')
-animate_potential(data,t_max=50)
 #%% Get information from the sim_settings file.
 def sim_settings(filefile,delim=':'):
     # Relies on finding the colon ':' in any given line.
@@ -674,7 +672,10 @@ def sim_settings(filefile,delim=':'):
         l1 = file.readline().strip()
     return (descriptors,values)
         
-
+#%% Main
+if __name__=="__main__":
+    data = import_screen(r'D:\Physics\MPhys Project\DatasetArcive\Remote tests\rtanh-math-test12_screen.log')
+    animate_potential(data,t_max=50)
 
 
     

@@ -21,18 +21,18 @@ contains
     do
       call output_to_screen()
       call output_energy()
-      if (save_fields) then
-        write(*,*) "Saving fields at step ",sipar%nsteps, "..."
-        call output_fields()
-        call output_momenta()
-      endif 
-      if (save_slices) then 
-        write(*,*) "Saving slices at step ",sipar%nsteps, "..."
-        call output_field_slice()
-        call output_momentum_slice()
-      endif
       if(use_checkpoint .and. mod(sipar%nsteps,checkpoint_steps).eq.0 .and. (sipar%nsteps.gt.0 .or. write_check_at_step0))then
         call write_check()
+        if (save_fields .and. mod(sipar%nsteps,checkpoint_steps*save_slice_interval).eq.0) then
+          write(*,*) "Saving fields at step ",sipar%nsteps, "..."
+          call output_fields()
+          call output_momenta()
+        endif 
+        if (save_slices.and. mod(sipar%nsteps,checkpoint_steps*save_slice_interval)) then 
+          write(*,*) "Saving slices at step ",sipar%nsteps, "..."
+          call output_field_slice()
+          call output_momentum_slice()
+        endif        
       endif
       call step(n_feedback)
       
@@ -41,7 +41,12 @@ contains
           if(isnan(metric%a)) then
             write(*,*) "Metric a is NaN. Exiting..."
           else if(metric%a .ge. stop_at_a)then
+#if METRIC_PERTURB
+            write(*,*) "Reached max a. Exiting..."
+#else
             write(*,*) "Reached max a at a=",metric%a," Exiting..."
+            write(*,*) "Mode: no perturbations"
+#endif
           else
             write(*,*) "Reached max number of steps. Exiting..."
           end if

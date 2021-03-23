@@ -90,7 +90,6 @@ contains
     lastTerm=',4x,E16.7'
     parentheses=')'
     screen_file = open_file("data/"//trim(run_name)//"_screen.log","a")
-    write(*,*) "Screen file unit:", screen_file%unit
     call get_energy()
     do i=1,ns
        avef(i)=sum(fields_f(i,:,:,:))/ncube

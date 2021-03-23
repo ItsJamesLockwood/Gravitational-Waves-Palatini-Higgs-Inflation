@@ -91,17 +91,20 @@
 #define YZ_SLICE 1
 #define WANTFIELDS NO
 #define WANTSLICES YES
+!! As slices and fields are resource intensive, there is an option to save them less regularly than regular checkpoints.
+#define CHECKPOINTS_PER_SLICE 5
 
 !!*** below are some settings that you can, but usually do not need to change *****
 
 !!how often to write feedback to the screen (# of steps, recommended value is between 5 and 50)
 !!IMPORTANT: If you are calculating gravity waves in the mode METRIC_OPTION = FRW_BACKGROUND or MINKOWSKI_BACKGROUND, h_{ij} will be evolved only when the feedback is written. In such case you should not make this number too big (5-10 is recommended). 
 #define FEEDBACK_INTERVAL 4
+#define LINES_BETWEEN_SAVES 10
 
 !!how often to write the checkpoint files and gravity wave spectrum. It must be an interger times FEEDBACK_INTERVAL
 !! you can make it a huge number (e.g. 10000000*FEEDBACK_INTERVAL) to disable checkpoints
 !!IMPORTANT: for METRIC_OPTION = FRW_PERTURB_ADAPTIVE, the redefinition of spatial coordinates (i.e. gauge transformation) is done when the checkpoint files are written. So do not make it too small in this case.
-#define CHECKPOINT_AND_GW_INTERVAL (FEEDBACK_INTERVAL * 50)
+#define CHECKPOINT_AND_GW_INTERVAL (FEEDBACK_INTERVAL * LINES_BETWEEN_SAVES)
 
 !!stop the program if # of steps exceeds
 #define MAX_STEPS 100000

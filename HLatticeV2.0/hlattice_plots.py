@@ -56,6 +56,9 @@ fiop = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\field-io-run%i
 lf4iop = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\lf4-nsr-io-run%i_screen.log"
 t4iop = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\t4-nsr-io-run%i_screen.log"
 
+hybf = r"D:\Physics\MPhys Project\DatasetArcive\Remote tests\rhybrid-test%i_screen.log"
+hv = 1
+hyb_file = hybf %hv
 
 l4s = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\l0-ts-run%i_screen.log"
 l6s = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\l6-ts-run%i_screen.log"
@@ -119,8 +122,9 @@ if my_fft:
     save='no'
     
 filefile = r_math_f
+#filefile = hyb_file
 #filefile = r_math_dispo
-#filefile = fref
+filefile = fref
 ts_mode= False
 conf_type = True
 pw_field_number =1 #Choose which field spectrum to plot (start: 1)
@@ -138,11 +142,14 @@ save_img = False
 
 
 #%% Get sim settings variables
-strs, vals = sim_settings(filefile)
-RESOLUTION = vals[6] 
-SKIP = int(vals[11]/vals[10] )
-BOXSIZE_H = vals[1] 
-Mpl = vals[14]
+try:
+    strs, vals = sim_settings(filefile)
+    RESOLUTION = vals[6] 
+    SKIP = int(vals[11]/vals[10] )
+    BOXSIZE_H = vals[1] 
+    Mpl = vals[14]
+except FileNotFoundError:
+    BOXSIZE_H = 15
 #%% Function definitions
 
 def plot_pw_t(df1,save_img=True,img_name='df1',trim=10):
@@ -341,7 +348,58 @@ def plot_gw(df1, df2, rows=[]):
     plt.xlabel(r"Frequency spectrum in Hz")
     plt.ylabel("(Omega_{gw}h^2)")
 
+def plot_gw_t(gw1,gw2, pw1 = pd.DataFrame(),rows=[],alpha=0.5,tolerance=0.5,truncate=100,path=filefile):
+    fig, ax1 = plt.subplots()
+    fig.suptitle(trim_file_name(path))
+    freqs = gw1.drop('a',axis=1)
+    gw_intensity = gw2.drop('a',axis=1)
+    a_list = gw1['a']
+    #Convert truncate percentage to an index
+    truncate = int(truncate/100 * pw1.shape[0])
+    #Find those frequencies which vary little over the course of the simulation
+    i=0 
+    # Find i such that the difference between the start and end is within the tolerance compared to the next band.
+    while i<freqs.shape[0]-1 and (freqs.iloc[0,i]-freqs.iloc[-1,i]<0.5*(freqs.iloc[-1,i+1]-freqs.iloc[-1,i])):
+        i += 1
+    print("Tolerance %i %% -> truncation: "%(tolerance*100),i)
+    #Ensure there are not too many labels
+    if i<14:
+        step = 1
+    else: 
+        step = ceil(freqs.shape[1]/14)
+    colors = np.flip(cm.viridis(np.linspace(0,1,i)),axis=0)
+    ax_twin =  ax1.twinx()
+    ax1.patch.set_visible(False)
+    ax_twin.set_zorder(0)
+    ax1.set_zorder(1)
+
+    for j in range(len(freqs.iloc[:,:i].columns)):
+        if j%step==0:
+            ax1.plot(a_list,gw_intensity.iloc[:,j],color=colors[j],label=freqs.iloc[:,j*step].median())
+        else:
+            ax1.plot(a_list,gw_intensity.iloc[:,j],color=colors[j])
+    if pw1.size>0:
+        c2 = np.flip(cm.magma(np.linspace(0,1,len(pw1.columns)-1)),axis=0)
+        for j in range(len(pw1.columns)-1):
+            ax_twin.plot(pw1['a'][:truncate],np.log(pw1[:truncate].iloc[:,j]/pw1[:truncate].iloc[0,j]),
+                     color=c2[j],
+                     alpha=alpha)        
+    
+    ax1.set_yscale('log')
+    ax1.set_title("Evolution of the gravity waves modes (tolerance: %i%%)"%(100*tolerance))
+    ax1.legend()
+        
+  
+    
 def mission_control(data,ns,rows=[],error=True,save_panel=False,save_plots=False,path=filefile,truncate=0,ts=False):
+    # Try first to import gravitational wave files
+    GW_files_found = True
+    try:
+        gw1, gw2 = import_GW(trim_name(filefile) + '_GW.log')
+    except FileNotFoundError:
+        print("No GW files found. Proceeding without...")
+        GW_files_found = False
+        
     png_name = trim_file_name(path)
     if truncate!=0:
         png_name += '_trunc' + str(truncate)
@@ -365,18 +423,54 @@ def mission_control(data,ns,rows=[],error=True,save_panel=False,save_plots=False
     c2 = np.flip(cm.magma(np.linspace(0,1,len(ns.columns)-1)),axis=0)
     ax_twin =  ax[0,0].twinx()
     for j in range(len(ns.columns)-1):
-        #pass
         ax_twin.plot(ns['a'][:truncate],np.log(pw_data1[:truncate].iloc[:,j]/pw_data1[:truncate].iloc[0,j]),
                      color=c2[j],
                      alpha=1)
     
         
     #Subplot 0,1
-    diffs = data['a'].diff()[1:]
-    ax[0,1].set_title("Increment of a for each step j")
-    ax[0,1].plot(data.index[1:][:truncate], diffs[:truncate])
-    #ax[0,1].plot(data.a[1:][:truncate], diffs[:truncate])
-    if ts:
+    if (not ts) and GW_files_found:
+        freqs = gw1.drop('a',axis=1)
+        gw_intensity = gw2.drop('a',axis=1)
+        a_list = gw1['a']
+        #Find those frequencies which vary little over the course of the simulation
+        tolerance = 0.99
+        i=0 
+        # Find i such that the difference between the start and end is within the tolerance compared to the next band.
+        while i<freqs.shape[0]-1 and (freqs.iloc[0,i]-freqs.iloc[-1,i]<0.5*(freqs.iloc[-1,i+1]-freqs.iloc[-1,i])):
+            i += 1
+        print("Tolerance %i %% -> truncation: "%(tolerance*100),i)
+        #Ensure there are not too many labels
+        if i<14:
+            step = 1
+        else: 
+            step = ceil(freqs.shape[1]/14)
+        colors = np.flip(cm.viridis(np.linspace(0,1,i)),axis=0)
+        ax_twin =  ax[0,1].twinx()
+        ax[0,1].patch.set_visible(False)
+        ax_twin.set_zorder(0)
+        ax[0,1].set_zorder(1)
+    
+        for j in range(len(freqs.iloc[:,:i].columns)):
+            if j%step==0:
+                ax[0,1].plot(a_list,gw_intensity.iloc[:,j],color=colors[j],label=freqs.iloc[:,j*step].median())
+            else:
+                ax[0,1].plot(a_list,gw_intensity.iloc[:,j],color=colors[j])
+        c3 = np.flip(cm.magma(np.linspace(0,1,len(ns.columns)-1)),axis=0)
+        for j in range(len(ns.columns)-1):
+            ax_twin.plot(ns['a'][:truncate],np.log(pw_data1[:truncate].iloc[:,j]/pw_data1[:truncate].iloc[0,j]),
+                     color=c3[j],
+                     alpha=.6)        
+        
+        ax[0,1].set_yscale('log')
+        ax[0,1].set_title("Evolution of the gravity waves modes (tolerance: %i%%)"%(100*tolerance))
+        ax[0,1].legend()
+        
+    else:
+        diffs = data['a'].diff()[1:]
+        ax[0,1].set_title("Increment of a for each step j")
+        ax[0,1].plot(data.index[1:][:truncate], diffs[:truncate])
+        #ax[0,1].plot(data.a[1:][:truncate], diffs[:truncate])    
         ax[0,1].plot(data.index[1:][:truncate], diffs[:truncate],'r.')
         ewidth = (data.kratio-0.5*(4*data.pratio+2*data.gratio)).max() - (data.kratio-0.5*(4*data.pratio+2*data.gratio)).min()
         emid= (data.kratio-0.5*(4*data.pratio + 2*data.gratio)).min() + ewidth/2
@@ -441,9 +535,9 @@ def mission_control(data,ns,rows=[],error=True,save_panel=False,save_plots=False
     ax[1,1].plot(data['a'][:truncate],data['pratio'][:truncate],linestyle='dashed',label='Potential energy')
     ax[1,1].plot(data['a'][:truncate],data['kratio'][:truncate],linestyle='dashed',label='Kinetic energy')
     ax[1,1].plot(data['a'][:truncate],data['gratio'][:truncate],'b',label='Gradient of field energy')
-    ax[1,1].plot(data['a'][:truncate],data['gratio'][:truncate]*etot,color='orange',label='Gradient energy (net)')
+    #ax[1,1].plot(data['a'][:truncate],data['gratio'][:truncate]*etot,color='orange',label='Gradient energy (net)')
     ax[1,1].plot(data['a'][:truncate],etot/etot[0],color='purple',label='Total energy $E^{tot}/E_0^{tot}$')
-    ax[1,1].legend()
+    ax[1,1].legend(loc=1)
     
     c2 = np.flip(cm.magma(np.linspace(0,1,len(ns.columns)-1)),axis=0)
     for j in range(len(ns.columns)-1):
@@ -454,43 +548,44 @@ def mission_control(data,ns,rows=[],error=True,save_panel=False,save_plots=False
         ax[1,1].legend()
     
     #Subplot 0,2
-    ax[0,2].set_yscale('log')    
-    ax[0,2].set_xscale('log')
-    
-    gw1, gw2 = import_GW(trim_name(filefile) + '_GW.log')
-    frequencies = gw1.drop(['a'],axis=1)
-    grav_intensity = gw2.drop(['a'],axis=1)
-    a_list = gw1['a']
-    if rows==[]:
-        #rows.append(int(gw1.shape[0]/2))
-        #colors = np.flip(cm.magma(np.linspace(0,1,len(rows))),axis=0)
-        rows.append(int(gw1.shape[0]/2))
-        colors = np.flip(cm.magma(np.linspace(0,1,gw1.shape[0])),axis=0)
-    else:
-        #colors = np.flip(cm.magma(np.linspace(0,1,len(rows))),axis=0)
-        colors = np.flip(cm.magma(np.linspace(0,1,gw1.shape[0])),axis=0)
-
-    print(rows)
-    # Plot all of the spectra, but only label those in the selected rows
-    for j in range(gw1.shape[0]):
-        #Retrieve k values from the column headers, discarding the 'a' in the last column
-        xs= gw1.iloc[j,:-1]
-        ys = gw2.iloc[j,:-1]
-        if j in rows:
-            ax[0,2].plot(xs,ys,color=colors[j], label=a_list[j])
+    if GW_files_found:
+        ax[0,2].set_yscale('log')    
+        ax[0,2].set_xscale('log')
+        
+        frequencies = gw1.drop(['a'],axis=1)
+        grav_intensity = gw2.drop(['a'],axis=1)
+        a_list = gw1['a']
+        if rows==[]:
+            #rows.append(int(gw1.shape[0]/2))
+            #colors = np.flip(cm.magma(np.linspace(0,1,len(rows))),axis=0)
+            rows.append(int(gw1.shape[0]/2))
+            colors = np.flip(cm.magma(np.linspace(0,1,gw1.shape[0])),axis=0)
         else:
-            ax[0,2].plot(xs,ys,color=colors[j])
-            
-    ax[0,2].legend(title='Spectrum at $a=$',loc='lower right')
-    ax[0,2].set_title("Gravitational waves spectrum at different scale factors $a$ ")
-    ax[0,2].set_xlabel(r"Frequency spectrum in Hz")
-    ax[0,2].set_ylabel("(Omega_{gw}h^2)")
-
+            #colors = np.flip(cm.magma(np.linspace(0,1,len(rows))),axis=0)
+            colors = np.flip(cm.magma(np.linspace(0,1,gw1.shape[0])),axis=0)
     
+        print(rows)
+        # Plot all of the spectra, but only label those in the selected rows
+        for j in range(gw1.shape[0]):
+            #Retrieve k values from the column headers, discarding the 'a' in the last column
+            xs= frequencies.iloc[j,:]
+            ys = grav_intensity.iloc[j,:]
+            if j in rows:
+                ax[0,2].plot(xs,ys,color=colors[j], label=a_list[j])
+            else:
+                ax[0,2].plot(xs,ys,color=colors[j])
+                
+        ax[0,2].legend(title='Spectrum at $a=$',loc='lower right')
+        ax[0,2].set_title("Gravitational waves spectrum at different scale factors $a$ ")
+        ax[0,2].set_xlabel(r"Frequency spectrum in Hz")
+        ax[0,2].set_ylabel("(Omega_{gw}h^2)")
+    else:
+        ax[0,2].set_title("FILES NOT FOUND: Gravitational waves spectrum")
+        
     #Subplot 1,2
     ax_twin = ax[1,2].twinx()
     p1, = ax[1,2].plot(data['a'], data['mean1']**2 + data['rms1']**2,label=r"$\langle \phi^{2} \rangle $")
-    p2, = ax_twin.plot(data['a'],data['mean1'],color=prop_colors[1],label=r"$\rangle \phi \langle")
+    p2, = ax_twin.plot(data['a'],data['mean1'],color=prop_colors[1],label=r"$\langle \phi \rangle$")
     lns = [p1,p2]
     ax[1,2].legend(handles=lns)
     ax[1,2].set_title("Comparison of the average field and squared field values")
@@ -512,7 +607,9 @@ def mission_control(data,ns,rows=[],error=True,save_panel=False,save_plots=False
         fig.savefig(png_name + '_increments.png', bbox_inches=extents[1].expanded(padx, pady))
         fig.savefig(png_name + '_n_k.png', bbox_inches=extents[2].expanded(padx, pady))
         fig.savefig(png_name + '_energies.png', bbox_inches=extents[3].expanded(padx, pady))
-    
+
+#%% Hybrid model: if hybrid, plot figure 3 from Huang
+
     
 #%% Main
 
@@ -589,8 +686,10 @@ if ts_mode:
     plt.yscale('log')
     
 #%% Import GW
-gw1, gw2 = import_GW(trim_name(filefile) + '_GW.log')
-
+try:
+    gw1, gw2 = import_GW(trim_name(filefile) + '_GW.log')
+except FileNotFoundError:
+    pass
 #%% Lattice slices
 
 fields_path = trim_name(filefile) + '_whole_field_%i.%s'%(pw_field_number,form)
