@@ -44,10 +44,10 @@
 !!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
 !!number of scalar fields, the global variable "ns" in the code.
-#define NUM_SCALAR_FIELDS 1
+#define NUM_SCALAR_FIELDS 3
 
 !!the length of each edge times Hubble: In HLattice the speed of light is defined to be 1, so this quantity is dimensionless. It should be chosen such that the dominating growing mode is captured. 
-#define INIT_BOXSIZE_TIMES_H 15.
+#define INIT_BOXSIZE_TIMES_H 0.8
 
 !! define the discretization scheme
 #define DIS_SCHEME HLATTICE2
@@ -72,11 +72,11 @@
 #define SIMU_RESOLUTION 64
 
 !! want gravitational waves? You can use it for any METRIC_OPTION. In the case METRIC_OPTION = MINKOWSKI_BACKGROUND or FRW_BACKGROUND, the metric perturbations will be integrated without giving feedback to the scalar fields.
-#define WANTGW NO
+#define WANTGW YES
 
 #if METRIC_OPTION ==  FRW_BACKGROUND
 !! use conformal time? This only works for METRIC_OPTION == FRW_BACKGROUND
-#define USE_CONFORMAL_TIME YES
+#define USE_CONFORMAL_TIME NO
 
 #else
 #define USE_CONFORMAL_TIME NO
@@ -90,7 +90,7 @@
 !!By default, set to the first slice
 #define YZ_SLICE 1
 #define WANTFIELDS NO
-#define WANTSLICES YES
+#define WANTSLICES NO
 
 !!*** below are some settings that you can, but usually do not need to change *****
 

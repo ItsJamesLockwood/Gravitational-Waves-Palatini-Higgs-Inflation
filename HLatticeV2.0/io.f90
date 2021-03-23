@@ -81,7 +81,7 @@ contains
   subroutine output_to_screen()
     DEFINE_IND
     character (len=20):: formatString
-    character (len=100):: totalFormat
+    character (len=200):: totalFormat
     character (len=10):: parentheses
     character (len=20):: lastTerm
     real(dl) avef(ns),flucf(ns)
@@ -90,6 +90,7 @@ contains
     lastTerm=',4x,E16.7'
     parentheses=')'
     screen_file = open_file("data/"//trim(run_name)//"_screen.log","a")
+    write(*,*) "Screen file pointer:", screen_file%unit
     call get_energy()
     do i=1,ns
        avef(i)=sum(fields_f(i,:,:,:))/ncube
@@ -148,6 +149,7 @@ contains
     character(LEN=128)::fmt
 #if HIJ_DEFINED
     gw_file = open_file("data/"//trim(run_name)//"_GW.log", "a")
+    write(*,*) "GW file pointer:", gw_file%unit
     tote=potential_energy()+fields_kinetic_energy()+fields_gradient_energy()
     fmt='('//trim(int2str(fft_numk))//'G16.7)'
     call get_GW_spectrum(pk)
@@ -184,6 +186,7 @@ contains
     do i=1,ns
        pw_file = open_file("data/"//trim(run_name)//"_pw_"//trim(int2str(i))//".log","a")
        write(pw_file%unit,'(G16.7)') metric%a
+       write(*,*) "PW file pointer:", pw_file%unit
        fft_ind_re = i
        fft_ind_im = i
        call fft_getPowerSpectrum(fields_f,fields_p,fpk, pipk)

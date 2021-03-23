@@ -1,31 +1,32 @@
-!!The model here is V=lambda * Mpl**2/(4 xi**2) * tanh(xi * chi/ Mpl) (default model in LatticeEasy and DEFROST, see hep-ph 9705347)
-
+!!Hybrid Inflation model. See arxiv 0812.2917
+!!change NUM_SCALAR_FIELDS to 3 in configure.h before you use this model
 module model
   use define_fields
   implicit none
 
 #include "configure.h"
+
 !!*******************define the couplings etc. for your model *************
 !!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !!the predefined constants that you can use: GeV, MPl (the reduced Planck Mass), PlanckMass (the Planck Mass), Mplsq (square of the reduced Planck Mass)
-  real(dl),parameter:: lambda =1.d-4
-  real(dl),parameter:: Nstar = 50
-  real(dl),parameter:: xi = 3.8d6 * Nstar**2 * lambda
-  real(dl),parameter:: xi2 = xi**2
-  real(dl),parameter:: xisqrt = xi**0.5 
-  
-  real(dl),parameter:: coef = lambda * Mplsq**2 / 4.d0 / xi2
-  real(dl),parameter:: b = xisqrt/Mpl
-  real(dl),parameter:: suppression = 1.d0 
-  real(dl),parameter:: time_suppression = 80._dl
-  !!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+  real(dl),parameter:: sqrt_lambda = 1.e-7_dl
+  real(dl),parameter:: lambda = sqrt_lambda**2
+  real(dl),parameter:: cpl_g = const_sqrt2 * sqrt_lambda
+  real(dl),parameter:: g2 = cpl_g**2
+  real(dl),parameter:: viv = 1.e-3_dl * PlanckMass
+  real(dl),parameter:: v2 = viv**2
+  real(dl),parameter:: V_c = 1.e-5_dl
+  real(dl),parameter:: phi_c = sqrt_lambda / cpl_g * viv
+!!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
 !!***************define macros here;************************
 !!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-#define PHI f(1) 
-!! Note: PHI was used to denote the Higgs field h
+#define PHI f(1)
+#define PHI2 (PHI**2)
+#define RECHI f(2)
+#define IMCHI f(3)
+#define CHI2 (RECHI**2+IMCHI**2)
 !!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-
 
 !!***************** define initial conditions ******************************
 !!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -33,141 +34,108 @@ module model
 !!To be self consistent you may want to get the background \phi and \dot\phi by solving the background equations from inflation. HLattice will do that for you.
 !!Just define where you want to start the background evolution. Note this is NOT where you start the lattice simulation, which is defined in a subroutine "start_box_simulation" in this file.
  !!initial field values
-  real(dl),dimension(ns)::init_fields= +0.00514349_dl  * Mpl !!-1.71633d-3 * Mpl
+  real(dl),dimension(ns)::init_fields=(/ &
+       phi_c*0.9975, 0._dl, 0._dl &
+       /)
 
 !!Initial field momenta
  !! if set to be greater than or equal to Mplsq (square of reduced Planck Mass), the initial field momenta will be determined by slow-roll inflationary attractor
   !! Note again these are NOT the initial field momenta where you start the lattice simulation, the are the initial values that HLattice take to evolve the inflaton. 
-  real(dl),dimension(ns):: init_momenta =  -1.d-10 * Mplsq !-1.d-9 * PlanckMass**2 
-
+  real(dl),dimension(ns):: init_momenta = (/ &
+        -V_c * lambda*v2/cpl_g, 0._dl, 0._dl  & 
+       /)
 
 !!put initial random Gaussian perturbations in the fields when you starts lattice simulation;
 !!the amplitude of fluctuations are defined in subroutine model_Power
-  logical,dimension(ns)::do_init =  .true. 
+  logical,dimension(ns)::do_init = (/ .false., .true., .true. /)
 
 !!Important note: init_fields and init_momenta will be changed after the initialization. After the subroutine init() is called, they will equal to the the fields and field momenta AT THE BEGINNING OF LATTICE SIMULATION. In addition, the Hubble parameter at the beginning of lattice simulation will be saved to a global variable "init_Hubble".
 !!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
+
 contains
-  
-!! the potential of the scalar fields
+
+  !!the potential  
   function potential(f)
     real(dl) f(ns)
     real(dl) potential
-    potential = coef * TANH( b * PHI )**4 
+    potential = (lambda/4._dl) * (CHI2 - v2)**2 + (g2/2._dl) * PHI**2 * CHI2
   end function potential
 
-!! the derivative of pential w.r.t. to the fields
-!! return an array (dV/df1, dV/df2, ...)
+  !!the derivative of potential w.r.t. the fields
   function dVdf(f)
     real(dl) f(ns)
     real(dl),dimension(ns):: dVdf
-    dVdf = 4._dl * coef * b * TANH( b * PHI )**3 / COSH(b * PHI )**2 
+    dVdf = (/ &
+         g2*CHI2*PHI, &
+         lambda *RECHI*(CHI2 - v2) + g2 * RECHI * PHI**2,     &
+         lambda *IMCHI*(CHI2 - v2) + g2 * IMCHI * PHI**2     &
+         /)
   end function dVdf
 
-!!d^2 V / d f_{fld}^2,, here fld can be 1,2,..., ns
+!!d^2V/df^2, fld can be 1, 2,.., NUM_SCALAR_FIELDS
   function mass_sq(f,fld)
     real(dl) f(ns)
     real(dl):: mass_sq
     integer fld
     select case(fld)
     case(1)
-       mass_sq = 4._dl*coef* (b**2) * (3._dl*TANH(b*PHI)**2 / COSH(b*PHI)**4 - 2._dl*TANH(b*PHI)**4 / COSH(b*PHI)**2 )
-    case default
-       stop "wrong argument fld in mass_sq"
+       mass_sq = g2*CHI2
+    case(2)
+       mass_sq = lambda*(3.*RECHI**2+IMCHI**2 - v2) + g2 * PHI2 
+    case(3)
+       mass_sq = lambda*(3.*IMCHI**2+RECHI**2 - v2) + g2 * PHI2
     end select
   end function mass_sq
 
-!!define the condition to start box simulation
-!!here array f -> the background field values (\phi_1, \phi_2, ...)
-!! array p-> the background field derivative, (d\phi_1/dt, d\phi_1/dt, ... )
+!!define the condition to start the lattice simulation
   function start_box_simulation(f,p)
     logical start_box_simulation
     real(dl),dimension(ns)::f,p
-!!LatticeEasy default, i.e. d \phi/dt + H phi = 0 (or equivalently d(a\phi)/dt =0
-    !!start_box_simulation = (p(1) + sqrt((sum(p**2)/2.+potential(f))/3.)/Mpl*f(1) .lt. 0.)
-!! If you want to start the lattice simualtion immediately
-    start_box_simulation = .true.
-!! If you want to use DEFROST starting point, the end of inflation, i.e. \ddot a =0
-    !!start_box_simulation = (potential(f) .le. sum(p**2) )
+    start_box_simulation = .true. !!here for Hybrid inflation we do not specify the inflationary potential, instead we use V_c as a free parameter, see arXiv: 0812.2917
   end function start_box_simulation
 
-!!define the time step; you will get significant error if you use physical time and 2nd order integrator (the integrator is chosen in parameters.f90)
-!!I strongly recommend you use conformal time for this model, for which a second order integrator will do ok (if metric perturbs are off)
   function model_dt_per_step()
     real(dl) model_dt_per_step
-#if USE_CONFORMAL_TIME
-    !!when metric backreaction is off, just use conformal time; Easy and very stable;
-    model_dt_per_step = metric%dx/32._dl / time_suppression
-#else
-    !!when metric backreaction is on, a bit tricky for this model cz HLattice use synchronous gauge (and physical time t).
-    !!Better not continuously change dt; Use step functions.
-    model_dt_per_step = metric%dx/64._dl*ceiling(metric%a/5._dl) / time_suppression
-#endif
+    model_dt_per_step = metric%dx/64.d0
   end function model_dt_per_step
 
-!!return an array (|f_k|^2, |f'_k|^2) for fields initialization. 
-!!remember always set them to be zero for k=0.
   function model_Power(fld,k)
     real(dl),dimension(2):: model_Power
     real(dl) k,omega
     logical,save::warning = .true.
-    logical,save::kmin_warning = .true.
     integer(IB) fld
     if(n*k*metric%dx .lt. const_pi) then
-      write(*,*) "k:",k,"Zero due to: n*k*dx < pi"
-      model_Power =0._dl * suppression
-      return
+       model_Power =0._dl
+       return
     endif
-    !check that k > k_min=a * H_init (note: k in code is defined as comoving momentum):
-    if(k.gt.Init_Hubble)then 
-      !define omega^2:
-      omega=k**2+mass_sq(init_fields,fld)
-      !check if omega / effective mass squared is positive
-      if(omega.gt.0.)then
-         omega=sqrt(abs(omega))
-         !TODO: why is this statement necessary?
-         if(omega*metric%dx .le. const_2pi .and. omega*metric%dx*n .ge. const_2pi)then
-            model_Power(1) = 0.5_dl/omega * suppression
-            model_Power(2) = 0.5_dl*omega * suppression
-            write(*,*) "k:",k,"parametric ","model_power:",model_Power
-            return
-         endif
-      !We now consider the tachyonic region (i.e. k_min < k < k_max)
-      else
-        !Set the initial conditions from arxiv:1902.10148. 
-         !!model_Power(1) = Mpl/k /metric%a**3 * suppression
-         !!model_Power(2) = xisqrt/SQRT(lambda)* k/Mpl /metric%a**3 * suppression
-          model_Power(1) = 0.5_dl/k *suppression
-          model_Power(2) = 0.5_dl*k *suppression
-          write(*,*) "k:",k,"tachyonic ","model_power:", model_Power
+    if(k.gt.Init_Hubble)then
+       omega=k**2+mass_sq(init_fields,fld)-2.25*Init_Hubble**2
+       if(omega.gt.0.)then
+          omega=sqrt(abs(omega))
+          if(omega*metric%dx .le. const_2pi .and. omega*metric%dx*n .ge. const_2pi)then
+             model_Power(1) = 0.5_dl/omega
+             model_Power(2) = 0.5_dl*omega
+             return
+          endif
+       else
+          model_Power(1) = 0.5_dl/k
+          model_Power(2) = 0.5_dl*k
           if(warning)then
-            write(*,*) "Tachyonic region initialization may be not correct"
-            warning = .false.
-         endif
-         return
-      endif
-   !When k < k_min: no longer in tachyonic region
-   else
-      !model_Power = 0._dl * suppression
-      if (kmin_warning) then
-        write(*,*) "effective k_min / Hubble = ", k_unit/metric%physdx/Init_Hubble
-        write(*,*) "NOTE: REGION OF k < k_min MAY NOT YIELD ACCURATE RESULTS"
-        kmin_warning = .false.
-      endif
-      !stop "This simulation is now botched due to k<k_min"
-      model_Power(1) = 0.5_dl/k*(init_Hubble/k)**2 * suppression
-      model_Power(2) = 0._dl * suppression
-      write(*,*) "k:",k,"k<k_min ","model_power:", model_Power
-      return
-   endif
-   model_Power = 0._dl * suppression
-   write(*,*) "k", k, "parametric, but metric incorrect size (?)","model_power:",model_Power
-   return
-   end function model_Power
+             write(*,*) "Tachyonic region initialization may be not correct"
+             warning = .false.
+          endif
+          return
+       endif
+    else
+       model_Power(1) = 0.5_dl/k*(init_Hubble/k)**2
+       model_Power(2) = 0._dl
+       return
+    endif
+    model_Power = 0._dl
+    return
+  end function model_Power
 
-
-!!model outputs
   subroutine model_output(i)
     !! i = 1; called before initialization
     !! i = 2; called after initialization
@@ -177,25 +145,30 @@ contains
     type(file_pointer) fp
     select case(i)
     case(1)
-!!A check for lambda phi^4 model, for which conformal time is a better choice.
-!!#if ! USE_CONFORMAL_TIME && ! METRIC_PERTURB
-!!       stop "you may want to turn on USE_CONFORMAL_TIME in configure.h"
-!!#endif
+#if USE_CONFORMAL_TIME
+       stop "you probably want to use physical time for this model"
+#endif
     case(2)
        fp = open_file("data/"//trim(run_name)//"_model.info", "w")
-       write(fp%unit,*) "V = lambda * Mpl^2 /(4 xi^2) tanh(xi^.5 chi/Mpl)"
-       write(fp%unit,*) "reduced Planck Mass M_p = ", Mpl
-       write(fp%unit,*) "lambda = ",lambda
-       write(fp%unit,*) "xi = ",xi
-       write(fp%unit,*) "n = ",n
-       write(fp%unit,*) "dx=",metric%dx
-       write(fp%unit,*) "Initial fields values:", Init_fields
-       write(fp%unit,*) "Initial momenta:", Init_momenta
-       write(fp%unit,*) "effective k_min / Hubble = ", k_unit/metric%physdx/Init_Hubble
-       write(fp%unit,*) "effective k_max / Hubble = ", fft_numk*k_unit/metric%physdx/Init_Hubble
+       write(fp%unit,'(a)') "V = lambda/4 (chi^2-v^2)^2 + g^2/2 phi^2 chi^2"
+       write(fp%unit,'(a,G16.7)') "reduced Planck Mass M_p = ", Mpl
+       write(fp%unit,'(a,G16.7)') "lambda = ",lambda
+       write(fp%unit,'(a,G16.7)') "g^2 = ", g2
+       write(fp%unit,'(a,G16.7)') "V_c = ", V_c
+       write(fp%unit,'(a,G16.7)') "v^2 = ", v2
+       write(fp%unit,'(a,I5)') "n = ",n
+       write(fp%unit,'(a,G16.7)') "dx=",metric%dx
+       write(fp%unit,'(a,'//trim(int2str(ns))//'G16.7)') "Initial fields values:", Init_fields
+       write(fp%unit,'(a,'//trim(int2str(ns))//'G16.7)') "Initial momenta:", Init_momenta
+       write(fp%unit,'(a,G16.7)') "Initial Hubble = ",Init_Hubble
+       write(fp%unit,'(a,G16.7)') "\dot\phi/H = ",Init_momenta(1)/Init_Hubble
+       write(fp%unit,*) "k_min = ", const_2pi/n/metric%physdx
+       write(fp%unit,*) "k_max = ", const_2pi/n/metric%physdx*fft_numk
+       write(fp%unit,*) "k* = ", (2.*g2*phi_c*abs(Init_momenta(1)))**(1./3._dl)
        call close_file(fp)
-       write(*,*) "effective k_min / Hubble = ", k_unit/metric%physdx/Init_Hubble
-       write(*,*) "effective k_max / Hubble = ", fft_numk*k_unit/metric%physdx/Init_Hubble
+       write(*,*) "k_min = ", const_2pi/n/metric%physdx
+       write(*,*) "k_max = ", const_2pi/n/metric%physdx*fft_numk
+       write(*,*) "k* = ", (2.*g2*phi_c*abs(Init_momenta(1)))**(1./3._dl)
     case(3)
     case(4)
     case default
@@ -205,7 +178,3 @@ contains
   end subroutine model_output
 
 end module model
-
-
-
-

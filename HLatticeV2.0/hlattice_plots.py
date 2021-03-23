@@ -56,6 +56,9 @@ fiop = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\field-io-run%i
 lf4iop = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\lf4-nsr-io-run%i_screen.log"
 t4iop = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\t4-nsr-io-run%i_screen.log"
 
+hybp = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\hybrid-test%i_screen.log"
+hybv = 2
+hybf = hybp % (hybv)
 
 l4s = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\l0-ts-run%i_screen.log"
 l6s = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\l6-ts-run%i_screen.log"
@@ -119,7 +122,7 @@ if my_fft:
     save='no'
     
 filefile = r_math_f
-#filefile = r_math_dispo
+#filefile = hybf
 #filefile = fref
 ts_mode= False
 conf_type = True
