@@ -230,7 +230,7 @@ contains
   end subroutine print_settings_file
 
    subroutine output_fields()
-      type(file_pointer) 
+      type(file_pointer) fp
       integer(IB) nf,i,j
       do nf=1, ns
          fp = open_file("data/" // trim(run_name) // "_whole_field_"//trim(int2str(nf))//".log","a")
