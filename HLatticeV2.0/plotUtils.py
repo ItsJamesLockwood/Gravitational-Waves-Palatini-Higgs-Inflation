@@ -330,7 +330,7 @@ def plot_mesh(field_df,a_ind=0,cond=['x',0],use_FFT=False,use_contour=False):
     resetax._button = button
     return fvals
 
-def import_slice(slice_file,sep="SEPARATOR"):
+def import_slice(slice_file,sep="SEPARATOR",strict=True):
     '''
     Import slice of field which has been stored directly as a mesh. 
     '''
@@ -345,9 +345,19 @@ def import_slice(slice_file,sep="SEPARATOR"):
     l1 = file.readline().strip()    
     l2 = file.readline().strip()
     l3 = file.readline().strip()
-    while l1!='':        
+    counter = 0
+    while l1!='':      
+        counter +=1
         if l1!=sep:
-            raise ValueError("Expected separator in second line. Instead found '"+l1+"'.")    
+            if strict:
+                raise ValueError("Expected separator in second line. Instead found '"+l1[:1000]+"' at line %i."%counter) 
+            else:
+                print("WARNING: skipping at line %i due to misplaced separator..."%counter)
+
+            while l1!='' and l1!=sep:
+                l1 = file.readline().strip()
+            l2 = file.readline().strip()
+            l3 = file.readline().strip()
         if l2==sep or l3==sep:
             raise ValueError("Expected either metric or field mesh in lines 2 and 3. Instead found the separator.")
         a = float(l2)
@@ -459,7 +469,7 @@ def plot_slices(slice_df,a_ind=0,use_FFT=False,use_contour=False, title=''):
     playax._button = playButton
     return fvals
 
-def import_energy(energy_file,sep="SEPARATOR"):
+def import_energy(energy_file,sep="SEPARATOR",strict=True):
     '''
     Import energy of field in z axis, which has been stored directly as a mesh. 
     The x/y values have been averaged out for each z.
@@ -479,10 +489,18 @@ def import_energy(energy_file,sep="SEPARATOR"):
     l3 = file.readline().strip()
     l4 = file.readline().strip()
     l5 = file.readline().strip()
-
+    counter = 0
     while l1!='' and l2!='' and l3!='' and l4!='' and l5!='':        
+        counter +=1
         if l1!=sep:
-            raise ValueError("Expected separator in second line. Instead found '"+l1+"'.")    
+            if strict:
+                raise ValueError("Expected separator in second line. Instead found '"+l1[:1000]+"' at line %i."%counter) 
+            else:
+                print("WARNING: skipping at line %i due to misplaced separator..."%counter)
+            while l1!='' and l1!=sep:
+                l1 = file.readline().strip()
+            l2 = file.readline().strip()
+            l3 = file.readline().strip()
         if l2==sep or l3==sep or l4==sep or l5==sep:
             raise ValueError("Expected either metric or field mesh in lines 2 and 3. Instead found the separator.")
         a = float(l2)

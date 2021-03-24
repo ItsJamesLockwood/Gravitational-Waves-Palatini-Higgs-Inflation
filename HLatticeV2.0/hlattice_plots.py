@@ -57,8 +57,12 @@ lf4iop = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\lf4-nsr-io-r
 t4iop = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\t4-nsr-io-run%i_screen.log"
 
 hybf = r"D:\Physics\MPhys Project\DatasetArcive\Remote tests\rhybrid-test%i_screen.log"
-hv = 1
+hv = 7
 hyb_file = hybf %hv
+
+
+eliot1 = r"D:\Physics\MPhys Project\DatasetArcive\Remote tests\noMpl_tach_1_1024_slices_screen.log"
+
 
 l4s = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\l0-ts-run%i_screen.log"
 l6s = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\l6-ts-run%i_screen.log"
@@ -122,9 +126,9 @@ if my_fft:
     save='no'
     
 filefile = r_math_f
-#filefile = hyb_file
-#filefile = r_math_dispo
-filefile = fref
+filefile = hyb_file
+filefile = eliot1
+#filefile = fref
 ts_mode= False
 conf_type = True
 pw_field_number =1 #Choose which field spectrum to plot (start: 1)
@@ -149,7 +153,9 @@ try:
     BOXSIZE_H = vals[1] 
     Mpl = vals[14]
 except FileNotFoundError:
+    print("Did not update settings...")
     BOXSIZE_H = 15
+    SKIP = 5
 #%% Function definitions
 
 def plot_pw_t(df1,save_img=True,img_name='df1',trim=10):
@@ -697,15 +703,24 @@ momenta_path = trim_name(filefile) + '_momenta_%i.%s'%(pw_field_number,form)
 slice_f_path=  trim_name(filefile) + '_slice_f_%i.%s'%(pw_field_number,form)
 slice_p_path=  trim_name(filefile) + '_slice_p_%i.%s'%(pw_field_number,form)
 
+
+eliot1f = r"D:\Physics\MPhys Project\DatasetArcive\noMpl_tach_1_1024_slices_COPY%s_slice_f_1.log" % '200'
+eliot1p = r"D:\Physics\MPhys Project\DatasetArcive\noMpl_tach_1_1024_slices_COPY%s_slice_p_1.log" % '200'
+slice_f_path = eliot1f
+slice_p_path = eliot1p
+
+slices = 'yes1'
+energies ='yes'
+
 if slices=='yes':
-    sfdf = import_slice(slice_f_path)
-    spdf = import_slice(slice_p_path)
+    sfdf = import_slice(slice_f_path,strict=False)
+    spdf = import_slice(slice_p_path,strict=False)
     plot_slices(sfdf,use_FFT=my_fft,title="field")
     plot_slices(spdf,use_FFT=my_fft,title="momenta")
 
 if energies== 'yes':
     pe_path = trim_name(filefile) + '_FPE_%i.%s'%(pw_field_number,form)
-    pedf, kedf, gedf = import_energy(pe_path)
+    pedf, kedf, gedf = import_energy(pe_path,strict=False)
     tedf =pedf
     tedf.mesh += kedf.mesh + gedf.mesh
     plot_energy(gedf,0,title='Gradient',use_FFT=False,use_log=True)

@@ -272,13 +272,15 @@ def n_palatini(pw1,pw2,data, L=64, skip=2,h0=-1,LH=6,use_ks=True):
     data_size = data[::skip].shape[0]
     pw_size = pw1.shape[0]
     min_size,max_size = min(data_size,pw_size),max(data_size,pw_size)
-    if (int(min_size*1.1) > max_size):
+    if (min_size*1.1 > max_size):
         data = data[:min_size*skip]
         pw1 = pw1[:min_size]
         pw2 = pw2[:min_size]
         print("Trimmed data, pw1 and pw2: ",data.shape,pw1.shape,pw2.shape)
     else:
-        raise ValueError("data and pw1/pw2 have two large a discrepancy in shapes: ",data.shape,pw1.shape)
+        print("Min size:",min_size,"Max size:",max_size)
+        print(int(min_size*1.1) > max_size)
+        raise ValueError("data and pw1/pw2 have two large a discrepancy in calculated shapes: ",data_size,pw_size,"; Untouched shapes: ",data.shape,pw1.shape)
 
     pw_a = pw1.drop('a',axis=1)
     pw_b = pw2.drop('a',axis=1)
