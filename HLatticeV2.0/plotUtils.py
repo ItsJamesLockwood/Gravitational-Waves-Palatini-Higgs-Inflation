@@ -6,6 +6,7 @@ Created on Mon Nov 23 21:38:40 2020
 """
 import os
 import scipy
+import logging
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -13,8 +14,28 @@ from math import ceil
 from matplotlib.widgets import Slider, Button, RadioButtons
 import matplotlib.animation as animation
 from mpl_toolkits.mplot3d import Axes3D
+from datetime import datetime
 
 from physUtils import *
+
+#%% Setup loggers
+CWD_PATH = os.getcwd()
+LOG_PATH = CWD_PATH + r"\importer_logs"
+if not os.path.exists(LOG_PATH):
+    os.mkdir(LOG_PATH)
+LOG_FILE = datetime.now().strftime("importer_%y%m%d-%H_%M_%S.txt")
+PATH = LOG_PATH +r"\\" +  LOG_FILE
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
+fmter = logging.Formatter("%(asctime)s:%(levelname)s:%(name)s: %(message)s","%Y-%m-%d %H:%M:%S")
+fh = logging.FileHandler(PATH)
+fh.setLevel(logging.INFO)
+fh.setFormatter(fmter)
+logger.addHandler(fh)
+
+#%% Utility definitions
 
 def  trim_name(file):
     ind = file.index('_screen')
@@ -47,13 +68,19 @@ def import_screen(file_name,print_logs=False):
     rmss = ['rms%i'%i for i in range(1,fld+1)]
     col_names += means + rmss
     
+    logger.info("Opening screen file... ")
     data = pd.read_csv(file_name,delim_whitespace=True,skiprows=1,names=col_names,index_col=False)
+    logger.info("Done.")
+    logger.info("Formatting 'data': removing non numerical lines...")
     try:
     	data = data[~data.iloc[:,0].str.contains("[a-zA-Z]").fillna(False)]
     except AttributeError:
     	pass
+    logger.info("Done")
     
+    logger.info("Applying pd.to_numeric to 'data'")
     data = data.apply(pd.to_numeric)
+    logger.info("Finished importing 'data'.")
     
     if print_logs==True:
         print(data.columns)
@@ -617,18 +644,37 @@ def plot_energy(edf,a_ind=0,use_FFT=False,use_contour=False,title='',use_log=Fal
     return fvals
 
 #%% Animating the results
-def animate_potential(data,t_max=25):
+def animate_potential(data,plt_obj=0,t_max=25,fps=25):
+    # Set plot object
+    if plt_obj ==0:
+        try:
+            import matplotlib.pyplot as plt
+        except ModuleNotFoundError:
+            print("ERROR: unable to find matplotlib (?!). Please check it is installed. Exiting function...")
+            return
+        plt_obj = plt
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        fig.set_figwidth(8)
+        fig.set_figheight(6)
+    
+    elif type(plt_obj)==list:
+        if len(plt_obj)!=2:
+            print("ERROR: list provided; expected 2 arguments (fig,ax), instead found %i."%len(plt_obj))
+            return
+        fig, ax = plt_obj
+    else:
+        print("ERROR: did not recognise plotting object.")
+        return
+        
     #t_max given in seconds
     anim_running = True
     
     #Work out the interval and fps to optimise the animation
-    fps = 25
     interval = 1000/fps  #Time per frame: 1 second / frames per second
     step = ceil(data.shape[0]/t_max / fps) #How large a step between rows to ensure fps and t_max are met
+    print("Animation: fps: ",fps,", milliseconds: ",interval,", step: ",step,", data.size: ",data[::step].shape[0])
     
-    fig = plt.figure()
-    fig.set_figwidth(8)
-    fig.set_figheight(6)
     phi_max = np.abs(data['mean1']).max() * 1.02 #Provide 2% extra margin
     xs = np.linspace(-phi_max,phi_max,1000)
     ys = palatiniV(xs)
@@ -648,6 +694,7 @@ def animate_potential(data,t_max=25):
     def anim_data():
         nonlocal step
         for i in range(0,data.shape[0],step):
+            #print(i)
             yield [data['mean1'][i],data['a'][i],i]
             
     def animate(anim_data):
@@ -656,14 +703,13 @@ def animate_potential(data,t_max=25):
         p1.set_data(xp,yp)
         time_text.set_text(time_template%(anim_data[1],anim_data[2]))
     
-    ax = fig.add_subplot(111)
     p0, = ax.plot(xs,ys)
     p1, = ax.plot(xp0,yp0,'ro')
     time_template = "Metric $a$= %.7f \nRow: %i "
     time_text = ax.text(0.05,0.87,'', transform=ax.transAxes)
     time_text.set_text(time_template%(data['a'][0],0))
     
-    anim = animation.FuncAnimation(fig,animate,anim_data,interval=interval)
+    anim = animation.FuncAnimation(fig,animate,anim_data,interval=interval,repeat=False,save_count=50)
     fig.canvas.mpl_connect('button_press_event', onClick)
         
 #%% Get information from the sim_settings file.

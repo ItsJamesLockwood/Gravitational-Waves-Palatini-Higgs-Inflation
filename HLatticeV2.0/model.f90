@@ -138,8 +138,8 @@ contains
         !Set the initial conditions from arxiv:1902.10148. 
          !!model_Power(1) = Mpl/k /metric%a**3 * suppression
          !!model_Power(2) = xisqrt/SQRT(lambda)* k/Mpl /metric%a**3 * suppression
-          model_Power(1) = 0.5_dl/k *suppression
-          model_Power(2) = 0.5_dl*k *suppression
+          model_Power(1) = 1._dl/k**2 / metric%a**2 *suppression
+          model_Power(2) = k**2 / metric%a**4 *suppression
           write(*,*) "k:",k,"tachyonic ","model_power:", model_Power
           if(warning)then
             write(*,*) "Tachyonic region initialization may be not correct"

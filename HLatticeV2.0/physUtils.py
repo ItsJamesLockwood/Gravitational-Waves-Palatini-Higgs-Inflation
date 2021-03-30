@@ -46,13 +46,13 @@ def xvar(data,conformal=True,amp=False):
         xvar = const * np.sqrt(ts)
     return xvar
 
-def init_momenta(v,dvdf,field0, use_PM=True, **kwargs):
+def init_momenta(v,dvdf,field0, use_PM=False, **kwargs):
     result = -dvdf(field0,**kwargs,use_PM=use_PM) / np.sqrt( 3 * v(field0, **kwargs,use_PM=use_PM))
     if use_PM:
         result *= (1/np.sqrt(8*np.pi)) **2
     return result
 
-def palatiniV(field0,use_PM=True,**kwargs):
+def palatiniV(field0,use_PM=False,**kwargs):
     default = {'l':10**-4,'xi':-1,'nstar':50}
     ks = default
     for k in default.keys():
@@ -74,7 +74,7 @@ def palatiniV(field0,use_PM=True,**kwargs):
     potential = a * np.tanh(b*field0)**4
     return potential
 
-def palatiniDV(field0,use_PM=True, **kwargs):
+def palatiniDV(field0,use_PM=False, **kwargs):
     default = {'l':10**-4,'xi':-1,'nstar':50}
     ks = default
     for k in default.keys():
@@ -95,7 +95,7 @@ def palatiniDV(field0,use_PM=True, **kwargs):
     dvdf = 4*a*b * np.tanh(b*field0)**3 / np.cosh(b*field0)**2
     return dvdf
 
-def palatiniD2V(field0,use_PM=True, **kwargs):
+def palatiniD2V(field0,use_PM=False, **kwargs):
     default = {'l':10**-4,'xi':-1,'nstar':50}
     ks = default
     for k in default.keys():
@@ -117,7 +117,7 @@ def palatiniD2V(field0,use_PM=True, **kwargs):
     return dvdf
 
     
-def lf4V(field0,use_PM=True, **kwargs):
+def lf4V(field0,use_PM=False, **kwargs):
     default = {'l':10**-4}
     ks = default
     for k in default.keys():
@@ -130,7 +130,7 @@ def lf4V(field0,use_PM=True, **kwargs):
         potential /= eta**4
     return potential
 
-def lf4DV(field0,use_PM=True, **kwargs):
+def lf4DV(field0,use_PM=False, **kwargs):
     default = {'l':10**-4}
     ks = default
     for k in default.keys():
@@ -163,7 +163,7 @@ def phi_k(pw_data1,L=64):
 def phi_dot_k(pw_data2,L=64):
     pw2 = pw_data2.drop('a',axis=1)
     ks = k_list(pw_data2,L=L)
-    pw2 /= ks**5
+    pw2 /= ks**3
     return pw2
     
 def k_list(pw_data1,L=64):

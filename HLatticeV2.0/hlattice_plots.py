@@ -10,18 +10,24 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import os
+import sys
+import logging
 from plotUtils import *
 from physUtils import *
 #TODO: obtain these values from the data files
 #TODO: check conformal time used correctly
 from itertools import chain
 
+#%% Logging setup
+logging.basicConfig(level=logging.DEBUG)        
+logging.getLogger('plotUtils').addHandler(logging.NullHandler())
+
 #%% Define variables 
 global lam, Mpl, g, RESOLUTION, PM
 RESOLUTION = 64
 SKIP =  50
 
-lam = 10**-2
+lam = 10**-4
 Mpl = 1024
 Nstar= 50
 xi = 3.8*10**6 * lam * Nstar**2
@@ -62,6 +68,10 @@ hyb_file = hybf %hv
 
 
 eliot1 = r"D:\Physics\MPhys Project\DatasetArcive\Remote tests\noMpl_tach_1_1024_slices_screen.log"
+eliot2 = r"D:\Physics\MPhys Project\DatasetArcive\Remote tests\long_sim_1_64_GW_screen.log"
+eliot3 = r"D:\Physics\MPhys Project\DatasetArcive\long_sim_1_64_GW_screen.log"
+eliot4 = r"D:\Physics\MPhys Project\DatasetArcive\Remote tests\long_1_64_GW_80_screen.log"
+eliot5 = r"D:\Physics\MPhys Project\DatasetArcive\Remote tests\1_128_80_long_slice_real_screen.log"
 
 
 l4s = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\l0-ts-run%i_screen.log"
@@ -126,8 +136,8 @@ if my_fft:
     save='no'
     
 filefile = r_math_f
-filefile = hyb_file
-filefile = eliot1
+#filefile = hyb_file
+filefile = eliot3
 #filefile = fref
 ts_mode= False
 conf_type = True
@@ -155,7 +165,8 @@ try:
 except FileNotFoundError:
     print("Did not update settings...")
     BOXSIZE_H = 15
-    SKIP = 5
+    SKIP = 10
+    Mpl = 1024
 #%% Function definitions
 
 def plot_pw_t(df1,save_img=True,img_name='df1',trim=10):
@@ -590,9 +601,11 @@ def mission_control(data,ns,rows=[],error=True,save_panel=False,save_plots=False
         
     #Subplot 1,2
     ax_twin = ax[1,2].twinx()
-    p1, = ax[1,2].plot(data['a'], data['mean1']**2 + data['rms1']**2,label=r"$\langle \phi^{2} \rangle $")
-    p2, = ax_twin.plot(data['a'],data['mean1'],color=prop_colors[1],label=r"$\langle \phi \rangle$")
-    lns = [p1,p2]
+    p1, = ax[1,2].plot(data['a'], np.sqrt(data['mean1']**2 + data['rms1']**2),label=r"$\langle \phi^{2} \rangle $")
+    p2, = ax_twin.plot(data['a'],np.abs(data['mean1']),color=prop_colors[1],label=r"$\langle \phi \rangle$")
+    p3, = ax_twin.plot(data['a'],np.sqrt(data['mean1']**2 + data['rms1']**2),color=prop_colors[2],label=r"$\sqrt{\langle \phi^2 \rangle}$")
+    
+    lns = [p1,p2,p3]
     ax[1,2].legend(handles=lns)
     ax[1,2].set_title("Comparison of the average field and squared field values")
     
@@ -703,14 +716,15 @@ momenta_path = trim_name(filefile) + '_momenta_%i.%s'%(pw_field_number,form)
 slice_f_path=  trim_name(filefile) + '_slice_f_%i.%s'%(pw_field_number,form)
 slice_p_path=  trim_name(filefile) + '_slice_p_%i.%s'%(pw_field_number,form)
 
-
+'''
 eliot1f = r"D:\Physics\MPhys Project\DatasetArcive\noMpl_tach_1_1024_slices_COPY%s_slice_f_1.log" % '200'
 eliot1p = r"D:\Physics\MPhys Project\DatasetArcive\noMpl_tach_1_1024_slices_COPY%s_slice_p_1.log" % '200'
 slice_f_path = eliot1f
 slice_p_path = eliot1p
 
 slices = 'yes1'
-energies ='yes'
+energies ='yes1'
+'''
 
 if slices=='yes':
     sfdf = import_slice(slice_f_path,strict=False)
