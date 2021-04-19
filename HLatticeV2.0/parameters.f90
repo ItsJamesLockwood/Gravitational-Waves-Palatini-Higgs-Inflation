@@ -67,9 +67,14 @@ module parameters
 
 !!============================ output of field/momenta slices =====================================
   !! Probably a bit redundant, but section available for future use 
-  integer(IB),parameter :: yz_lattice_slice = YZ_SLICE 
   integer(IB),parameter :: save_slice_interval = CHECKPOINTS_PER_SLICE
-    
+  integer(IB),parameter :: which_lattice_cut = WHICHSLICE
+  
+  integer(IB),parameter :: yz_lattice_slice = YZ_SLICE 
+  integer(IB),parameter :: xy_lattice_slice = XY_SLICE 
+  integer(IB),parameter :: xz_lattice_slice = XZ_SLICE 
+
+
 
 !!============================ do not change things below =========================================
 !! n/2

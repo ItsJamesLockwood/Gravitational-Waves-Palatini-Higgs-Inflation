@@ -47,10 +47,10 @@
 #define NUM_SCALAR_FIELDS 1
 
 !!the length of each edge times Hubble: In HLattice the speed of light is defined to be 1, so this quantity is dimensionless. It should be chosen such that the dominating growing mode is captured. 
-#define INIT_BOXSIZE_TIMES_H 15.
+#define INIT_BOXSIZE_TIMES_H 0.10000000
 
 !! define the discretization scheme
-#define DIS_SCHEME HLATTICE2
+#define DIS_SCHEME LATTICEEASY
   !!here you can use:
   !! LATTICEEASY : \partial^2_x -->  -2 ( 1 - cos(k_x) ) This option is recommended for simulations without metric perturbations. It CANNOT be used for simulations with metric perturbations, because the first-order derivatives are not defined here.
   !! HLATTICE1 : \partial_x --> i sin(k_x), faster but less accurate spatial derivatives
@@ -69,7 +69,7 @@
 #define INTEGRATOR SYMPLECTIC_6TH
 
 !! define the # of grid points along each edge of the cubical box (global variable "n" in the code):it must be integer power of 2 (and between 4 and 4096); the total number of grid points is n^3
-#define SIMU_RESOLUTION 64
+#define SIMU_RESOLUTION 128
 
 !! want gravitational waves? You can use it for any METRIC_OPTION. In the case METRIC_OPTION = MINKOWSKI_BACKGROUND or FRW_BACKGROUND, the metric perturbations will be integrated without giving feedback to the scalar fields.
 #define WANTGW NO
@@ -88,7 +88,12 @@
 
 !!Determine which y-z slice of the lattice should be output for the fields and momenta
 !!By default, set to the first slice
-#define YZ_SLICE 1
+#define WHICHSLICE XZ 
+!! Choose between 0 and n.
+#define YZ_SLICE 32
+#define XY_SLICE 1
+#define XZ_SLICE 1
+
 #define WANTFIELDS NO
 #define WANTSLICES YES
 !! As slices and fields are resource intensive, there is an option to save them less regularly than regular checkpoints.
@@ -107,13 +112,13 @@
 #define CHECKPOINT_AND_GW_INTERVAL (FEEDBACK_INTERVAL * LINES_BETWEEN_SAVES)
 
 !!stop the program if # of steps exceeds
-#define MAX_STEPS 100000
+#define MAX_STEPS 1000000
 
 !!In HLattice if metric feedbacks are turned on, I split the noncanonical term e^{Adt} to (e^{A/m dt})^m and integrate e^{A/m dt} using a 4-th order Runge-Kutta integrator. Typically m=10 suffices. But feel free to change it here.
 #define SUB_INTEGRATOR_STEPS 10
 
 !!Reduced Planck Mass, it can be any number. To achieve better performance you may want to define it ~ (Planck Mass / Energy Scale of your problem), so the numbers in the simulation can have order ~ 1. (Since HLattice uses double precision numbers, this usually is not a big issue.)
-#define REDUCED_PLANCK_MASS 1024.
+#define REDUCED_PLANCK_MASS 1.00000000000
 
 !!use k^{std} instead of k^{eff} in the TT projector;
 #define USE_STANDARD_WAVENUMBER NO

@@ -33,12 +33,18 @@ module model
 !!To be self consistent you may want to get the background \phi and \dot\phi by solving the background equations from inflation. HLattice will do that for you.
 !!Just define where you want to start the background evolution. Note this is NOT where you start the lattice simulation, which is defined in a subroutine "start_box_simulation" in this file.
  !!initial field values
+  
   real(dl),dimension(ns)::init_fields= +0.00514349_dl  * Mpl !!-1.71633d-3 * Mpl
+  !!real(dl),dimension(ns)::init_fields= +0.00514349_dl  * Mpl !!-1.71633d-3 * Mpl
+  
+  !!real(dl),dimension(ns)::init_fields= +0.00162652_dl  * Mpl 
 
 !!Initial field momenta
  !! if set to be greater than or equal to Mplsq (square of reduced Planck Mass), the initial field momenta will be determined by slow-roll inflationary attractor
   !! Note again these are NOT the initial field momenta where you start the lattice simulation, the are the initial values that HLattice take to evolve the inflaton. 
+
   real(dl),dimension(ns):: init_momenta =  -1.d-10 * Mplsq !-1.d-9 * PlanckMass**2 
+  !! real(dl),dimension(ns):: init_momenta =  -3.30209d-10 * Mplsq 
 
 
 !!put initial random Gaussian perturbations in the fields when you starts lattice simulation;
@@ -138,8 +144,8 @@ contains
         !Set the initial conditions from arxiv:1902.10148. 
          !!model_Power(1) = Mpl/k /metric%a**3 * suppression
          !!model_Power(2) = xisqrt/SQRT(lambda)* k/Mpl /metric%a**3 * suppression
-          model_Power(1) = 1._dl/k**2 / metric%a**2 *suppression
-          model_Power(2) = k**2 / metric%a**4 *suppression
+          model_Power(1) = 1 /k / metric%a**2 *suppression
+          model_Power(2) = 1 * k / metric%a**4 *suppression
           write(*,*) "k:",k,"tachyonic ","model_power:", model_Power
           if(warning)then
             write(*,*) "Tachyonic region initialization may be not correct"
@@ -156,7 +162,7 @@ contains
         kmin_warning = .false.
       endif
       !stop "This simulation is now botched due to k<k_min"
-      model_Power(1) = 0.5_dl/k*(init_Hubble/k)**2 * suppression
+      model_Power(1) = 0.5_dl/k*(init_Hubble/k)**2 * suppression *0 !! Set them to zero
       model_Power(2) = 0._dl * suppression
       write(*,*) "k:",k,"k<k_min ","model_power:", model_Power
       return

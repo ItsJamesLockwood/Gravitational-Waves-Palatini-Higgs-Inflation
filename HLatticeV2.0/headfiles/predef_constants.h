@@ -30,3 +30,10 @@
 
 !!since V2.0 this feature is off
 #define MATCH_CONFIGURATION_SPACE_FLUC NO
+
+
+
+!! Slice cuts
+#define YZ 1
+#define XY 2
+#define XZ 3

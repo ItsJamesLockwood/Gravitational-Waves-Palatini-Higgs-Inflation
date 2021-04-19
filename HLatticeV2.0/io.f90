@@ -288,7 +288,15 @@ contains
          !       write(fp%unit,*) fields_f(nf,i,j,:)               
          !    enddo
          ! enddo
-         write(fp%unit,*) fields_f(nf,yz_lattice_slice,:,:)
+         if (which_lattice_cut .eq. 1) then
+            write(fp%unit,*) fields_f(nf,yz_lattice_slice,:,:)
+         else if (which_lattice_cut .eq. 2) then
+            write(fp%unit,*) fields_f(nf,:,:,xy_lattice_slice)
+         else if (which_lattice_cut .eq. 3) then
+            write(fp%unit,*) fields_f(nf,:,xz_lattice_slice,:)
+         else 
+            write(*,*) "Skipping field slices: slice direction not recognised"
+         endif
          call close_file(fp)
       enddo
       
@@ -310,7 +318,15 @@ contains
          !       write(fp%unit,*) fields_f(nf,i,j,:)               
          !    enddo
          ! enddo
-         write(fp%unit,*) fields_p(nf,yz_lattice_slice,:,:)
+         if (which_lattice_cut .eq. 1) then
+            write(fp%unit,*) fields_p(nf,yz_lattice_slice,:,:)
+         else if (which_lattice_cut .eq. 2) then
+            write(fp%unit,*) fields_p(nf,:,:,xy_lattice_slice)
+         else if (which_lattice_cut .eq. 3) then
+            write(fp%unit,*) fields_p(nf,:,xz_lattice_slice,:)
+         else 
+            write(*,*) "Skipping momentum slices: slice direction not recognised"
+         endif
          call close_file(fp)
       enddo
       

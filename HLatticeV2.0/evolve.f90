@@ -28,7 +28,7 @@ contains
           call output_fields()
           call output_momenta()
         endif 
-        if (save_slices.and. mod(sipar%nsteps,checkpoint_steps*save_slice_interval)) then 
+        if (save_slices.and. mod(sipar%nsteps,checkpoint_steps*save_slice_interval) .eq. 0) then 
           write(*,*) "Saving slices at step ",sipar%nsteps, "..."
           call output_field_slice()
           call output_momentum_slice()
@@ -54,8 +54,8 @@ contains
           exit
        endif
        call coor_trans()
-       !write(*,*) "Exiting after first lattice step due to TS-mode..."
-       !exit
+       !!write(*,*) "Exiting after first lattice step due to TS-mode..."
+       !!exit
     enddo
     return
   end subroutine evolve
