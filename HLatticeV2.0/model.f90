@@ -17,7 +17,7 @@ module model
   real(dl),parameter:: coef = lambda * Mplsq**2 / 4.d0 / xi2
   real(dl),parameter:: b = xisqrt/Mpl
   real(dl),parameter:: suppression = 1.d0 
-  real(dl),parameter:: time_suppression = 80._dl
+  real(dl),parameter:: time_suppression = 40._dl
   !!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
 !!***************define macros here;************************
@@ -136,7 +136,7 @@ contains
          if(omega*metric%dx .le. const_2pi .and. omega*metric%dx*n .ge. const_2pi)then
             model_Power(1) = 0.5_dl/omega * suppression
             model_Power(2) = 0.5_dl*omega * suppression
-            write(*,*) "k:",k,"parametric ","model_power:",model_Power
+            write(*,*) "k:",k,"parametric ","omega:",omega,"m_eff:", mass_sq(init_fields,fld)
             return
          endif
       !We now consider the tachyonic region (i.e. k_min < k < k_max)
@@ -146,7 +146,7 @@ contains
          !!model_Power(2) = xisqrt/SQRT(lambda)* k/Mpl /metric%a**3 * suppression
           model_Power(1) = 1 /k / metric%a**2 *suppression
           model_Power(2) = 1 * k / metric%a**4 *suppression
-          write(*,*) "k:",k,"tachyonic ","model_power:", model_Power
+          write(*,*) "k:",k,"tachyonic ","omega:", omega,"m_eff:", mass_sq(init_fields,fld)
           if(warning)then
             write(*,*) "Tachyonic region initialization may be not correct"
             warning = .false.
