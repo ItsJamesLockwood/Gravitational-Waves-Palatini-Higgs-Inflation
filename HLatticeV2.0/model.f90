@@ -17,7 +17,7 @@ module model
   real(dl),parameter:: coef = lambda * Mplsq**2 / 4.d0 / xi2
   real(dl),parameter:: b = xisqrt/Mpl
   real(dl),parameter:: suppression = 1.d0 
-  real(dl),parameter:: time_suppression = 80._dl
+  real(dl),parameter:: time_suppression = 2.5_dl
   !!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
 !!***************define macros here;************************
