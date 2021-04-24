@@ -72,7 +72,7 @@
 #define SIMU_RESOLUTION 128
 
 !! want gravitational waves? You can use it for any METRIC_OPTION. In the case METRIC_OPTION = MINKOWSKI_BACKGROUND or FRW_BACKGROUND, the metric perturbations will be integrated without giving feedback to the scalar fields.
-#define WANTGW NO
+#define WANTGW YES
 
 #if METRIC_OPTION ==  FRW_BACKGROUND
 !! use conformal time? This only works for METRIC_OPTION == FRW_BACKGROUND
