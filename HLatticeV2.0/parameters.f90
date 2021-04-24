@@ -74,7 +74,9 @@ module parameters
   integer(IB),parameter :: xy_lattice_slice = XY_SLICE 
   integer(IB),parameter :: xz_lattice_slice = XZ_SLICE 
 
-
+  integer(IB),parameter :: save_field_interval = CHECKPOINTS_PER_FIELD
+  integer(IB),parameter :: field_number_cutoff = N_FIELD_SAVES
+  
 
 !!============================ do not change things below =========================================
 !! n/2

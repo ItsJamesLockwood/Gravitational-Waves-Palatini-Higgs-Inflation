@@ -23,7 +23,7 @@ contains
       call output_energy()
       if(use_checkpoint .and. mod(sipar%nsteps,checkpoint_steps).eq.0 .and. (sipar%nsteps.gt.0 .or. write_check_at_step0))then
         call write_check()
-        if (save_fields .and. mod(sipar%nsteps,checkpoint_steps*save_slice_interval).eq.0) then
+        if (save_fields .and. mod(sipar%nsteps,checkpoint_steps*save_field_interval).eq.0 .and. (checkpoint_steps*save_field_interval*field_number_cutoff).ge.sipar%nsteps ) then
           write(*,*) "Saving fields at step ",sipar%nsteps, "..."
           call output_fields()
           call output_momenta()

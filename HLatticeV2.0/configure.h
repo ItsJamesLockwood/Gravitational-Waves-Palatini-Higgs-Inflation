@@ -72,7 +72,7 @@
 #define SIMU_RESOLUTION 128
 
 !! want gravitational waves? You can use it for any METRIC_OPTION. In the case METRIC_OPTION = MINKOWSKI_BACKGROUND or FRW_BACKGROUND, the metric perturbations will be integrated without giving feedback to the scalar fields.
-#define WANTGW YES
+#define WANTGW NO
 
 #if METRIC_OPTION ==  FRW_BACKGROUND
 !! use conformal time? This only works for METRIC_OPTION == FRW_BACKGROUND
@@ -94,11 +94,12 @@
 #define XY_SLICE 1
 #define XZ_SLICE 1
 
-#define WANTFIELDS NO
-#define WANTSLICES YES
+#define WANTFIELDS YES
+#define WANTSLICES NO
 !! As slices and fields are resource intensive, there is an option to save them less regularly than regular checkpoints.
 #define CHECKPOINTS_PER_SLICE 5
-
+#define CHECKPOINTS_PER_FIELD 10
+#define N_FIELD_SAVES 50 
 !!*** below are some settings that you can, but usually do not need to change *****
 
 !!how often to write feedback to the screen (# of steps, recommended value is between 5 and 50)
