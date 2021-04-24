@@ -47,10 +47,10 @@
 #define NUM_SCALAR_FIELDS 1
 
 !!the length of each edge times Hubble: In HLattice the speed of light is defined to be 1, so this quantity is dimensionless. It should be chosen such that the dominating growing mode is captured. 
-#define INIT_BOXSIZE_TIMES_H 1.000000
+#define INIT_BOXSIZE_TIMES_H 0.100000000
 
 !! define the discretization scheme
-#define DIS_SCHEME LATTICEEASY
+#define DIS_SCHEME HLATTICE2
   !!here you can use:
   !! LATTICEEASY : \partial^2_x -->  -2 ( 1 - cos(k_x) ) This option is recommended for simulations without metric perturbations. It CANNOT be used for simulations with metric perturbations, because the first-order derivatives are not defined here.
   !! HLATTICE1 : \partial_x --> i sin(k_x), faster but less accurate spatial derivatives
