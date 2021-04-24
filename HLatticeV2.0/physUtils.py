@@ -235,7 +235,7 @@ def omegas(pw1,data,L=64,skip=50,LH=0.8,h0=-1):
     omegas = ks_a_matrix + d2v_column.reshape(-1,1)
     # For information: print information about tachyonic modes. 
     print("Tachyonic modes present: ", (omegas<0).any())
-    if (omegas<0).any(): print("Number of tachyonic modes: ", np.count_nonzero(omegas<0))
+    if (omegas<0).any(): print("Number of tachyonic modes: ", np.count_nonzero(omegas<0),"/",np.size)
     return ks_a_matrix, d2v_column.reshape(-1,1)
     
 def n_palatini(pw1,pw2,data, L=64, skip=2,h0=-1,LH=6,use_ks=True):
@@ -310,7 +310,7 @@ def n_palatini(pw1,pw2,data, L=64, skip=2,h0=-1,LH=6,use_ks=True):
     omegas = ks_a_matrix + d2v_column.reshape(-1,1)
     # For information: print information about tachyonic modes. 
     print("Tachyonic modes present: ", (omegas<0).any())
-    if (omegas<0).any(): print("Number of tachyonic modes: ", np.count_nonzero(omegas<0))
+    if (omegas<0).any(): print("Number of tachyonic modes: ", np.count_nonzero(omegas<0),"/",omegas.size)
     
     # Add the terms together to form the number density.
     term1 = phi_dots

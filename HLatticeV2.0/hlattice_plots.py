@@ -58,12 +58,16 @@ unstable4 = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\test-exit
 unstable5 = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\test-exit-r5_screen.log"
 unstable6 = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\test-exit-r6_screen.log"
 
+slice_test_p = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\tanh-slice-test%i_screen.log" 
+slice_i = 1
+slice_f = slice_test_p % slice_i
+
 fiop = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\field-io-run%i_screen.log"
 lf4iop = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\lf4-nsr-io-run%i_screen.log"
 t4iop = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\t4-nsr-io-run%i_screen.log"
 
 hybf = r"D:\Physics\MPhys Project\DatasetArcive\Remote tests\rhybrid-test%i_screen.log"
-hv = 7
+hv = 2
 hyb_file = hybf %hv
 
 
@@ -89,10 +93,21 @@ t_math_v = 12
 t_math_s = ''
 t_math_f = tanh_math % (t_math_v , t_math_s)
 
+
+t_16 = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\tanh-16-lh1-run%i%s_screen.log"
+
+tv = 3
+tvs = ''
+t_16f = t_16 % (tv,tvs)
+
+
+
 r_math_f = r_math% (t_math_v, t_math_s)
 
 simpt4p = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\simple-t4-run%i_screen.log"
 simpv = 7
+
+superlong = r"C:\Users\James\Downloads\super_long_lf4_screen.log"
 
 
 simpl4 =  r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\simp-lf4-run%i_screen.log"
@@ -111,6 +126,17 @@ rl4i = 6
 rti = 2
 #1,2,4,7
 
+
+lazzaP = "D:\Physics\MPhys Project\DatasetArcive\Remote tests\SIM%i_lazzarus%i%s_screen.log"
+lazzaBup = "D:\Physics\MPhys Project\DatasetArcive\Last updated\SIM%i_lazzarus%i%s_screen.log"
+lazza3 = "D:\Physics\MPhys Project\DatasetArcive\Remote tests\long_SIM3_lazzarus%i%s_screen.log"
+simV = 3
+lV = 1
+lS = ''
+lazzaF = lazzaP %(simV,lV,lS)
+lazzaBF = lazzaBup %(simV,lV,lS)
+#lazzaF = lazza3 %(lV,lS)
+
 simpf = simpt4p%simpv
 simp4f = simpl4%simp4v
 rsimpf = rslf%(rstv,modifier)
@@ -125,6 +151,13 @@ th4 = t4s%t4i
 rl4 = r4s%rl4i 
 rth = rt4%rti
 
+cernboxR1a = r"D:\Physics\MPhys Project\DatasetArcive\CERNBox\Remote Sim 1a\data\RemoteSim1_UPDATED_91a576a_screen.log"
+cernboxR2a = r"D:\Physics\MPhys Project\DatasetArcive\CERNBox\Remote Sim 2a\data\RemoteSim2_UPDATED_8525109_screen.log"
+cernboxR3a = r"D:\Physics\MPhys Project\DatasetArcive\CERNBox\Remote Sim 3a\data\RemoteSim3_UPDATED_f4ee809_screen.log"
+
+
+sim_l2 = r"D:\Physics\MPhys Project\DatasetArcive\Remote tests\sim_lambda2_lh1_t120_screen.log"
+
 save = 'no'
 energies = 'yes1'
 slices = 'yes1'
@@ -134,10 +167,18 @@ my_fft = False
 if my_fft:
     print("FFT baby",save)
     save='no'
-    
+  
 filefile = r_math_f
+#filefile = lazzaF
+filefile = lazzaBF
+#filefile = t_16f
+filefile = cernboxR3a
+filefile = sim_l2
+
+#filefile = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\simp-lf4-run1_screen.log"
 #filefile = hyb_file
-filefile = eliot3
+#filefile = eliot4
+#filefile = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\test_sim2_screen.log"
 #filefile = fref
 ts_mode= False
 conf_type = True
@@ -155,17 +196,20 @@ my_img_name =  trim_name(filefile) + '_img'
 save_img = False
 
 
+pow_a =1
 #%% Get sim settings variables
 try:
     strs, vals = sim_settings(filefile)
     RESOLUTION = vals[6] 
+    L = RESOLUTION
     SKIP = int(vals[11]/vals[10] )
     BOXSIZE_H = vals[1] 
+    LH = BOXSIZE_H
     Mpl = vals[14]
 except FileNotFoundError:
     print("Did not update settings...")
     BOXSIZE_H = 15
-    SKIP = 10
+    SKIP = 10 
     Mpl = 1024
 #%% Function definitions
 
@@ -406,7 +450,32 @@ def plot_gw_t(gw1,gw2, pw1 = pd.DataFrame(),rows=[],alpha=0.5,tolerance=0.5,trun
     ax1.set_title("Evolution of the gravity waves modes (tolerance: %i%%)"%(100*tolerance))
     ax1.legend()
         
-  
+def plot_qk(pw_data1,data,L=64,use_metric=False,jump=5):
+    fig, ax = plt.subplots()
+    dim1 = (data.shape[0]-1)
+    dim2 = (pw_data1.shape[0]-1)
+    chkpt_ratio = (dim1-dim1%dim2) / dim2
+    
+    ks = k_list(pw_data1,L=L) * L / LH
+    qks = pw_data1.drop('a',axis=1)
+    t_mat = np.ones(qks.shape) * (chkpt_ratio * qks.index.values.reshape(-1,1) +1) # 1_matrix * time
+    
+    H0 = data.h[0]
+    kmin = data.a[0] 
+    #Colours 
+    colors = np.flip(cm.viridis(np.linspace(0.1,1,t_mat.shape[0])),axis=0)
+    
+    #Plot
+    vals = np.sqrt(qks)  #/t_mat
+    
+    for i in range(0,vals.shape[0],jump):
+        ax.plot(ks/kmin, vals.iloc[i,:]/ks**2,color=colors[i])
+    ax.set_yscale('log')
+    ax.set_xscale('log')
+    return qks,t_mat
+    
+    
+    
     
 def mission_control(data,ns,rows=[],error=True,save_panel=False,save_plots=False,path=filefile,truncate=0,ts=False):
     # Try first to import gravitational wave files
@@ -434,7 +503,10 @@ def mission_control(data,ns,rows=[],error=True,save_panel=False,save_plots=False
     plt.subplots_adjust(top=.93)
     #Subplt 0,0
     ax[0,0].set_title("Inflaton field evolution")
-    ax[0,0].plot(data['a'][:truncate], data['mean1'][:truncate])
+    ax[0,0].plot(data['a'][:truncate]**pow_a, data['mean1'][:truncate])
+    ax[0,0].axhline(1.05/np.sqrt(xi),linestyle='dashed',color='grey')
+    ax[0,0].axhline(-1.05/np.sqrt(xi),linestyle='dashed',color='grey')
+    
     if ts:
         ax[0,0].plot(data['a'][:truncate], data['mean1'][:truncate],'r.')
     c2 = np.flip(cm.magma(np.linspace(0,1,len(ns.columns)-1)),axis=0)
@@ -447,15 +519,18 @@ def mission_control(data,ns,rows=[],error=True,save_panel=False,save_plots=False
         
     #Subplot 0,1
     if (not ts) and GW_files_found:
+        global freqs
         freqs = gw1.drop('a',axis=1)
         gw_intensity = gw2.drop('a',axis=1)
         a_list = gw1['a']
         #Find those frequencies which vary little over the course of the simulation
         tolerance = 0.99
         i=0 
+        
         # Find i such that the difference between the start and end is within the tolerance compared to the next band.
-        while i<freqs.shape[0]-1 and (freqs.iloc[0,i]-freqs.iloc[-1,i]<0.5*(freqs.iloc[-1,i+1]-freqs.iloc[-1,i])):
+        while i<freqs.shape[1]-1 and (freqs.iloc[0,i]-freqs.iloc[-1,i]<0.5*(freqs.iloc[-1,i+1]-freqs.iloc[-1,i])):
             i += 1
+            print(i)
         print("Tolerance %i %% -> truncation: "%(tolerance*100),i)
         #Ensure there are not too many labels
         if i<14:
@@ -470,7 +545,7 @@ def mission_control(data,ns,rows=[],error=True,save_panel=False,save_plots=False
     
         for j in range(len(freqs.iloc[:,:i].columns)):
             if j%step==0:
-                ax[0,1].plot(a_list,gw_intensity.iloc[:,j],color=colors[j],label=freqs.iloc[:,j*step].median())
+                ax[0,1].plot(a_list,gw_intensity.iloc[:,j],color=colors[j],label=freqs.iloc[:,j].median())
             else:
                 ax[0,1].plot(a_list,gw_intensity.iloc[:,j],color=colors[j])
         c3 = np.flip(cm.magma(np.linspace(0,1,len(ns.columns)-1)),axis=0)
@@ -608,6 +683,7 @@ def mission_control(data,ns,rows=[],error=True,save_panel=False,save_plots=False
     lns = [p1,p2,p3]
     ax[1,2].legend(handles=lns)
     ax[1,2].set_title("Comparison of the average field and squared field values")
+    ax[1,2].axhline(1.05/np.sqrt(xi),linestyle='dashed',color='grey')
     
     
     #End of function: save figures if requested
@@ -693,7 +769,7 @@ def plot_line(data,conf=True,save=True,path=filefile):
         f.savefig(trim_file_name(path)+'_time_comparison.jpg')
 if save=='yes':
     plot_line(data,save=True,conf=conf_type)
-elif save=='no1':
+elif save=='no2':
     plot_line(data,save=False,conf=conf_type)
 
 #%% Palatini perturbation energy density 
@@ -703,7 +779,9 @@ pert = integrate_perturbation(n_pal)
 if ts_mode:
     plt.plot(pw_data1.a, pert,'r')
     plt.yscale('log')
-    
+
+
+plot_qk(pw_data1,data,L=L)
 #%% Import GW
 try:
     gw1, gw2 = import_GW(trim_name(filefile) + '_GW.log')

@@ -12,9 +12,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 from math import ceil
 from matplotlib.widgets import Slider, Button, RadioButtons
+import matplotlib
 import matplotlib.animation as animation
+import matplotlib.ticker as tikr
+from matplotlib.cm import ScalarMappable
 from mpl_toolkits.mplot3d import Axes3D
 from datetime import datetime
+from PIL import Image
 
 from physUtils import *
 
@@ -392,7 +396,7 @@ def import_slice(slice_file,sep="SEPARATOR",strict=True):
         try:
             mesh = np.array(mesh).reshape(res,res).T
         except ValueError:
-            print("WARNING: The line for a=",a," is the wrong size (", len(mesh),"). Please check file: ",slice_file)
+            print("WARNING: The line for a=",a," is the wrong size (", len(mesh),"). Expected: ",res,"^2. Please check file: ",slice_file)
             break
         field_list.append([a,mesh])
         
@@ -414,6 +418,7 @@ def plot_slices(slice_df,a_ind=0,use_FFT=False,use_contour=False, title=''):
     X, Y = np.meshgrid(np.linspace(1,fvals.shape[0],fvals.shape[0]),np.linspace(1,fvals.shape[1],fvals.shape[1]))
     fig = plt.figure()
     plt.subplots_adjust(left=0.25, bottom=0.25)    
+    plt.tight_layout()
     ax = fig.add_subplot(2,1,1)
     ax3 = fig.add_subplot(2,1,2,projection='3d')
     ax.set_aspect(1)
@@ -427,13 +432,14 @@ def plot_slices(slice_df,a_ind=0,use_FFT=False,use_contour=False, title=''):
     else:
         ax.imshow(fvals)
     pl3d = ax3.plot_surface(X=X, Y=Y, Z=fvals, cmap='YlGnBu_r')
-    cbar = fig.colorbar(pl3d, ax=ax3)
+    cbar = fig.colorbar(pl3d, ax=ax3, pad=0.2)
     
     axcolor = 'lightgoldenrodyellow'
+    
     slid_ax = plt.axes([0.25, 0.1, 0.65, 0.03], facecolor=axcolor)
     a_slider = Slider(slid_ax, 'A', 0, slice_df.shape[0]-1, valinit=a_ind, valstep=1)
     
-  
+    
     def update(val):
         av = int(a_slider.val) 
         the_mesh = slice_df.iloc[av,:].mesh
@@ -494,6 +500,7 @@ def plot_slices(slice_df,a_ind=0,use_FFT=False,use_contour=False, title=''):
     
     resetax._button = button
     playax._button = playButton
+    
     return fvals
 
 def import_energy(energy_file,sep="SEPARATOR",strict=True):
@@ -643,8 +650,202 @@ def plot_energy(edf,a_ind=0,use_FFT=False,use_contour=False,title='',use_log=Fal
     playax._button = playButton
     return fvals
 
+def slice_to_gif(slice_df,a_ind=0,a_max=-1,use_FFT=False,use_vmin=False, use_contour=False, title='',fps=-1,out='animated_slice',save=True,t_max=-1):
+    the_mesh = slice_df.iloc[a_ind,:].mesh
+    fvals = the_mesh
+    fft_str=''
+    if a_max ==-1 or a_max > slice_df.shape[0]:
+        a_max = slice_df.shape[0]
+    jump = 1
+    if fps==-1 and t_max==-1:
+        jump = 1
+        fps = 24
+    elif fps==-1:
+        fps = 24
+        jump = ceil(a_max/fps/t_max)
+    elif t_max==-1:
+        jump = 1
+       
+    if use_FFT:
+        fft_str='\n(log of modulus of FFT)'
+        fvals = np.log(np.absolute(np.fft.fft2(fvals)))
+    vmin, vmax = slice_df.mesh[a_ind].min(),slice_df.mesh[a_ind].max()
+    if use_vmin:
+        for j in slice_df.index[a_ind:a_max:jump]:
+            v1 = slice_df.mesh[j].min()
+            v2 = slice_df.mesh[j].max()
+            if v1<vmin: vmin=v1
+            if v2>vmax: vmax=v2
+        
+    print("Vmin,vmax: ",vmin,vmax)
+    bounds = np.linspace(vmin,vmax,1000)
+    
+    X, Y = np.meshgrid(np.linspace(1,fvals.shape[0],fvals.shape[0]),np.linspace(1,fvals.shape[1],fvals.shape[1]))
+    fig,ax = plt.subplots()
+    fig.set_figheight(6)
+    fig.set_figwidth(7.5)
+    #plt.tight_layout()
+    ax.set_aspect(1)
+    ax.set_title("Heatmaps of the %s perturbations for constant x up to %d"%(title,slice_df.a[a_max-1]) + fft_str)
+    ax.set_xlabel("Y coordinate")
+    ax.set_ylabel("Z coordinate")
+
+    #ax.contourf(fvals)
+    if use_contour:
+        img_plot = ax.contourf(fvals, vmin=vmin, vmax=vmax)
+    else:
+        img_plot = ax.imshow(fvals,  vmin=vmin, vmax=vmax)
+    if use_vmin:
+        cb = fig.colorbar(ScalarMappable(norm = img_plot.norm, cmap = img_plot.cmap),
+                 boundaries=bounds,
+                 ticks=np.linspace(vmin,vmax,10))
+        
+    def update(i):
+        the_mesh = slice_df.iloc[i,:].mesh
+        fvals = the_mesh
+        
+        if use_FFT:
+            fvals = np.log(np.absolute(np.fft.fft2(fvals)))        
+        ax.clear()
+        if not use_vmin:
+            vmin_loc, vmax_loc = slice_df.mesh[i].min(),slice_df.mesh[i].max()
+    
+            if use_contour:
+                img_plot = ax.contourf(fvals, vmin=vmin_loc, vmax=vmax_loc)
+            else:
+                img_plot = ax.imshow(fvals,  vmin=vmin_loc, vmax=vmax_loc)
+        else:
+            if use_contour:
+                img_plot = ax.contourf(fvals, vmin=vmin, vmax=vmax)
+            else:
+                img_plot = ax.imshow(fvals,  vmin=vmin, vmax=vmax)
+
+        
+        ax.set_title("Heatmaps of the %s perturbations for constant x up to %d"%(title,slice_df.a[a_max-1]) + fft_str)
+        ax.set_xlabel("Y coordinate")
+        ax.set_ylabel("Z coordinate")
+        time_text = ax.text(.05,.87,'',transform = ax.transAxes, bbox=props,color='orange')
+        time_text.set_text(time_template%(slice_df['a'][i],i))
+        
+    time_template = "Metric $a$= %.7f \nRow: %i "
+    props = dict(boxstyle='round', facecolor='blue', alpha=0.3)
+    time_text = ax.text(.05,.87,'',transform = ax.transAxes, bbox=props,color='orange')
+    time_text.set_text(time_template%(slice_df['a'][a_ind],a_ind))
+
+        
+    anim = animation.FuncAnimation(fig, update,frames=slice_df.index[a_ind:a_max:jump], repeat=False)
+    writer = animation.PillowWriter(fps=fps)
+    if save:
+        anim.save(out+'.gif', writer=writer)
+    return anim
+
+
+def perts_to_gif(slice_df,a_ind=0,a_max=-1,use_FFT=False,use_vmin=True, log_scale=False, use_contour=False, title='',fps=-1,out='animated_slice',save=True,t_max=-1):
+    the_mesh = slice_df.iloc[a_ind,:].mesh
+    fvals = np.abs(the_mesh - the_mesh.mean())
+    fft_str=''
+    if a_max ==-1 or a_max > slice_df.shape[0]:
+        a_max = slice_df.shape[0]
+    jump = 1
+    if fps==-1 and t_max==-1:
+        jump = 1
+        fps = 24
+    elif fps==-1:
+        fps = 24
+        jump = ceil(a_max/fps/t_max)
+    elif t_max==-1:
+        jump = 1
+    if use_FFT:
+        fft_str='\n(log of modulus of FFT)'
+        fvals = np.log(np.absolute(np.fft.fft2(fvals)))
+    vmin = np.abs(slice_df.mesh[a_ind]-slice_df.mesh[a_ind].mean()).min()
+    vmax = np.abs(slice_df.mesh[a_ind]-slice_df.mesh[a_ind].mean()).max()
+    if use_vmin:
+        for j in slice_df.index[a_ind:a_max:jump]:
+            v1 = np.abs(slice_df.mesh[j]-slice_df.mesh[j].mean()).min()
+            v2 = np.abs(slice_df.mesh[j]-slice_df.mesh[j].mean()).max()
+            if v1<vmin: vmin=v1
+            if v2>vmax: vmax=v2
+    if log_scale:
+        norm = matplotlib.colors.LogNorm()
+        fvals = np.log10(fvals)
+        vmin, vmax = np.log10(vmin), np.log10(vmax)
+    else:
+        norm = matplotlib.colors.Normalize()
+
+        
+    print("Vmin,vmax: ",vmin,vmax)
+    bounds = np.linspace(vmin,vmax,1000)
+    
+    X, Y = np.meshgrid(np.linspace(1,fvals.shape[0],fvals.shape[0]),np.linspace(1,fvals.shape[1],fvals.shape[1]))
+    fig,ax = plt.subplots()
+    fig.set_figheight(6)
+    fig.set_figwidth(7.5)
+    #plt.tight_layout()
+    ax.set_aspect(1)
+    ax.set_title("Heatmaps of the %s perturbations for constant x up to %d"%(title,slice_df.a[a_max-1]) + fft_str)
+    ax.set_xlabel("Y coordinate")
+    ax.set_ylabel("Z coordinate")
+
+    #ax.contourf(fvals)
+    if use_contour:
+        img_plot = ax.contourf(fvals, vmin=vmin, vmax=vmax)
+    else:
+        img_plot = ax.imshow(fvals,  vmin=vmin, vmax=vmax)
+    if use_vmin:
+        cb = fig.colorbar(ScalarMappable(norm = img_plot.norm, cmap = img_plot.cmap),
+                 boundaries=bounds,
+                 ticks=np.linspace(vmin,vmax,10))
+        
+    def update(i):
+        the_mesh = slice_df.iloc[i,:].mesh
+        fvals = np.abs(the_mesh - the_mesh.mean())
+        
+        if use_FFT:
+            fvals = np.log(np.absolute(np.fft.fft2(fvals)))        
+        ax.clear()
+        if log_scale:
+            fvals = np.log(fvals)
+
+        if not use_vmin:
+            vmin_loc = np.abs(slice_df.mesh[i]-slice_df.mesh[i].mean()).min()
+            vmax_loc = np.abs(slice_df.mesh[i]-slice_df.mesh[i].mean()).max()
+            if log_scale:
+                vmin_loc, vmax_loc = np.log10(vmin_loc), np.log10(vmax_loc)
+
+                
+            if use_contour:
+                img_plot = ax.contourf(fvals, vmin=vmin_loc, vmax=vmax_loc)
+            else:
+                img_plot = ax.imshow(fvals,  vmin=vmin_loc, vmax=vmax_loc)
+        else:
+            if use_contour:
+                img_plot = ax.contourf(fvals, vmin=vmin, vmax=vmax)
+            else:
+                img_plot = ax.imshow(fvals,  vmin=vmin, vmax=vmax)
+        
+
+        
+        ax.set_title("Heatmaps of the %s perturbations for constant x up to %d"%(title,slice_df.a[a_max-1]) + fft_str)
+        ax.set_xlabel("Y coordinate")
+        ax.set_ylabel("Z coordinate")
+        time_text = ax.text(.05,.87,'',transform = ax.transAxes, bbox=props,color='orange')
+        time_text.set_text(time_template%(slice_df['a'][i],i))
+        
+    time_template = "Metric $a$= %.7f \nRow: %i "
+    props = dict(boxstyle='round', facecolor='blue', alpha=0.3)
+    time_text = ax.text(.05,.87,'',transform = ax.transAxes, bbox=props,color='orange')
+    time_text.set_text(time_template%(slice_df['a'][a_ind],a_ind))
+
+        
+    anim = animation.FuncAnimation(fig, update,frames=slice_df.index[a_ind:a_max:jump], repeat=False)
+    writer = animation.PillowWriter(fps=fps)
+    if save:
+        anim.save(out+'.gif', writer=writer)
+    return anim
+
 #%% Animating the results
-def animate_potential(data,plt_obj=0,t_max=25,fps=25):
+def animate_potential(data,plt_obj=0,t_max=25,fps=25, Mpl=1):
     # Set plot object
     if plt_obj ==0:
         try:
@@ -676,7 +877,7 @@ def animate_potential(data,plt_obj=0,t_max=25,fps=25):
     print("Animation: fps: ",fps,", milliseconds: ",interval,", step: ",step,", data.size: ",data[::step].shape[0])
     
     phi_max = np.abs(data['mean1']).max() * 1.02 #Provide 2% extra margin
-    xs = np.linspace(-phi_max,phi_max,1000)
+    xs = np.linspace(0,phi_max,1000)
     ys = palatiniV(xs)
     v_phi_interp = scipy.interpolate.PchipInterpolator(xs, ys, extrapolate=False)
     
@@ -688,7 +889,7 @@ def animate_potential(data,plt_obj=0,t_max=25,fps=25):
         else:
             anim.event_source.start()
             anim_running = True
-            
+    '''        
     xp0 = data['mean1'][0]
     yp0 = palatiniV(xp0)
     def anim_data():
@@ -711,6 +912,66 @@ def animate_potential(data,plt_obj=0,t_max=25,fps=25):
     
     anim = animation.FuncAnimation(fig,animate,anim_data,interval=interval,repeat=False,save_count=50)
     fig.canvas.mpl_connect('button_press_event', onClick)
+    '''    
+
+    phis = np.abs(data['mean1'])
+    phi2s = np.sqrt(data['mean1']**2 + data['rms1']**2)
+    
+    xp1 = phis[0]
+    yp1 = palatiniV(xp1)
+    xp2 = phi2s[0]
+    yp2 = palatiniV(xp2)
+    
+    def anim_data():
+        nonlocal step
+        for i in range(0,phis.shape[0],step):
+            #print(i)
+            yield [phis[i],phi2s[i],data['a'][i],i]
+            
+    def animate(anim_data):
+        xp1 = anim_data[0]
+        xp2 = anim_data[1]
+        yp1 = palatiniV(xp1)
+        yp2 = palatiniV(xp2)
+        p1.set_data(xp1,yp1)
+        p2.set_data(xp2,yp2)
+        
+        time_text.set_text(time_template%(anim_data[2],anim_data[3]))
+    
+    p0, = ax.plot(xs,ys)
+    p1, = ax.plot(xp1,yp1,'ro')
+    p2, = ax.plot(xp2,yp2,'go')
+    time_template = "Metric $a$= %.7f \nRow: %i "
+    time_text = ax.text(0.05,0.87,'', transform=ax.transAxes)
+    time_text.set_text(time_template%(data['a'][0],0))
+    ax.set_title(r"Potential for $\langle \phi \rangle(t)$ and $\sqrt{\langle \phi^2 \rangle(t)}$")
+    ax.set_xlabel("Field value (units of $M_{P}=$%d)"%Mpl)
+    ax.set_ylabel("Potential ($M_{P}=$%d)"%Mpl)
+    print(anim_running)
+    anim = animation.FuncAnimation(fig,animate,anim_data,interval=interval,repeat=True,save_count=50)
+    fig.canvas.mpl_connect('button_press_event', onClick)
+        
+
+
+#%% Convert datafiles to CSV
+
+def df_to_csv(*args, path='', transposed=False):
+    dfs = []
+    for a in args:
+        dfs.append(a.copy())
+    print("Length of dfs: ",len(dfs))
+    if path=='':
+        path = "test.csv"
+    if transposed:
+        for i in range(len(dfs)):
+            dfs[i] = dfs[i].T
+    if len(dfs)==1:
+        dfs[0].to_csv(path+'_csv.txt', index=False)
+    else:
+        i = 1
+        for d in dfs:
+            d.to_csv(path+'_'+str(i)+'_csv.txt', index=False)
+            i+=1
         
 #%% Get information from the sim_settings file.
 def sim_settings(filefile,delim=':'):
@@ -738,8 +999,11 @@ def sim_settings(filefile,delim=':'):
         
 #%% Main
 if __name__=="__main__":
-    data = import_screen(r'D:\Physics\MPhys Project\DatasetArcive\Remote tests\rtanh-math-test12_screen.log')
-    animate_potential(data,t_max=50)
-
+    path = r'D:\Physics\MPhys Project\DatasetArcive\Remote tests\rtanh-math-test12_screen.log'
+    data = import_screen(path)
+    pw1, pw2 = import_pw(trim_name(path) + '_pw_1.log')
+    df_to_csv(pw1,pw2,path=trim_file_name(path))
+    #animate_potential(data,t_max=50)
+    
 
     
