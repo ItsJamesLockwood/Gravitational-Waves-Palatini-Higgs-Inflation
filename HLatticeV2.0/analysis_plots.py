@@ -17,11 +17,32 @@ import numpy as np
 
 
 #%% Define files
+r_math = r"D:\Physics\MPhys Project\DatasetArcive\Remote tests\rtanh-math-test%i%s_screen.log"
+t_16 = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\tanh-16-lh1-run%i_screen.log"
+
+tv = 5
+t_16f = t_16 % tv
+
+t_math_v = 10
+t_math_s = ''
+r_math_f = r_math% (t_math_v, t_math_s)
+
+eliot1 = r"D:\Physics\MPhys Project\DatasetArcive\Remote tests\noMpl_tach_1_1024_slices_screen.log"
 eliot2 = r"D:\Physics\MPhys Project\DatasetArcive\Remote tests\long_sim_1_64_GW_screen.log"
+eliot3 = r"D:\Physics\MPhys Project\DatasetArcive\long_sim_1_64_GW_screen.log"
+eliot4 = r"D:\Physics\MPhys Project\DatasetArcive\Remote tests\long_1_64_GW_80_screen.log"
 eliot5 = r"D:\Physics\MPhys Project\DatasetArcive\Remote tests\1_128_80_long_slice_real_screen.log"
 
+superlong = r"C:\Users\James\Downloads\super_long_lf4_screen.log"
 
-analysis_file = eliot5
+
+cernboxR5a = r"D:\Physics\MPhys Project\DatasetArcive\CERNBox\Remote SIm 5a\data\Remote_SIM5_8c54b1d_screen.log"
+
+
+analysis_file = eliot4
+#analysis_file = t_16f
+analysis_file = cernboxR5a
+
 pw_field_number = 1
 form = 'log'
 #%% Get sim settings variables
@@ -38,8 +59,10 @@ try:
 except FileNotFoundError:
     print("Did not update settings...")
     BOXSIZE_H = 15
-    SKIP = 5
-
+    SKIP = 5 
+    CONF = 1
+    RESOLUTION = 64
+    sim_vals = {}
 #%% Placholder analysis function
 '''
 !Plot 1: Energies 
@@ -133,11 +156,11 @@ def placeholder(data,pw1,pw2,ns,rows=[],sim_vals={}, save_panel=False,save_plots
     
     #Subplot 1,1
     ax_twin = ax[1,1].twinx()
-    p1, = ax[1,1].plot(data['a'], (data['mean1']**2 + data['rms1']**2),label=r"$\langle \phi^{2} \rangle $")
+    #p1, = ax[1,1].plot(data['a'], (data['mean1']**2 + data['rms1']**2),label=r"$\langle \phi^{2} \rangle $")
     p2, = ax_twin.plot(data['a'],np.abs(data['mean1']),color=prop_colors[1],label=r"$\langle \phi \rangle$")
     p3, = ax_twin.plot(data['a'],np.sqrt(data['mean1']**2 + data['rms1']**2),color=prop_colors[2],label=r"$\sqrt{\langle \phi^2 \rangle}$")
     
-    lns = [p1,p2,p3]
+    lns = [p2,p3]
     ax[1,1].legend(handles=lns)
     ax[1,1].set_title("Comparison of the average field and squared field values")
         
@@ -202,13 +225,13 @@ def placeholder(data,pw1,pw2,ns,rows=[],sim_vals={}, save_panel=False,save_plots
     ax[0,2].set_xlabel("Field value (units of $M_{P}=$%d)"%Mpl)
     ax[0,2].set_ylabel("Potential ($M_{P}=$%d)"%Mpl)
     print(anim_running)
-    anim = animation.FuncAnimation(fig,animate,anim_data,interval=interval,repeat=True,save_count=50)
+    #anim = animation.FuncAnimation(fig,animate,anim_data,interval=interval,repeat=True,save_count=50)
     
     #fig.canvas.mpl_connect('button_press_event', onClick)    
     #Subplot 1,2
     ax[1,2].plot(data.index,data['a'])
     ax[1,2].set_yscale('log')
-    ax[1,2].set_xscale('log')
+    ax[1,2].set_xscale('log')          
     if conf==1:
         ax[1,2].set_xlabel(r'Conformal time $\eta$')
     else:
@@ -216,7 +239,7 @@ def placeholder(data,pw1,pw2,ns,rows=[],sim_vals={}, save_panel=False,save_plots
     ax[1,2].set_ylabel("Metric $a$")
     ax[1,2].set_title("Log-log plot of the metric v. %s time"%('conformal' if conf else 'physical'))
     
-    
+    fig.tight_layout()
     
     #End of function: save figures if requested
     if save_panel==True:
@@ -235,6 +258,20 @@ def placeholder(data,pw1,pw2,ns,rows=[],sim_vals={}, save_panel=False,save_plots
         fig.savefig(png_name + '_n_k.png', bbox_inches=extents[2].expanded(padx, pady))
         fig.savefig(png_name + '_energies.png', bbox_inches=extents[3].expanded(padx, pady))
     return anim
+
+def plot_loglog_time(data,conf = CONF):
+    fig, ax = plt.subplots()
+    ax.plot(data.index,data['a'])
+    ax.set_yscale('log')
+    ax.set_xscale('log')
+    if conf==1:
+        ax.set_xlabel(r'Conformal time $\eta$')
+    else:
+        ax.set_xlabel(r"Physical time $t$")
+    ax.set_ylabel("Metric $a$")
+    ax.set_title("Log-log plot of the metric v. %s time"%('conformal' if conf else 'physical'))
+    
+    fig.tight_layout()
 
 #%% import relevant files
 data = import_screen(analysis_file)

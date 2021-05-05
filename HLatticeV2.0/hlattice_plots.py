@@ -58,12 +58,16 @@ unstable4 = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\test-exit
 unstable5 = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\test-exit-r5_screen.log"
 unstable6 = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\test-exit-r6_screen.log"
 
+slice_test_p = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\tanh-slice-test%i_screen.log" 
+slice_i = 1
+slice_f = slice_test_p % slice_i
+
 fiop = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\field-io-run%i_screen.log"
 lf4iop = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\lf4-nsr-io-run%i_screen.log"
 t4iop = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\t4-nsr-io-run%i_screen.log"
 
 hybf = r"D:\Physics\MPhys Project\DatasetArcive\Remote tests\rhybrid-test%i_screen.log"
-hv = 7
+hv = 2
 hyb_file = hybf %hv
 
 
@@ -89,10 +93,21 @@ t_math_v = 12
 t_math_s = ''
 t_math_f = tanh_math % (t_math_v , t_math_s)
 
+
+t_16 = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\tanh-16-lh1-run%i%s_screen.log"
+
+tv = 3
+tvs = ''
+t_16f = t_16 % (tv,tvs)
+
+
+
 r_math_f = r_math% (t_math_v, t_math_s)
 
 simpt4p = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\simple-t4-run%i_screen.log"
 simpv = 7
+
+superlong = r"C:\Users\James\Downloads\super_long_lf4_screen.log"
 
 
 simpl4 =  r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\simp-lf4-run%i_screen.log"
@@ -111,6 +126,17 @@ rl4i = 6
 rti = 2
 #1,2,4,7
 
+
+lazzaP = "D:\Physics\MPhys Project\DatasetArcive\Remote tests\SIM%i_lazzarus%i%s_screen.log"
+lazzaBup = "D:\Physics\MPhys Project\DatasetArcive\Last updated\SIM%i_lazzarus%i%s_screen.log"
+lazza3 = "D:\Physics\MPhys Project\DatasetArcive\Remote tests\long_SIM3_lazzarus%i%s_screen.log"
+simV = 1
+lV = 2
+lS = ''
+lazzaF = lazzaP %(simV,lV,lS)
+lazzaBF = lazzaBup %(simV,lV,lS)
+#lazzaF = lazza3 %(lV,lS)
+
 simpf = simpt4p%simpv
 simp4f = simpl4%simp4v
 rsimpf = rslf%(rstv,modifier)
@@ -125,6 +151,24 @@ th4 = t4s%t4i
 rl4 = r4s%rl4i 
 rth = rt4%rti
 
+cernboxR1a = r"D:\Physics\MPhys Project\DatasetArcive\CERNBox\Remote Sim 1a\data\RemoteSim1_UPDATED_91a576a_screen.log"
+cernboxR2a = r"D:\Physics\MPhys Project\DatasetArcive\CERNBox\Remote Sim 2a\data\RemoteSim2_UPDATED_8525109_screen.log"
+cernboxR3a = r"D:\Physics\MPhys Project\DatasetArcive\CERNBox\Remote Sim 3a\data\RemoteSim3_UPDATED_f4ee809_screen.log"
+cernboxR5a = r"D:\Physics\MPhys Project\DatasetArcive\CERNBox\Remote SIm 5a\data\Remote_SIM5_8c54b1d_screen.log"
+cernboxR6a = r"D:\Physics\MPhys Project\DatasetArcive\CERNBox\Remote SIm 6a\data\Remote_SIM6_f5ec45f_screen.log"
+
+
+
+sim_l2 = r"D:\Physics\MPhys Project\DatasetArcive\Remote tests\sim_lambda2_lh1_t120_screen.log"
+
+rsimp_lf4 = r"D:\Physics\MPhys Project\DatasetArcive\Remote tests\rsimp-lf4-run3_screen.log"
+
+
+sim16p = r"data\sim16_run%i%s_screen.log"
+sim16v = 2
+sim16s = ''
+sim16f = sim16p % (sim16v, sim16s)
+
 save = 'no'
 energies = 'yes1'
 slices = 'yes1'
@@ -134,11 +178,23 @@ my_fft = False
 if my_fft:
     print("FFT baby",save)
     save='no'
-    
+  
 filefile = r_math_f
+filefile = lazzaF
+filefile = lazzaBF
+#filefile = t_16f
+#filefile = cernboxR5a
+#filefile = sim_l2
+#filefile = sim16f
+#filefile = rsimp_lf4
+
+#filefile = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\simp-lf4-run1_screen.log"
 #filefile = hyb_file
-filefile = eliot3
+#filefile = eliot4
+#filefile = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\test_sim2_screen.log"
 #filefile = fref
+#filefile = r"D:\Physics\MPhys Project\DatasetArcive\data-12-1\Lphi4_LatticeEasy_128points_Run1_screen.log"
+
 ts_mode= False
 conf_type = True
 pw_field_number =1 #Choose which field spectrum to plot (start: 1)
@@ -155,29 +211,52 @@ my_img_name =  trim_name(filefile) + '_img'
 save_img = False
 
 
+pow_a =1
 #%% Get sim settings variables
 try:
     strs, vals = sim_settings(filefile)
     RESOLUTION = vals[6] 
+    L = RESOLUTION
     SKIP = int(vals[11]/vals[10] )
     BOXSIZE_H = vals[1] 
+    LH = BOXSIZE_H
     Mpl = vals[14]
 except FileNotFoundError:
     print("Did not update settings...")
     BOXSIZE_H = 15
-    SKIP = 10
-    Mpl = 1024
+    SKIP = 50 
+    Mpl = 1
 #%% Function definitions
 
-def plot_pw_t(df1,save_img=True,img_name='df1',trim=10):
-    dfs = df1.iloc[:,:trim]
-    a = df1['a']
+def plot_pw_t(df1,save_imtrimg=True,img_name='df1',show_n=-1,trunc=-1,norm=True,path=filefile,L=L):
+    if show_n<0:
+        show_n = df1.shape[1]-2
+    if trunc<0:
+        trunc = df1.shape[0]-1
+    jump = ceil((df1.shape[1]-2)/show_n)
+    dfs = df1.drop('a',axis=1).iloc[:trunc,:]
+    a = df1['a'][:trunc]
     fig,ax = plt.subplots()
-    for c in dfs.columns:
-        ax.plot(a,dfs[c])
+    colors = np.flip(cm.magma(np.linspace(0.15,1,show_n)),axis=0)
+    for c in range(0,show_n):
+        normalise = 1
+        if norm:
+            normalise = dfs.iloc[0,c*jump]
+        ax.plot(a,dfs.iloc[:,c*jump]/normalise,color=colors[c],label=round(dfs.columns[c*jump]/(L),3))
     plt.yscale('log')
+    if show_n<=10:
+        ax.legend(title="Values of $k\Delta/2\pi$")
     if save_img==True:
         fig.savefig("pw_img_"+img_name)
+    if norm:
+        norm_str = "(normalised)"
+        norm_formula = "/k_{pert,0}"
+    else: 
+        norm_str = ""
+        norm_formula = ""
+    ax.set_title("Field perturbations %s of %s"%(norm_str, trim_file_name(path)))
+    ax.set_xlabel("Metric $a$")
+    ax.set_ylabel("$k_{pert}%s$"%norm_formula)
     fig.show()
 
 def plot_pw_k(df1,save_img=True,img_name='df1',trim=10):
@@ -406,7 +485,40 @@ def plot_gw_t(gw1,gw2, pw1 = pd.DataFrame(),rows=[],alpha=0.5,tolerance=0.5,trun
     ax1.set_title("Evolution of the gravity waves modes (tolerance: %i%%)"%(100*tolerance))
     ax1.legend()
         
-  
+
+def plot_all_gw(gw1,gw2,rows=[]):
+    fig,ax = plt.subplots()
+    ax.set_yscale('log')    
+    ax.set_xscale('log')
+    
+    frequencies = gw1.drop(['a'],axis=1)
+    grav_intensity = gw2.drop(['a'],axis=1)
+    a_list = gw1['a']
+    if rows==[]:
+        #rows.append(int(gw1.shape[0]/2))
+        #colors = np.flip(cm.magma(np.linspace(0,1,len(rows))),axis=0)
+        rows = range(0,gw1.shape[0],int(gw1.shape[0]/10))
+        colors = np.flip(cm.magma(np.linspace(0,1,gw1.shape[0])),axis=0)
+    else:
+        #colors = np.flip(cm.magma(np.linspace(0,1,len(rows))),axis=0)
+        colors = np.flip(cm.magma(np.linspace(0,1,gw1.shape[0])),axis=0)
+
+    print(rows)
+    # Plot all of the spectra, but only label those in the selected rows
+    for j in range(gw1.shape[0]):
+        #Retrieve k values from the column headers, discarding the 'a' in the last column
+        xs= frequencies.iloc[j,:]
+        ys = grav_intensity.iloc[j,:]
+        if j in rows:
+            ax.plot(xs,ys,color=colors[j], label=a_list[j])
+        else:
+            ax.plot(xs,ys,color=colors[j])
+            
+    ax.legend(title='Spectrum at $a=$',loc='lower right')
+    ax.set_title("Gravitational waves spectrum at different scale factors $a$ ")
+    ax.set_xlabel(r"Frequency spectrum in Hz")
+    ax.set_ylabel("(Omega_{gw}h^2)")
+
     
 def mission_control(data,ns,rows=[],error=True,save_panel=False,save_plots=False,path=filefile,truncate=0,ts=False):
     # Try first to import gravitational wave files
@@ -434,7 +546,10 @@ def mission_control(data,ns,rows=[],error=True,save_panel=False,save_plots=False
     plt.subplots_adjust(top=.93)
     #Subplt 0,0
     ax[0,0].set_title("Inflaton field evolution")
-    ax[0,0].plot(data['a'][:truncate], data['mean1'][:truncate])
+    ax[0,0].plot(data['a'][:truncate]**pow_a, data['mean1'][:truncate])
+    ax[0,0].axhline(1.05/np.sqrt(xi),linestyle='dashed',color='grey')
+    ax[0,0].axhline(-1.05/np.sqrt(xi),linestyle='dashed',color='grey')
+    
     if ts:
         ax[0,0].plot(data['a'][:truncate], data['mean1'][:truncate],'r.')
     c2 = np.flip(cm.magma(np.linspace(0,1,len(ns.columns)-1)),axis=0)
@@ -447,15 +562,18 @@ def mission_control(data,ns,rows=[],error=True,save_panel=False,save_plots=False
         
     #Subplot 0,1
     if (not ts) and GW_files_found:
+        global freqs
         freqs = gw1.drop('a',axis=1)
         gw_intensity = gw2.drop('a',axis=1)
         a_list = gw1['a']
         #Find those frequencies which vary little over the course of the simulation
         tolerance = 0.99
         i=0 
+        
         # Find i such that the difference between the start and end is within the tolerance compared to the next band.
-        while i<freqs.shape[0]-1 and (freqs.iloc[0,i]-freqs.iloc[-1,i]<0.5*(freqs.iloc[-1,i+1]-freqs.iloc[-1,i])):
+        while i<freqs.shape[1]-1 and (freqs.iloc[0,i]-freqs.iloc[-1,i]<0.5*(freqs.iloc[-1,i+1]-freqs.iloc[-1,i])):
             i += 1
+            print(i)
         print("Tolerance %i %% -> truncation: "%(tolerance*100),i)
         #Ensure there are not too many labels
         if i<14:
@@ -470,7 +588,7 @@ def mission_control(data,ns,rows=[],error=True,save_panel=False,save_plots=False
     
         for j in range(len(freqs.iloc[:,:i].columns)):
             if j%step==0:
-                ax[0,1].plot(a_list,gw_intensity.iloc[:,j],color=colors[j],label=freqs.iloc[:,j*step].median())
+                ax[0,1].plot(a_list,gw_intensity.iloc[:,j],color=colors[j],label=freqs.iloc[:,j].median())
             else:
                 ax[0,1].plot(a_list,gw_intensity.iloc[:,j],color=colors[j])
         c3 = np.flip(cm.magma(np.linspace(0,1,len(ns.columns)-1)),axis=0)
@@ -608,6 +726,7 @@ def mission_control(data,ns,rows=[],error=True,save_panel=False,save_plots=False
     lns = [p1,p2,p3]
     ax[1,2].legend(handles=lns)
     ax[1,2].set_title("Comparison of the average field and squared field values")
+    ax[1,2].axhline(1.05/np.sqrt(xi),linestyle='dashed',color='grey')
     
     
     #End of function: save figures if requested
@@ -626,6 +745,9 @@ def mission_control(data,ns,rows=[],error=True,save_panel=False,save_plots=False
         fig.savefig(png_name + '_increments.png', bbox_inches=extents[1].expanded(padx, pady))
         fig.savefig(png_name + '_n_k.png', bbox_inches=extents[2].expanded(padx, pady))
         fig.savefig(png_name + '_energies.png', bbox_inches=extents[3].expanded(padx, pady))
+        if GW_files_found:
+            fig.savefig(png_name + '_gw.png', bbox_inches=extents[4].expanded(padx, pady))
+            
 
 #%% Hybrid model: if hybrid, plot figure 3 from Huang
 
@@ -637,6 +759,7 @@ pw_data1, pw_data2 = import_pw(trim_name(filefile) + '_pw_%i.%s'%(pw_field_numbe
 
 n_df = n_k(pw_data1,pw_data2,L=L)
 nred_df  = n_k_red(pw_data1,pw_data2,L=L)
+n_df = nred_df
 #print(data['a'])
 #plot_n_t(n_df,cols=[1,4,5,20,30],save_img=save_img,img_name=my_img_name,data=data)
 my_rows = np.searchsorted(n_df['a'],my_rows)
@@ -693,7 +816,7 @@ def plot_line(data,conf=True,save=True,path=filefile):
         f.savefig(trim_file_name(path)+'_time_comparison.jpg')
 if save=='yes':
     plot_line(data,save=True,conf=conf_type)
-elif save=='no1':
+elif save=='no2':
     plot_line(data,save=False,conf=conf_type)
 
 #%% Palatini perturbation energy density 
@@ -703,12 +826,132 @@ pert = integrate_perturbation(n_pal)
 if ts_mode:
     plt.plot(pw_data1.a, pert,'r')
     plt.yscale('log')
-    
+if save=='yes':
+    plot_qk(pw_data1,data,L=L, save=True)
+else:
+    plot_qk(pw_data1,data,L=L,save=False)
+
+
+
+#plot_pw_t(pw_data1,show_n=10)
+
 #%% Import GW
 try:
     gw1, gw2 = import_GW(trim_name(filefile) + '_GW.log')
 except FileNotFoundError:
     pass
+#%% FLoquet data from Mathematica
+p1 = r"C:\Users\James\Downloads\aTotValues%s.jpg"
+p2 = r"C:\Users\James\Downloads\TransposeListFinal%s.jpg"
+
+def plot_qk(pw_data1,data,L=64,use_metric=False,jump=5,LH=LH,save=False,filefile=filefile,use_xlog=True,plot=True):
+    if plot:
+        fig, ax = plt.subplots()
+    dim1 = (data.shape[0]-1)
+    dim2 = (pw_data1.shape[0]-1)
+    chkpt_ratio = (dim1-dim1%dim2) / dim2
+    
+    H0 = data.h[0]
+    kmin = data.a[0] *H0
+    
+    # 2pi / n * j  * n * h /LH ~= 
+    ks = k_list(pw_data1,L=L) * L *H0/ LH
+    a_list = pw_data1['a']
+    
+    qks = pw_data1.drop('a',axis=1)
+    t_mat = np.ones(qks.shape) * (chkpt_ratio * qks.index.values.reshape(-1,1) +1) # 1_matrix * time
+    
+    
+    
+    #data_indices = [data['a'][data['a'].eq(pw_data.a[i])].index[j] for i in range(pw_data1.shape[0]) for j in range(data['a'][data['a'].eq(pw_data.a[i])].index)]
+    etot = 3* data['h'][::int(chkpt_ratio)]**2 * Mpl**2 * (data['omega'][::int(chkpt_ratio)]+1)
+    etot.reset_index(drop=True,inplace=True)
+    
+    #Colours 
+    colors = np.flip(cm.viridis(np.linspace(0.1,1,t_mat.shape[0])),axis=0)
+    
+    #Plot
+    vals = np.sqrt(qks) 
+    #vals /= t_mat
+    p = 1
+    vals = vals.multiply(a_list**p,axis=0) 
+    vals /= ks**2.5 
+    
+    j = 1/2 *1
+    vals = vals.multiply(etot**j,axis=0) * np.sqrt(2*np.pi**2)
+    
+    m = 1
+    if use_xlog:
+        ax.set_xscale('log')
+        ks /= kmin
+    else:
+        ks = np.log10(ks/kmin)
+    if not plot:
+        return vals,ks,t_mat
+        
+    for i in range(0,vals.shape[0],jump):
+        #print(i)
+        #ax.plot(ks/kmin, np.log(vals.iloc[i,:])/a_list[i]**m,color=colors[i])
+        ax.plot(ks, np.log(vals.iloc[i,:])/t_mat[i]**m,color=colors[i])
+    #ax.set_yscale('log')
+    ax.set_ylabel(r'$C \cdot \mu_k$')
+    ax.set_xlabel(r'$k/k_{min}$')
+    ax.set_title(r"Growth index $\mu_k$ for LH=%.3f"%LH)
+    if save:
+        fig.savefig(trim_file_name(filefile)+"_mu_k.png")
+    return vals,ks,t_mat
+    
+
+def compare_floquet(p1,p2,pw_data1,data,L=L,LH=LH):
+    fig,ax = plt.subplots()
+    a1p = p1%''
+    a2p = p1%'1'
+    f1p = p2%''
+    f2p = p2%'1'
+    
+    man_trunc = 3
+    man_lim = man_trunc + 100
+    a1 = pd.read_csv(a1p)
+    a2 = pd.read_csv(a2p)
+
+
+    f1 = pd.read_csv(f1p)
+    f2 = pd.read_csv(f2p)
+    f1.columns = np.float64(f1.columns)
+    f2.columns = np.float64(f2.columns)
+
+    a_ind = np.searchsorted(pw_data1['a'],a2).reshape(-1)
+
+    tc = np.sqrt(xi/lam)/Mpl
+    qc = pow(xi/lam,1/4)
+    
+    
+    qk_calc,ks_calc,t_mat_calc = plot_qk(pw_data1, data,L=L,LH=LH,use_xlog=False,plot=False)
+    t_mat_calc = (1/tc*  t_mat_calc )**1 /10 
+    #ks_calc *= np.log10(np.pi*2)
+    
+    cols = np.flip(cm.magma(np.linspace(0.2,1,len(a_ind))),axis=0)
+    cols2 = np.flip(cm.viridis(np.linspace(0.2,1,len(a_ind))),axis=0)    
+    lim = len(cols)
+    comp = 0
+    if len(cols)>man_lim:
+        lim = man_lim
+        cols = np.flip(cm.magma(np.linspace(0.3,1,lim-man_trunc)),axis=0)
+        cols2 = np.flip(cm.viridis(np.linspace(0.3,1,lim-man_trunc)),axis=0)
+        comp = man_trunc
+    for i in range(man_trunc,lim):
+        #ax.plot(f2.columns, f2.iloc[i,:],c=cols[i-comp],label='$a=%.4f\pm%.4f$'%(a2.iloc[i,0],abs(a2.iloc[i,0]-pw_data1['a'][a_ind[i]])))
+        ax.plot(f2.columns, f2.iloc[i,:],c=cols[i-comp],label='$a=%.4f$'%(a2.iloc[i,0]))
+    for i in range(man_trunc,lim):    
+        ax.plot(ks_calc, np.log(qc * qk_calc.iloc[a_ind[i],:])/(tc * t_mat_calc[a_ind[i]]),c=cols2[i-comp],label='$a=%.4f$'%pw_data1['a'][a_ind[i]])
+    ax.set_xticks(list(np.linspace(f2.columns.min(), f2.columns.max(),10)))
+    ax.legend()
+    ax.set_xlabel("$\log_{10}{(k/k_{min})}$")
+    ax.set_ylabel("$\mu_k$")
+    ax.set_title("Floquet exponent plot for $\lambda=10^{-4}$ in Palatini Higgs (numerical vs. lattice)(reds vs. blue-greens)")
+trunc = 270
+compare_floquet(p1,p2,pw_data1,data)
+#plot_qk(pw_data1[:trunc],data[:trunc*10],L=L,LH=LH,use_xlog=False,jump=5)
 #%% Lattice slices
 
 fields_path = trim_name(filefile) + '_whole_field_%i.%s'%(pw_field_number,form)

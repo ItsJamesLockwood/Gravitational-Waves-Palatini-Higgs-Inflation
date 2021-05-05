@@ -12,9 +12,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 from math import ceil
 from matplotlib.widgets import Slider, Button, RadioButtons
+import matplotlib
 import matplotlib.animation as animation
+import matplotlib.ticker as tikr
+from matplotlib.cm import ScalarMappable
 from mpl_toolkits.mplot3d import Axes3D
 from datetime import datetime
+from PIL import Image
+
+import imageio
 
 from physUtils import *
 
@@ -392,7 +398,7 @@ def import_slice(slice_file,sep="SEPARATOR",strict=True):
         try:
             mesh = np.array(mesh).reshape(res,res).T
         except ValueError:
-            print("WARNING: The line for a=",a," is the wrong size (", len(mesh),"). Please check file: ",slice_file)
+            print("WARNING: The line for a=",a," is the wrong size (", len(mesh),"). Expected: ",res,"^2. Please check file: ",slice_file)
             break
         field_list.append([a,mesh])
         
@@ -414,6 +420,7 @@ def plot_slices(slice_df,a_ind=0,use_FFT=False,use_contour=False, title=''):
     X, Y = np.meshgrid(np.linspace(1,fvals.shape[0],fvals.shape[0]),np.linspace(1,fvals.shape[1],fvals.shape[1]))
     fig = plt.figure()
     plt.subplots_adjust(left=0.25, bottom=0.25)    
+    plt.tight_layout()
     ax = fig.add_subplot(2,1,1)
     ax3 = fig.add_subplot(2,1,2,projection='3d')
     ax.set_aspect(1)
@@ -427,13 +434,14 @@ def plot_slices(slice_df,a_ind=0,use_FFT=False,use_contour=False, title=''):
     else:
         ax.imshow(fvals)
     pl3d = ax3.plot_surface(X=X, Y=Y, Z=fvals, cmap='YlGnBu_r')
-    cbar = fig.colorbar(pl3d, ax=ax3)
+    cbar = fig.colorbar(pl3d, ax=ax3, pad=0.2)
     
     axcolor = 'lightgoldenrodyellow'
+    
     slid_ax = plt.axes([0.25, 0.1, 0.65, 0.03], facecolor=axcolor)
     a_slider = Slider(slid_ax, 'A', 0, slice_df.shape[0]-1, valinit=a_ind, valstep=1)
     
-  
+    
     def update(val):
         av = int(a_slider.val) 
         the_mesh = slice_df.iloc[av,:].mesh
@@ -494,6 +502,7 @@ def plot_slices(slice_df,a_ind=0,use_FFT=False,use_contour=False, title=''):
     
     resetax._button = button
     playax._button = playButton
+    
     return fvals
 
 def import_energy(energy_file,sep="SEPARATOR",strict=True):
@@ -643,8 +652,469 @@ def plot_energy(edf,a_ind=0,use_FFT=False,use_contour=False,title='',use_log=Fal
     playax._button = playButton
     return fvals
 
+def slice_to_gif(slice_df,a_ind=0,a_max=-1,use_FFT=False,use_vmin=False, use_contour=False, title='',fps=-1,out='animated_slice',save=True,t_max=-1):
+    the_mesh = slice_df.iloc[a_ind,:].mesh
+    fvals = the_mesh
+    fft_str=''
+    if a_max ==-1 or a_max > slice_df.shape[0]:
+        a_max = slice_df.shape[0]
+    jump = 1
+    if fps==-1 and t_max==-1:
+        jump = 1
+        fps = 24
+    elif fps==-1:
+        fps = 24
+        jump = ceil(a_max/fps/t_max)
+    elif t_max==-1:
+        jump = 1
+       
+    if use_FFT:
+        fft_str='\n(log of modulus of FFT)'
+        fvals = np.log(np.absolute(np.fft.fft2(fvals)))
+    vmin, vmax = slice_df.mesh[a_ind].min(),slice_df.mesh[a_ind].max()
+    if use_vmin:
+        for j in slice_df.index[a_ind:a_max:jump]:
+            v1 = slice_df.mesh[j].min()
+            v2 = slice_df.mesh[j].max()
+            if v1<vmin: vmin=v1
+            if v2>vmax: vmax=v2
+        
+    print("Vmin,vmax: ",vmin,vmax)
+    bounds = np.linspace(vmin,vmax,1000)
+    
+    X, Y = np.meshgrid(np.linspace(1,fvals.shape[0],fvals.shape[0]),np.linspace(1,fvals.shape[1],fvals.shape[1]))
+    fig,ax = plt.subplots()
+    fig.set_figheight(6)
+    fig.set_figwidth(7.5)
+    #plt.tight_layout()
+    ax.set_aspect(1)
+    ax.set_title("Heatmaps of the %s perturbations for constant x up to %d"%(title,slice_df.a[a_max-1]) + fft_str)
+    ax.set_xlabel("Y coordinate")
+    ax.set_ylabel("Z coordinate")
+
+    #ax.contourf(fvals)
+    if use_contour:
+        img_plot = ax.contourf(fvals, vmin=vmin, vmax=vmax)
+    else:
+        img_plot = ax.imshow(fvals,  vmin=vmin, vmax=vmax)
+    if use_vmin:
+        cb = fig.colorbar(ScalarMappable(norm = img_plot.norm, cmap = img_plot.cmap),
+                 boundaries=bounds,
+                 ticks=np.linspace(vmin,vmax,10))
+        
+    def update(i):
+        the_mesh = slice_df.iloc[i,:].mesh
+        fvals = the_mesh
+        
+        if use_FFT:
+            fvals = np.log(np.absolute(np.fft.fft2(fvals)))        
+        ax.clear()
+        if not use_vmin:
+            vmin_loc, vmax_loc = slice_df.mesh[i].min(),slice_df.mesh[i].max()
+    
+            if use_contour:
+                img_plot = ax.contourf(fvals, vmin=vmin_loc, vmax=vmax_loc)
+            else:
+                img_plot = ax.imshow(fvals,  vmin=vmin_loc, vmax=vmax_loc)
+        else:
+            if use_contour:
+                img_plot = ax.contourf(fvals, vmin=vmin, vmax=vmax)
+            else:
+                img_plot = ax.imshow(fvals,  vmin=vmin, vmax=vmax)
+
+        
+        ax.set_title("Heatmaps of the %s perturbations for constant x up to %d"%(title,slice_df.a[a_max-1]) + fft_str)
+        ax.set_xlabel("Y coordinate")
+        ax.set_ylabel("Z coordinate")
+        time_text = ax.text(.05,.87,'',transform = ax.transAxes, bbox=props,color='orange')
+        time_text.set_text(time_template%(slice_df['a'][i],i))
+        
+    time_template = "Metric $a$= %.7f \nRow: %i "
+    props = dict(boxstyle='round', facecolor='blue', alpha=0.3)
+    time_text = ax.text(.05,.87,'',transform = ax.transAxes, bbox=props,color='orange')
+    time_text.set_text(time_template%(slice_df['a'][a_ind],a_ind))
+
+        
+    anim = animation.FuncAnimation(fig, update,frames=slice_df.index[a_ind:a_max:jump], repeat=False)
+    writer = animation.PillowWriter(fps=fps)
+    if save:
+        anim.save(out+'.gif', writer=writer)
+    return anim
+
+
+def perts_to_gif(slice_df,a_ind=0,a_max=-1,use_FFT=False,use_vmin=True, log_scale=False, use_contour=False, title='',fps=-1,out='animated_slice',save=True,t_max=-1):
+    the_mesh = slice_df.iloc[a_ind,:].mesh
+    fvals = np.abs(the_mesh - the_mesh.mean())
+    fft_str=''
+    if a_max ==-1 or a_max > slice_df.shape[0]:
+        a_max = slice_df.shape[0]
+    jump = 1
+    if fps==-1 and t_max==-1:
+        jump = 1
+        fps = 24
+    elif fps==-1:
+        fps = 24
+        jump = ceil(a_max/fps/t_max)
+    elif t_max==-1:
+        jump = 1
+    if use_FFT:
+        fft_str='\n(log of modulus of FFT)'
+        fvals = np.log(np.absolute(np.fft.fft2(fvals)))
+    vmin = np.abs(slice_df.mesh[a_ind]-slice_df.mesh[a_ind].mean()).min()
+    vmax = np.abs(slice_df.mesh[a_ind]-slice_df.mesh[a_ind].mean()).max()
+    if use_vmin:
+        for j in slice_df.index[a_ind:a_max:jump]:
+            v1 = np.abs(slice_df.mesh[j]-slice_df.mesh[j].mean()).min()
+            v2 = np.abs(slice_df.mesh[j]-slice_df.mesh[j].mean()).max()
+            if v1<vmin: vmin=v1
+            if v2>vmax: vmax=v2
+    if log_scale:
+        norm = matplotlib.colors.LogNorm()
+        fvals = np.log10(fvals)
+        vmin, vmax = np.log10(vmin), np.log10(vmax)
+    else:
+        norm = matplotlib.colors.Normalize()
+
+        
+    print("Vmin,vmax: ",vmin,vmax)
+    bounds = np.linspace(vmin,vmax,1000)
+    
+    X, Y = np.meshgrid(np.linspace(1,fvals.shape[0],fvals.shape[0]),np.linspace(1,fvals.shape[1],fvals.shape[1]))
+    fig,ax = plt.subplots()
+    fig.set_figheight(6)
+    fig.set_figwidth(7.5)
+    #plt.tight_layout()
+    ax.set_aspect(1)
+    ax.set_title("Heatmaps of the %s perturbations for constant x up to %d"%(title,slice_df.a[a_max-1]) + fft_str)
+    ax.set_xlabel("Y coordinate")
+    ax.set_ylabel("Z coordinate")
+
+    #ax.contourf(fvals)
+    if use_contour:
+        img_plot = ax.contourf(fvals, vmin=vmin, vmax=vmax)
+    else:
+        img_plot = ax.imshow(fvals,  vmin=vmin, vmax=vmax)
+    if use_vmin:
+        cb = fig.colorbar(ScalarMappable(norm = img_plot.norm, cmap = img_plot.cmap),
+                 boundaries=bounds,
+                 ticks=np.linspace(vmin,vmax,10))
+        
+    def update(i):
+        the_mesh = slice_df.iloc[i,:].mesh
+        fvals = np.abs(the_mesh - the_mesh.mean())
+        
+        if use_FFT:
+            fvals = np.log(np.absolute(np.fft.fft2(fvals)))        
+        ax.clear()
+        if log_scale:
+            fvals = np.log(fvals)
+
+        if not use_vmin:
+            vmin_loc = np.abs(slice_df.mesh[i]-slice_df.mesh[i].mean()).min()
+            vmax_loc = np.abs(slice_df.mesh[i]-slice_df.mesh[i].mean()).max()
+            if log_scale:
+                vmin_loc, vmax_loc = np.log10(vmin_loc), np.log10(vmax_loc)
+
+                
+            if use_contour:
+                img_plot = ax.contourf(fvals, vmin=vmin_loc, vmax=vmax_loc)
+            else:
+                img_plot = ax.imshow(fvals,  vmin=vmin_loc, vmax=vmax_loc)
+        else:
+            if use_contour:
+                img_plot = ax.contourf(fvals, vmin=vmin, vmax=vmax)
+            else:
+                img_plot = ax.imshow(fvals,  vmin=vmin, vmax=vmax)
+        
+
+        
+        ax.set_title("Heatmaps of the %s perturbations for constant x up to %d"%(title,slice_df.a[a_max-1]) + fft_str)
+        ax.set_xlabel("Y coordinate")
+        ax.set_ylabel("Z coordinate")
+        time_text = ax.text(.05,.87,'',transform = ax.transAxes, bbox=props,color='orange')
+        time_text.set_text(time_template%(slice_df['a'][i],i))
+        
+    time_template = "Metric $a$= %.7f \nRow: %i "
+    props = dict(boxstyle='round', facecolor='blue', alpha=0.3)
+    time_text = ax.text(.05,.87,'',transform = ax.transAxes, bbox=props,color='orange')
+    time_text.set_text(time_template%(slice_df['a'][a_ind],a_ind))
+
+        
+    anim = animation.FuncAnimation(fig, update,frames=slice_df.index[a_ind:a_max:jump], repeat=False)
+    writer = animation.PillowWriter(fps=fps)
+    if save:
+        anim.save(out+'.gif', writer=writer)
+    return anim
+
+
+
+def import_a_mesh(fields_file,sep="SEPARATOR",selected=1,up_to=0,outfile="",save=True):
+    if outfile=="":
+        outfile="placeholder"
+    
+    # Selected: int, choose which field state to plot.
+    if up_to==0: up_to=selected
+    
+    file = open(fields_file,'r')
+    mesh_pair = []
+    
+    lres = file.readline().strip()
+    if lres==sep:
+        raise ValueError("Separator found in first line. Expected resolution. Check that file format corresponds to requirements for 'import_mesh'.")
+    res = int(lres)
+        
+    l1 = file.readline().strip()    
+    l2 = file.readline().strip()
+    l3 = file.readline().strip()
+    counter = 1
+    while l1!='' and counter<=up_to:        
+        if l1!=sep:
+            raise ValueError("Expected separator in second line. Instead found '"+l1+"'.")    
+        if l2==sep or l3==sep:
+            raise ValueError("Expected either metric or field mesh in lines 2 and 3. Instead found the separator.")
+        a = float(l2)
+        
+        if counter>=selected and counter<=up_to:
+            print("Saving mesh %i..."%counter)
+            mesh = list(map(float, l3.split()))
+            mesh = np.array(mesh).reshape(res,res,res).T
+            
+            mesh_pair = [a, mesh]
+            if save:
+                np.save(outfile+"_"+str(counter)+".npy",mesh_pair[1])
+            print("Done saving.")
+        else:
+            print("Counter: ",counter,"Skipping...")
+        
+        counter += 1
+        l1 = file.readline().strip()
+        l2 = file.readline().strip()
+        l3 = file.readline().strip()
+        
+    
+    file.close()
+    return mesh_pair
+
+
+
+    
+def mesh_to_gif(fields_file,outfile='out_mesh',sep="SEPARATOR",start_from=1,up_to=1,use_perts=False,scientific=False,cutoff=-2.3):
+    file = open(fields_file,'r')
+    mesh_pair = []
+    
+    
+    #Find vmin, vmax
+    vmin,vmax = 0,0
+    if scientific:
+        lres = file.readline().strip()
+        if lres==sep:
+            raise ValueError("Separator found in first line. Expected resolution. Check that file format corresponds to requirements for 'import_mesh'.")
+        res = int(lres)
+            
+        l1 = file.readline().strip()    
+        l2 = file.readline().strip()
+        l3 = file.readline().strip()
+        counter = 1
+        
+        print("Going through file to find vmin, vmax...")
+        while l1!='' and counter<=up_to:        
+            if l1!=sep:
+                raise ValueError("Expected separator in second line. Instead found '"+l1+"'.")    
+            if l2==sep or l3==sep:
+                raise ValueError("Expected either metric or field mesh in lines 2 and 3. Instead found the separator.")
+            a = float(l2)
+            
+            if counter>=start_from:
+                print("Scanning field %i..."%counter)
+                mesh = list(map(float, l3.split()))
+                mesh = np.array(mesh).reshape(res,res,res).T
+                if not use_perts:
+                    if counter==1:
+                        vmin = mesh.min()
+                        vmax = mesh.max()
+                    else:
+                        v1,v2 = mesh.min(),mesh.max()
+                        if v1<vmin: vmin=v1
+                        if v2>vmax: vmax=v2
+                else:
+                    if counter==1:
+                        avg_mesh = mesh.mean()
+                        vmin = np.log10(np.abs((mesh-avg_mesh))).min()
+                        vmax = np.log10(np.abs((mesh-avg_mesh))).max()
+                    else:
+                        avg_mesh = mesh.mean()
+                        v1,v2 = np.log10(np.abs((mesh-avg_mesh))).min(), np.log10(np.abs((mesh-avg_mesh))).max()
+                        if v1<vmin: vmin=v1
+                        if v2>vmax: vmax=v2
+            else:
+                print("Skipping field %i."%counter)
+            counter += 1
+            l1 = file.readline().strip()
+            l2 = file.readline().strip()
+            l3 = file.readline().strip()
+        print("Vmin, vmax: ",vmin,vmax)
+        file.close()
+        file = open(fields_file,'r')
+
+        
+    lres = file.readline().strip()
+    if lres==sep:
+        raise ValueError("Separator found in first line. Expected resolution. Check that file format corresponds to requirements for 'import_mesh'.")
+    res = int(lres)
+        
+    l1 = file.readline().strip()    
+    l2 = file.readline().strip()
+    l3 = file.readline().strip()
+    counter = 1     
+    
+    while l1!='' and counter<=up_to:        
+        if l1!=sep:
+            raise ValueError("Expected separator in second line. Instead found '"+l1+"'.")    
+        if l2==sep or l3==sep:
+            raise ValueError("Expected either metric or field mesh in lines 2 and 3. Instead found the separator.")
+        a = float(l2)
+        
+        if counter<start_from:
+            print("Skipping mesh %i..."%counter)
+        else:
+            print("Saving mesh %i..."%counter,end=' ')
+            mesh = list(map(float, l3.split()))
+            mesh = np.array(mesh).reshape(res,res,res).T
+                
+            mesh_pair = [a, mesh]
+                
+            print("Done saving. Plotting...")
+            if scientific:
+                mesh_plot(mesh_pair, out=outfile, use_perts=use_perts,counter=counter,cutoff=cutoff,vs=[cutoff,vmax])
+            else:
+                mesh_plot(mesh_pair, out=outfile, use_perts=use_perts,counter=counter,cutoff=cutoff)
+        counter += 1
+        l1 = file.readline().strip()
+        l2 = file.readline().strip()
+        l3 = file.readline().strip()
+    
+    
+    file.close()
+    return mesh_pair
+    
+def normalise(x,vmin,vmax):
+    return (x-vmin)/(vmax-vmin)
+
+def unnormalise(x,vmin,vmax):
+    return (vmax-vmin)*x+vmin
+
+def mesh_plot(mesh_pair,out='out_mesh',counter=1,use_perts=False,cutoff=-2.5,vs=[],show=False):
+    a_val = mesh_pair[0]
+    the_mesh = mesh_pair[1]
+    n= the_mesh.shape[0]
+    
+    coords = np.linspace(1,n,n)
+    X,Y,Z = np.meshgrid(coords, coords, coords)
+    xs = X.reshape(1,n**3)[0]
+    ys = Y.reshape(1,n**3)[0]
+    zs = Z.reshape(1,n**3)[0]
+    ts = the_mesh.reshape(1,n**3)[0]
+    
+    mesh_avg = the_mesh.mean()
+    mesh_perts = np.log10(np.abs(the_mesh - mesh_avg)).reshape(1,n**3)[0]
+    
+    if use_perts:
+        ts = mesh_perts
+
+    x_keep, y_keep, z_keep, t_keep = [], [], [], [] 
+    for i in range(len(xs)):
+        if mesh_perts[i]>cutoff:
+            x_keep.append(xs[i])
+            y_keep.append(ys[i])
+            z_keep.append(zs[i])
+            t_keep.append(ts[i])
+            
+    fig = plt.figure()    
+    fig.set_figwidth(10)
+    fig.set_figheight(8)
+    ax = fig.add_subplot(111, projection='3d')
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('Z')
+    ax.set_title(r"Perturbations produced in the Palatini Higgs model (cutoff: $\log_{10}{|\chi/\chi_0|} >%.2f$)($a=%.3f$)"%(cutoff,mesh_pair[0]))
+    
+    print("Remaining points after cutoff: ",len(x_keep))        
+    if len(x_keep)==0:
+        fig.savefig(out + '%i.jpeg'%counter)
+        plt.close(fig)
+        return
+    
+
+    # Plot at different transparences
+    scats=[]
+    if len(vs)!=2:
+        v1,v2 = min(t_keep), max(t_keep)
+    else:
+        v1,v2 = vs[0],vs[1]
+    #print(v1,v2)
+    bounds = [0.33,0.66]
+    alphas = [0.25,0.5,0.75]
+    x_seps, y_seps, z_seps, t_seps = [], [], [], []
+    for _ in alphas:
+        x_seps.append([])
+        y_seps.append([])
+        z_seps.append([])
+        t_seps.append([])
+    for i in range(len(t_keep)):
+        found = False
+        for b in range(len(bounds)):
+            if t_keep[i]<unnormalise(bounds[b],v1,v2):
+                x_seps[b].append(x_keep[i])
+                y_seps[b].append(y_keep[i])
+                z_seps[b].append(z_keep[i])
+                t_seps[b].append(t_keep[i])
+                found = True
+                break
+        if not found:
+            x_seps[len(bounds)].append(x_keep[i])
+            y_seps[len(bounds)].append(y_keep[i])
+            z_seps[len(bounds)].append(z_keep[i])
+            t_seps[len(bounds)].append(t_keep[i])
+    for t in t_seps:
+        #print("Length: ", len(t))
+        pass
+    
+    if len(vs)!=2:
+        #print("Scattering at alpha: ",end=' ')            
+        for a in range(len(alphas)):
+            #print(alphas[a],'...',end=' ')
+            scats.append(ax.scatter(x_seps[a], y_seps[a], z_seps[a], c=t_seps[a], alpha=alphas[a]))
+        fig.colorbar(scats[0],ax=ax)
+        #print('\n')
+    elif vs[0]<=vs[1]:
+        #print("Scattering at alpha: ",end=' ')            
+        for a in range(len(alphas)):
+            #print(alphas[a],'...',end=' ')
+            scats.append(ax.scatter(x_seps[a], y_seps[a], z_seps[a], c=t_seps[a], alpha=alphas[a], vmin=v1,vmax=v2))
+        fig.colorbar(scats[0],ax=ax)
+        #print('\n')
+
+    
+    fig.savefig(out + '%i.jpeg'%counter)
+    if not show:
+        plt.close(fig)
+
+
+
+def imgs_to_gif(template_path,img_type='.jpeg', indices=[],fps=1):
+    if len(indices)==0:
+        print("No indices given")
+        return
+    images = []
+    for i in sorted(indices):
+        file_path = template_path+str(i)+img_type
+        if os.path.exists(file_path):
+            print("Processing index: ",i)
+            images.append(imageio.imread(file_path))
+    imageio.mimsave(template_path+'GIF'+ str(min(indices)) + '_' + str(max(indices)) + '.gif', images,fps=fps)
+    
 #%% Animating the results
-def animate_potential(data,plt_obj=0,t_max=25,fps=25):
+def animate_potential(data,plt_obj=0,t_max=25,fps=25, Mpl=1):
     # Set plot object
     if plt_obj ==0:
         try:
@@ -676,7 +1146,7 @@ def animate_potential(data,plt_obj=0,t_max=25,fps=25):
     print("Animation: fps: ",fps,", milliseconds: ",interval,", step: ",step,", data.size: ",data[::step].shape[0])
     
     phi_max = np.abs(data['mean1']).max() * 1.02 #Provide 2% extra margin
-    xs = np.linspace(-phi_max,phi_max,1000)
+    xs = np.linspace(0,phi_max,1000)
     ys = palatiniV(xs)
     v_phi_interp = scipy.interpolate.PchipInterpolator(xs, ys, extrapolate=False)
     
@@ -688,7 +1158,7 @@ def animate_potential(data,plt_obj=0,t_max=25,fps=25):
         else:
             anim.event_source.start()
             anim_running = True
-            
+    '''        
     xp0 = data['mean1'][0]
     yp0 = palatiniV(xp0)
     def anim_data():
@@ -711,6 +1181,66 @@ def animate_potential(data,plt_obj=0,t_max=25,fps=25):
     
     anim = animation.FuncAnimation(fig,animate,anim_data,interval=interval,repeat=False,save_count=50)
     fig.canvas.mpl_connect('button_press_event', onClick)
+    '''    
+
+    phis = np.abs(data['mean1'])
+    phi2s = np.sqrt(data['mean1']**2 + data['rms1']**2)
+    
+    xp1 = phis[0]
+    yp1 = palatiniV(xp1)
+    xp2 = phi2s[0]
+    yp2 = palatiniV(xp2)
+    
+    def anim_data():
+        nonlocal step
+        for i in range(0,phis.shape[0],step):
+            #print(i)
+            yield [phis[i],phi2s[i],data['a'][i],i]
+            
+    def animate(anim_data):
+        xp1 = anim_data[0]
+        xp2 = anim_data[1]
+        yp1 = palatiniV(xp1)
+        yp2 = palatiniV(xp2)
+        p1.set_data(xp1,yp1)
+        p2.set_data(xp2,yp2)
+        
+        time_text.set_text(time_template%(anim_data[2],anim_data[3]))
+    
+    p0, = ax.plot(xs,ys)
+    p1, = ax.plot(xp1,yp1,'ro')
+    p2, = ax.plot(xp2,yp2,'go')
+    time_template = "Metric $a$= %.7f \nRow: %i "
+    time_text = ax.text(0.05,0.87,'', transform=ax.transAxes)
+    time_text.set_text(time_template%(data['a'][0],0))
+    ax.set_title(r"Potential for $\langle \phi \rangle(t)$ and $\sqrt{\langle \phi^2 \rangle(t)}$")
+    ax.set_xlabel("Field value (units of $M_{P}=$%d)"%Mpl)
+    ax.set_ylabel("Potential ($M_{P}=$%d)"%Mpl)
+    print(anim_running)
+    anim = animation.FuncAnimation(fig,animate,anim_data,interval=interval,repeat=True,save_count=50)
+    fig.canvas.mpl_connect('button_press_event', onClick)
+        
+
+
+#%% Convert datafiles to CSV
+
+def df_to_csv(*args, path='', transposed=False):
+    dfs = []
+    for a in args:
+        dfs.append(a.copy())
+    print("Length of dfs: ",len(dfs))
+    if path=='':
+        path = "test.csv"
+    if transposed:
+        for i in range(len(dfs)):
+            dfs[i] = dfs[i].T
+    if len(dfs)==1:
+        dfs[0].to_csv(path+'_csv.txt', index=False)
+    else:
+        i = 1
+        for d in dfs:
+            d.to_csv(path+'_'+str(i)+'_csv.txt', index=False)
+            i+=1
         
 #%% Get information from the sim_settings file.
 def sim_settings(filefile,delim=':'):
@@ -735,11 +1265,56 @@ def sim_settings(filefile,delim=':'):
             values.append('n/a')
         l1 = file.readline().strip()
     return (descriptors,values)
+ 
+
+
+#%% Floquet data from Python
+flfile = r"C:\Users\James\Downloads\floquet_data.txt"
+import re, pprint
+'''
+with open(flfile,'r') as f:
+    fl_data = f.read()
+results = re.findall(r'\{\}', fl_data)   
+res2 = re.findall('\[[^\]]*\]|\{[^\}]*\)|\"[^\"]*\"|\S+',fl_data) 
+pprint.pprint(results)
+  '''
+def make_pure_qkdf(pw_data1,data,L=64,LH=1,process=True,Mpl=1):
+    dim1 = (data.shape[0]-1)
+    dim2 = (pw_data1.shape[0]-1)
+    chkpt_ratio = (dim1-dim1%dim2) / dim2
+
+    H0 = data.h[0]
+    kmin = data.a[0] *H0
+    
+    # 2pi / n * j  * n * h /LH ~= 
+    ks = k_list(pw_data1,L=L) * L *H0/ LH
+    a_list = pw_data1['a']
+
+    qks = pw_data1.drop('a',axis=1)
+    etot = 3* data['h'][::int(chkpt_ratio)]**2 * Mpl**2 * (data['omega'][::int(chkpt_ratio)]+1)
+    etot.reset_index(drop=True,inplace=True)
+
+    vals = np.sqrt(qks)    
+    if process:
         
+        vals = vals.multiply(a_list,axis=0) 
+        vals /= ks**2.5 
+        
+        vals = vals.multiply(etot**(1/2),axis=0) * np.sqrt(2*np.pi**2)
+    vals.columns = ks
+    vals['a'] = pw_data1['a']
+    vals['etot'] = etot
+    
+    return vals
+
+
 #%% Main
 if __name__=="__main__":
-    data = import_screen(r'D:\Physics\MPhys Project\DatasetArcive\Remote tests\rtanh-math-test12_screen.log')
-    animate_potential(data,t_max=50)
-
+    path = r'D:\Physics\MPhys Project\DatasetArcive\Remote tests\rtanh-math-test12_screen.log'
+    data = import_screen(path)
+    pw1, pw2 = import_pw(trim_name(path) + '_pw_1.log')
+    df_to_csv(pw1,pw2,path=trim_file_name(path))
+    #animate_potential(data,t_max=50)
+    
 
     

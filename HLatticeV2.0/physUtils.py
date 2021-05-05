@@ -178,11 +178,11 @@ def n_k_red(pw_data1,pw_data2,L=64):
 
     ks = k_list(pw_data1,L=L)
     #Retrieve actual field eignemode values
-    fk_df = pw_a.multiply(a_list**2,axis=0) 
+    fk_df = pw_a.multiply(a_list**0,axis=0) 
     fkdot_df = pw_b
 
     #Some pretty cool element-wise multiplication between vector ks and dataframes fk_df and fkdot_df!
-    ns = 1/2 * (fk_df + fkdot_df)
+    ns = 1/2 * (fk_df + fkdot_df) / ks**4
     #Store ks in the column headers
     ns.columns = ks
     #Add a values back for plotting purposes
@@ -235,7 +235,7 @@ def omegas(pw1,data,L=64,skip=50,LH=0.8,h0=-1):
     omegas = ks_a_matrix + d2v_column.reshape(-1,1)
     # For information: print information about tachyonic modes. 
     print("Tachyonic modes present: ", (omegas<0).any())
-    if (omegas<0).any(): print("Number of tachyonic modes: ", np.count_nonzero(omegas<0))
+    if (omegas<0).any(): print("Number of tachyonic modes: ", np.count_nonzero(omegas<0),"/",np.size)
     return ks_a_matrix, d2v_column.reshape(-1,1)
     
 def n_palatini(pw1,pw2,data, L=64, skip=2,h0=-1,LH=6,use_ks=True):
@@ -310,7 +310,7 @@ def n_palatini(pw1,pw2,data, L=64, skip=2,h0=-1,LH=6,use_ks=True):
     omegas = ks_a_matrix + d2v_column.reshape(-1,1)
     # For information: print information about tachyonic modes. 
     print("Tachyonic modes present: ", (omegas<0).any())
-    if (omegas<0).any(): print("Number of tachyonic modes: ", np.count_nonzero(omegas<0))
+    if (omegas<0).any(): print("Number of tachyonic modes: ", np.count_nonzero(omegas<0),"/",omegas.size)
     
     # Add the terms together to form the number density.
     term1 = phi_dots
