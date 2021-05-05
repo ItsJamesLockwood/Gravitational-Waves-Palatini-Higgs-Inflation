@@ -47,7 +47,7 @@
 #define NUM_SCALAR_FIELDS 1
 
 !!the length of each edge times Hubble: In HLattice the speed of light is defined to be 1, so this quantity is dimensionless. It should be chosen such that the dominating growing mode is captured. 
-#define INIT_BOXSIZE_TIMES_H 0.100000000
+#define INIT_BOXSIZE_TIMES_H 0.02500000000
 
 !! define the discretization scheme
 #define DIS_SCHEME HLATTICE2
@@ -69,7 +69,7 @@
 #define INTEGRATOR SYMPLECTIC_6TH
 
 !! define the # of grid points along each edge of the cubical box (global variable "n" in the code):it must be integer power of 2 (and between 4 and 4096); the total number of grid points is n^3
-#define SIMU_RESOLUTION 128
+#define SIMU_RESOLUTION 16
 
 !! want gravitational waves? You can use it for any METRIC_OPTION. In the case METRIC_OPTION = MINKOWSKI_BACKGROUND or FRW_BACKGROUND, the metric perturbations will be integrated without giving feedback to the scalar fields.
 #define WANTGW NO
@@ -94,8 +94,8 @@
 #define XY_SLICE 1
 #define XZ_SLICE 1
 
-#define WANTFIELDS YES
-#define WANTSLICES NO
+#define WANTFIELDS NO
+#define WANTSLICES YES
 !! As slices and fields are resource intensive, there is an option to save them less regularly than regular checkpoints.
 #define CHECKPOINTS_PER_SLICE 5
 #define CHECKPOINTS_PER_FIELD 10
@@ -113,7 +113,8 @@
 #define CHECKPOINT_AND_GW_INTERVAL (FEEDBACK_INTERVAL * LINES_BETWEEN_SAVES)
 
 !!stop the program if # of steps exceeds
-#define MAX_STEPS 1000000
+#define MAX_STEPS 100
+!!00000
 
 !!In HLattice if metric feedbacks are turned on, I split the noncanonical term e^{Adt} to (e^{A/m dt})^m and integrate e^{A/m dt} using a 4-th order Runge-Kutta integrator. Typically m=10 suffices. But feel free to change it here.
 #define SUB_INTEGRATOR_STEPS 10
