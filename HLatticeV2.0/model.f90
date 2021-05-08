@@ -17,7 +17,7 @@ module model
   real(dl),parameter:: coef = lambda * Mplsq**2 / 4.d0 / xi2
   real(dl),parameter:: b = xisqrt/Mpl
   real(dl),parameter:: suppression = 1.d0 
-  real(dl),parameter:: time_suppression = 4._dl
+  real(dl),parameter:: time_suppression = 8._dl
   !!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
 !!***************define macros here;************************
@@ -161,7 +161,7 @@ contains
         write(*,*) "NOTE: REGION OF k < k_min MAY NOT YIELD ACCURATE RESULTS"
         kmin_warning = .false.
       endif
-      !stop "This simulation is now botched due to k<k_min"
+      stop "This simulation is now botched due to k<k_min"
       model_Power(1) = 0.5_dl/k*(init_Hubble/k)**2 * suppression *0 !! Set them to zero
       model_Power(2) = 0._dl * suppression
       write(*,*) "k:",k,"k<k_min ","model_power:", model_Power
