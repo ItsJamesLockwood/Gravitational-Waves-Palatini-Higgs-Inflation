@@ -57,7 +57,7 @@
   !! HLATTICE2 : \partial_x --> i/3 sin(k_x) (4 - cos(k_x)), slower but more accurate spatial derivatives. This option is recommended for simulations with metric perturbations
 
 !! define the metric
-#define METRIC_OPTION FRW_PERTURB_FIXED
+#define METRIC_OPTION FRW_PERTURB_ADAPTIVE
   !! you can use:
   !! MINKOWSKI_BACKGROUND : minkowski spacetime
   !! FRW_BACKGROUND : FRW, evolve a(t) together with the scalar fields
