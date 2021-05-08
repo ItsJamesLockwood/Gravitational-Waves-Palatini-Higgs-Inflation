@@ -57,7 +57,7 @@
   !! HLATTICE2 : \partial_x --> i/3 sin(k_x) (4 - cos(k_x)), slower but more accurate spatial derivatives. This option is recommended for simulations with metric perturbations
 
 !! define the metric
-#define METRIC_OPTION FRW_PERTURB_ADAPTIVE
+#define METRIC_OPTION FRW_BACKGROUND
   !! you can use:
   !! MINKOWSKI_BACKGROUND : minkowski spacetime
   !! FRW_BACKGROUND : FRW, evolve a(t) together with the scalar fields
@@ -69,7 +69,7 @@
 #define INTEGRATOR SYMPLECTIC_6TH
 
 !! define the # of grid points along each edge of the cubical box (global variable "n" in the code):it must be integer power of 2 (and between 4 and 4096); the total number of grid points is n^3
-#define SIMU_RESOLUTION 64
+#define SIMU_RESOLUTION 128
 
 !! want gravitational waves? You can use it for any METRIC_OPTION. In the case METRIC_OPTION = MINKOWSKI_BACKGROUND or FRW_BACKGROUND, the metric perturbations will be integrated without giving feedback to the scalar fields.
 #define WANTGW YES
