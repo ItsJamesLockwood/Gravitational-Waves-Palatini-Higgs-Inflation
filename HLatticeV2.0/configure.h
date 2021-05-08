@@ -50,7 +50,7 @@
 #define INIT_BOXSIZE_TIMES_H 0.100000000
 
 !! define the discretization scheme
-#define DIS_SCHEME LATTICEEASY
+#define DIS_SCHEME HLATTICE2
   !!here you can use:
   !! LATTICEEASY : \partial^2_x -->  -2 ( 1 - cos(k_x) ) This option is recommended for simulations without metric perturbations. It CANNOT be used for simulations with metric perturbations, because the first-order derivatives are not defined here.
   !! HLATTICE1 : \partial_x --> i sin(k_x), faster but less accurate spatial derivatives
@@ -69,7 +69,7 @@
 #define INTEGRATOR SYMPLECTIC_6TH
 
 !! define the # of grid points along each edge of the cubical box (global variable "n" in the code):it must be integer power of 2 (and between 4 and 4096); the total number of grid points is n^3
-#define SIMU_RESOLUTION 128
+#define SIMU_RESOLUTION 256
 
 !! want gravitational waves? You can use it for any METRIC_OPTION. In the case METRIC_OPTION = MINKOWSKI_BACKGROUND or FRW_BACKGROUND, the metric perturbations will be integrated without giving feedback to the scalar fields.
 #define WANTGW YES
@@ -94,8 +94,8 @@
 #define XY_SLICE 1
 #define XZ_SLICE 1
 
-#define WANTFIELDS NO
-#define WANTSLICES YES
+#define WANTFIELDS YES
+#define WANTSLICES NO
 !! As slices and fields are resource intensive, there is an option to save them less regularly than regular checkpoints.
 #define CHECKPOINTS_PER_SLICE 5
 #define CHECKPOINTS_PER_FIELD 10
