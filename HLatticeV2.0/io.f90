@@ -123,7 +123,7 @@ contains
        write(screen_file%unit,'(A9, 5A11, 2A'//trim(int2str(ns*11))//')') 'a  ','H  ','rho/3H^2 -1','P_f/E_f   ', 'K_f/E_f   ', 'G_f/E_f   ', 'mean_fields ',  'rms_fields'
     endif
     write(*,(totalFormat)) metric%a,effective_Hubble(),total_fields_energy()/effective_Hubble()**2/3/Mplsq-1._dl, potential_energy()/total_fields_energy(), fields_kinetic_energy()/total_fields_energy(), fields_gradient_energy()/total_fields_energy(), avef,flucf
-    write(*,*) "Time:", sipar%time , sipar%dt * n_feedback
+    !!write(*,*) "Time:", sipar%time , sipar%dt * n_feedback
     write(screen_file%unit,(totalFormat)) metric%a,effective_Hubble(),total_fields_energy()/effective_Hubble()**2/3/Mplsq-1._dl, potential_energy()/total_fields_energy(), fields_kinetic_energy()/total_fields_energy(), fields_gradient_energy()/total_fields_energy(), avef,flucf
     !!!write(*,'(F10.5,'//trim(Int2str(2*ns+5))//'G11.3)')metric%a,effective_Hubble(),total_fields_energy()/effective_Hubble()**2/3/Mplsq-1._dl, potential_energy()/total_fields_energy(), fields_kinetic_energy()/total_fields_energy(), fields_gradient_energy()/total_fields_energy(), avef,flucf
     !! Use the line below only during troubleshooting of y, P_f and piy.
