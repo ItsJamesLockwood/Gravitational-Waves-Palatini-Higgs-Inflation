@@ -50,7 +50,7 @@
 #define INIT_BOXSIZE_TIMES_H 0.100000000
 
 !! define the discretization scheme
-#define DIS_SCHEME HLATTICE2
+#define DIS_SCHEME LATTICEEASY
   !!here you can use:
   !! LATTICEEASY : \partial^2_x -->  -2 ( 1 - cos(k_x) ) This option is recommended for simulations without metric perturbations. It CANNOT be used for simulations with metric perturbations, because the first-order derivatives are not defined here.
   !! HLATTICE1 : \partial_x --> i sin(k_x), faster but less accurate spatial derivatives
