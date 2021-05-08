@@ -1,9 +1,11 @@
 #ifdef KSPACE_OPERATION
 #ifdef REDUCTION_VARS
     !$omp parallel do default(shared) private(i,j,k,i1,j1,k1,i2,j2,k2) reduction(+:REDUCTION_VARS)
+    !!do i,j,k,i1,j1,k1,i2,j2,k2 !!reduction(+:REDUCTION_VARS)
 #undef REDUCTION_VARS
 #else
     !$omp parallel do default(shared) private(i,j,k,i1,j1,k1,i2,j2,k2)
+    !!do i,j,k,i1,j1,k1,i2,j2,k2
 #endif
     do k=2,Nby2
        call fft_conj_pair(k,k1,k2)
@@ -16,6 +18,7 @@
        enddo
     enddo
     !$omp end parallel do
+   !!enddo
     do k=1,Nby2+1,Nby2
        call fft_conj_pair(k,k1,k2)
        do j=2,Nby2

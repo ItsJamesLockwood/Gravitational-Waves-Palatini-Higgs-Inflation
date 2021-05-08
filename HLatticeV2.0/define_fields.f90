@@ -64,6 +64,19 @@ contains
      call close_file(fp)
    end subroutine fields_dump
 
+   subroutine fields_formatted_dump() 
+      type(file_pointer) ffd
+      DEFINE_IND
+      ffd = open_file("data/"//trim(run_name)//"_fieldsB.log","w")
+      write(ffd%unit,*) n
+      write(ffd%unit,*) ns
+      do i=1,n
+         write(ffd%unit,*) fields_f(:,:,:,i)
+         write(ffd%unit,*) fields_p(:,:,:,i)
+      enddo
+      call close_file(ffd)
+    end subroutine fields_formatted_dump
+ 
    subroutine fields_load()
      type(file_pointer) fp
      DEFINE_IND

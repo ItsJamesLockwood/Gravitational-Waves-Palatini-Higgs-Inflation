@@ -54,8 +54,8 @@ contains
           exit
        endif
        call coor_trans()
-       !!write(*,*) "Exiting after first lattice step due to TS-mode..."
-       !!exit
+       write(*,*) "Exiting after first lattice step due to TS-mode..."
+       exit
     enddo
     return
   end subroutine evolve

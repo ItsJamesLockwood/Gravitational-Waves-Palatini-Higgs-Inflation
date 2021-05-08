@@ -21,6 +21,7 @@ contains
     write(chkfile%unit) sipar%time
     call close_file(chkfile)
     call fields_dump()
+    !!call fields_formatted_dump()
     call output_pw()
     call metric_dump()
 

@@ -88,10 +88,10 @@
 
 !!Determine which y-z slice of the lattice should be output for the fields and momenta
 !!By default, set to the first slice
-#define WHICHSLICE XZ 
+#define WHICHSLICE XZ
 !! Choose between 0 and n.
 #define YZ_SLICE 32
-#define XY_SLICE 1
+#define XY_SLICE 20
 #define XZ_SLICE 1
 
 #define WANTFIELDS NO

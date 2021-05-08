@@ -17,6 +17,7 @@ Integer(IB),parameter ::  fft_cutoff_ind = 32
 #elif DIS_SCHEME == HLATTICE2
 Integer(IB),parameter ::  fft_numk = 48
 Integer(IB),parameter ::  fft_cutoff_ind = 38
+!! Default cutoff : 38
 #endif
 Integer(IB),parameter :: sind(-256:384) = (/ & 
 128, 1,  & 

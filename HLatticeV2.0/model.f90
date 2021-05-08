@@ -10,6 +10,7 @@ module model
 !!the predefined constants that you can use: GeV, MPl (the reduced Planck Mass), PlanckMass (the Planck Mass), Mplsq (square of the reduced Planck Mass)
   real(dl):: lambda =1.d-14
   real(dl):: g2l = 120.
+  real(dl):: suppression = 1.d0 *0
 !!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
 !!***************define macros here;************************
@@ -110,7 +111,7 @@ contains
   function model_Power(fld,k)
     real(dl),dimension(2):: model_Power
     real(dl) k,omega
-    integer(IB) fld
+    integer(IB) fld, temp_ts
     omega=k**2+mass_sq(init_fields,fld)
     if(n*k*metric%dx .lt. const_pi .or. omega.lt.0.) then
        model_Power =0._dl
@@ -120,11 +121,29 @@ contains
     if(omega.gt.Init_Hubble)then 
        !!put in 1/2 particle per phase space volume
        !!note this is just an approximation. If you care about time scale of one or two oscillations. The quantum->classical transition should be calculated analytically.
-       model_Power(1) = 0.5_dl/omega
-       model_Power(2) = 0.5_dl*omega
+       model_Power(1) = 0.5_dl/omega * suppression
+       model_Power(2) = 0.5_dl*omega * suppression
+       !model_Power(1) = 0.5_dl/k * suppression
+       !model_Power(2) = 0.5_dl*k * suppression
+      temp_ts = 0
+        !if (k .ge. k_unit/metric%physdx *(temp_ts-0.5) .and. k .le. k_unit/metric%physdx *(temp_ts+0.5)) then
+        if (k .ge. k_unit/metric%physdx *(temp_ts-0.5)) then
+        
+          write(*,*) "ARRIVED at crit-k: ",k,". Setting model power to zero!"
+          model_power(1)= 0.5_dl/omega  * 1.d0 !* suppression
+          model_power(2) = 0.5_dl* omega * 1.d0  !* suppression
+        else 
+          !model_Power(1) = 0.5_dl/1.d-6 * suppression
+          !model_Power(2) = 0.5_dl* 1.d-6 * suppression
+          model_Power(1) = 0.5_dl/omega**2 * suppression
+          model_Power(2) = 0.5_dl*omega**2 * suppression
+             
+        endif 
+      write(*,*) "k=", k/(k_unit/metric%physdx), ": parametric. Model_power:",model_power(1),model_Power(2),". Omega:",omega
        return
     endif
     model_Power = 0._dl
+    write(*,*) "k=",k," super-horizon -> 0"
     return
   end function model_Power
 
