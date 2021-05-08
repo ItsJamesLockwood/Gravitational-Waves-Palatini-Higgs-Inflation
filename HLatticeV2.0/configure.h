@@ -94,7 +94,7 @@
 #define XY_SLICE 1
 #define XZ_SLICE 1
 
-#define WANTFIELDS NO
+#define WANTFIELDS YES
 #define WANTSLICES NO
 !! As slices and fields are resource intensive, there is an option to save them less regularly than regular checkpoints.
 #define CHECKPOINTS_PER_SLICE 5
