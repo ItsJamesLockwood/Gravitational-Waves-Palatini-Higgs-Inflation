@@ -15,6 +15,7 @@ from matplotlib.widgets import Slider, Button, RadioButtons
 import matplotlib
 import matplotlib.animation as animation
 import matplotlib.ticker as tikr
+from matplotlib import cm
 from matplotlib.cm import ScalarMappable
 from mpl_toolkits.mplot3d import Axes3D
 from datetime import datetime
@@ -75,7 +76,23 @@ def import_screen(file_name,print_logs=False):
     col_names += means + rmss
     
     logger.info("Opening screen file... ")
-    data = pd.read_csv(file_name,delim_whitespace=True,skiprows=1,names=col_names,index_col=False)
+    data = pd.read_csv(file_name,delim_whitespace=True,index_col=False,skiprows=1,header=None)
+    with open(file_name,'r') as file:
+        first_line = file.readline().strip().split()
+    
+    
+    #Check if metric perturbations are switched on
+    if first_line[2]=='E_f':
+        print("colnames:",len(col_names))
+        print("data:",len(data.columns))
+        col_names = ['a','h','ef','pratio','kratio','gratio','kg','gg','eratio','rmsh']
+        col_names += means + rmss
+        data.columns = col_names
+    else:
+        print("colnames:",len(col_names))
+        print("data:",len(data.columns))
+        data.columns = col_names
+    
     logger.info("Done.")
     logger.info("Formatting 'data': removing non numerical lines...")
     try:
@@ -461,7 +478,8 @@ def plot_slices(slice_df,a_ind=0,use_FFT=False,use_contour=False, title=''):
             ax.imshow(fvals)
         ax3.plot_surface(X=X, Y=Y, Z=fvals, cmap='YlGnBu_r')
         fig.canvas.draw_idle()
-        
+    plt.axis('off')
+            
     a_slider.on_changed(update)
     
     resetax = plt.axes([0.8, 0.025, 0.1, 0.04])    
@@ -485,7 +503,6 @@ def plot_slices(slice_df,a_ind=0,use_FFT=False,use_contour=False, title=''):
         ax.set_title("Heatmaps of the %s perturbations for constant x "%title + fft_str)
         ax.set_xlabel("Y coordinate")
         ax.set_ylabel("Z coordinate")
-
         if use_contour:
             ax.contourf(fvals)
         else:
@@ -1306,6 +1323,75 @@ def make_pure_qkdf(pw_data1,data,L=64,LH=1,process=True,Mpl=1):
     vals['etot'] = etot
     
     return vals
+
+def plot_qk_t(pw_data1):
+    fig,ax = plt.subplots()
+    colors = np.flip(cm.magma(np.linspace(0.1,1,pw_data1.shape[1])),axis=0)
+    for i in range(len(pw_data1.columns)-1):
+        ax.plot(pw_data1.a,pw_data1.iloc[:,i]/pw_data1.iloc[0,i],c=colors[i])
+    ax.set_yscale('log')
+    ax.set_title(r"Perturbations in the field $\varphi_k$")
+
+def plot_qk(pw_data1,data,L=64,use_metric=False,jump=5,LH=0.1,save=False,filefile='',use_xlog=True,plot=True,Mpl=1):
+    if plot:
+        fig, ax = plt.subplots()
+    dim1 = (data.shape[0]-1)
+    dim2 = (pw_data1.shape[0]-1)
+    chkpt_ratio = (dim1-dim1%dim2) / dim2
+    
+    H0 = data.h[0]
+    kmin = data.a[0] *H0
+    
+    # 2pi / n * j  * n * h /LH ~= 
+    ks = k_list(pw_data1,L=L) * L *H0/ LH
+    a_list = pw_data1['a']
+    
+    qks = pw_data1.drop('a',axis=1)
+    t_mat = np.ones(qks.shape) * (chkpt_ratio * qks.index.values.reshape(-1,1) +1) # 1_matrix * time
+    
+    
+    
+    
+    #data_indices = [data['a'][data['a'].eq(pw_data.a[i])].index[j] for i in range(pw_data1.shape[0]) for j in range(data['a'][data['a'].eq(pw_data.a[i])].index)]
+    if data.columns[2] == 'ef':
+        etot = data['ef'][::int(chkpt_ratio)]
+    else:
+        etot = 3* data['h'][::int(chkpt_ratio)]**2 * Mpl**2 * (data['omega'][::int(chkpt_ratio)]+1)
+    etot.reset_index(drop=True,inplace=True)
+    
+    #Colours 
+    colors = np.flip(cm.viridis(np.linspace(0.1,1,t_mat.shape[0])),axis=0)
+    
+    #Plot
+    vals = np.sqrt(qks) 
+    #vals /= t_mat
+    p = 1
+    vals = vals.multiply(a_list**p,axis=0) 
+    vals /= ks**2.5 
+    
+    j = 1/2 *1
+    vals = vals.multiply(etot**j,axis=0) * np.sqrt(2*np.pi**2)
+    
+    m = 1
+    if use_xlog:
+        ax.set_xscale('log')
+        ks /= kmin
+    else:
+        ks = np.log10(ks/kmin)
+    if not plot:
+        return vals,ks,t_mat
+        
+    for i in range(0,vals.shape[0]-1,jump):
+        #print(i)
+        #ax.plot(ks/kmin, np.log(vals.iloc[i,:])/a_list[i]**m,color=colors[i])
+        ax.plot(ks, np.log(vals.iloc[i,:])/t_mat[i]**m,color=colors[i])
+    #ax.set_yscale('log')
+    ax.set_ylabel(r'$C \cdot \mu_k$')
+    ax.set_xlabel(r'$k/k_{min}$')
+    ax.set_title(r"Growth index $\mu_k$ for LH=%.3f"%LH)
+    if save:
+        fig.savefig(trim_file_name(filefile)+"_mu_k.png")
+    return vals,ks,t_mat
 
 
 #%% Main

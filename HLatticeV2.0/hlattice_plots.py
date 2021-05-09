@@ -14,6 +14,7 @@ import sys
 import logging
 from plotUtils import *
 from physUtils import *
+from metricTools import *
 #TODO: obtain these values from the data files
 #TODO: check conformal time used correctly
 from itertools import chain
@@ -160,6 +161,7 @@ cernboxR6a = r"D:\Physics\MPhys Project\DatasetArcive\CERNBox\Remote SIm 6a\data
 
 
 sim_l2 = r"D:\Physics\MPhys Project\DatasetArcive\Remote tests\sim_lambda2_lh1_t120_screen.log"
+sim_l2B = r"D:\Physics\MPhys Project\DatasetArcive\Last updated\sim_lambda2_lh1_t120_screen.log"
 
 rsimp_lf4 = r"D:\Physics\MPhys Project\DatasetArcive\Remote tests\rsimp-lf4-run3_screen.log"
 
@@ -184,9 +186,13 @@ filefile = lazzaF
 filefile = lazzaBF
 #filefile = t_16f
 #filefile = cernboxR5a
-#filefile = sim_l2
+filefile = sim_l2B
 #filefile = sim16f
 #filefile = rsimp_lf4
+
+frw = r"D:\Physics\MPhys Project\DatasetArcive\Remote tests\FRWcomp%i_screen.log" %1
+rhyb = r"D:\Physics\MPhys Project\DatasetArcive\Remote tests\rhybrid-test%i_screen.log"% 7
+filefile = rhyb
 
 #filefile = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\simp-lf4-run1_screen.log"
 #filefile = hyb_file
@@ -399,24 +405,25 @@ def plot_fig6(ns,rows=[],vlines=False,save_img=False,img_name="Fig 6"):
     else:
         colors = np.flip(cm.magma(np.linspace(0,1,len(rows))),axis=0)
         #colors = np.flip(cm.magma(np.array(rows)/max(rows)),axis=0)
+    f,ax = plt.subplots()
     for j in range(len(rows)):
         #Retrieve k values from the column headers, discarding the 'a' in the last column
         xs = np.array(ns.columns[:-1]) / (2 * np.pi)
         ys = ns.iloc[rows[j],:-1] * (2 * xs**4)
-        plt.plot(xs,ys,label=ns['a'][rows[j]], color=colors[j])
-    plt.yscale('log')
+        ax.plot(xs,ys,label=ns['a'][rows[j]], color=colors[j])
+    ax.set_yscale('log')
     
     if vlines: 
         vert_lines = np.array([1.25, 1.8, 3.35])/ (2*np.pi) 
         for vl in vert_lines:
-            plt.axvline(x = vl)
+            ax.axvline(x = vl)
     
-    plt.legend(title='Spectrum at $a=$',loc='lower right')
-    plt.title("Occupation number $n_k$ at different scale factors $a$ (Fig.6, Z.Huang)\n"+trim_name(filefile)+'_field_%i'%pw_field_number)
-    plt.xlabel(r"$k\Delta / 2 \pi$")
-    plt.ylabel(r"$ k^4\; n_k /\; 2 \pi^2\; \rho}$")
+    ax.legend(title='Spectrum at $a=$',loc='lower right')
+    ax.set_title("Occupation number $n_k$ at different scale factors $a$ (Fig.6, Z.Huang)\n"+trim_name(filefile)+'_field_%i'%pw_field_number)
+    ax.set_xlabel(r"$k\Delta / 2 \pi$")
+    ax.set_ylabel(r"$ k^4\; n_k /\; 2 \pi^2\; \rho}$")
     if save_img==True:
-        plt.savefig(img_name + '_fig6_field_%i'%pw_field_number)
+        fig.savefig(img_name + '_fig6_field_%i'%pw_field_number)
 
     plt.show()
     
@@ -520,7 +527,13 @@ def plot_all_gw(gw1,gw2,rows=[]):
     ax.set_ylabel("(Omega_{gw}h^2)")
 
     
-def mission_control(data,ns,rows=[],error=True,save_panel=False,save_plots=False,path=filefile,truncate=0,ts=False):
+def mission_control(data,ns,pw_data1,rows=[],error=True,save_panel=False,save_plots=False,path=filefile,truncate=0,ts=False):
+    # Quick fix: call metric_mission_control if column 'ef' present
+    if data.columns[2]=='ef':
+        metric_mission_control(data,ns,pw_data1,rows=rows,save_panel=save_panel, save_plots=save_plots,path=path,truncate=truncate,ts=ts)
+        return
+    
+    
     # Try first to import gravitational wave files
     GW_files_found = True
     try:
@@ -789,11 +802,18 @@ loc_max = None
 #plot_gw(df1,img_name='df1')
 #plot_gw(df2,img_name='df2')
 
+#%% Import GW
+try:
+    gw1, gw2 = import_GW(trim_name(filefile) + '_GW.log')
+except FileNotFoundError:
+    print("WARNING: no gw files found")
+    pass
+
 #%% Mission control
 if save=='yes':
-    mission_control(data,n_df,rows=my_rows,save_panel=True,save_plots=True,ts=ts_mode)
+    mission_control(data,n_df,pw_data1,rows=my_rows,save_panel=True,save_plots=True,ts=ts_mode)
 elif save=='no':
-    mission_control(data,n_df,rows=my_rows,ts=ts_mode)
+    mission_control(data,n_df,pw_data1,rows=my_rows,ts=ts_mode)
     
 #%% Comparing conformal vs. physical times
 
@@ -835,71 +855,11 @@ else:
 
 #plot_pw_t(pw_data1,show_n=10)
 
-#%% Import GW
-try:
-    gw1, gw2 = import_GW(trim_name(filefile) + '_GW.log')
-except FileNotFoundError:
-    pass
+
 #%% FLoquet data from Mathematica
 p1 = r"C:\Users\James\Downloads\aTotValues%s.jpg"
 p2 = r"C:\Users\James\Downloads\TransposeListFinal%s.jpg"
 
-def plot_qk(pw_data1,data,L=64,use_metric=False,jump=5,LH=LH,save=False,filefile=filefile,use_xlog=True,plot=True):
-    if plot:
-        fig, ax = plt.subplots()
-    dim1 = (data.shape[0]-1)
-    dim2 = (pw_data1.shape[0]-1)
-    chkpt_ratio = (dim1-dim1%dim2) / dim2
-    
-    H0 = data.h[0]
-    kmin = data.a[0] *H0
-    
-    # 2pi / n * j  * n * h /LH ~= 
-    ks = k_list(pw_data1,L=L) * L *H0/ LH
-    a_list = pw_data1['a']
-    
-    qks = pw_data1.drop('a',axis=1)
-    t_mat = np.ones(qks.shape) * (chkpt_ratio * qks.index.values.reshape(-1,1) +1) # 1_matrix * time
-    
-    
-    
-    #data_indices = [data['a'][data['a'].eq(pw_data.a[i])].index[j] for i in range(pw_data1.shape[0]) for j in range(data['a'][data['a'].eq(pw_data.a[i])].index)]
-    etot = 3* data['h'][::int(chkpt_ratio)]**2 * Mpl**2 * (data['omega'][::int(chkpt_ratio)]+1)
-    etot.reset_index(drop=True,inplace=True)
-    
-    #Colours 
-    colors = np.flip(cm.viridis(np.linspace(0.1,1,t_mat.shape[0])),axis=0)
-    
-    #Plot
-    vals = np.sqrt(qks) 
-    #vals /= t_mat
-    p = 1
-    vals = vals.multiply(a_list**p,axis=0) 
-    vals /= ks**2.5 
-    
-    j = 1/2 *1
-    vals = vals.multiply(etot**j,axis=0) * np.sqrt(2*np.pi**2)
-    
-    m = 1
-    if use_xlog:
-        ax.set_xscale('log')
-        ks /= kmin
-    else:
-        ks = np.log10(ks/kmin)
-    if not plot:
-        return vals,ks,t_mat
-        
-    for i in range(0,vals.shape[0],jump):
-        #print(i)
-        #ax.plot(ks/kmin, np.log(vals.iloc[i,:])/a_list[i]**m,color=colors[i])
-        ax.plot(ks, np.log(vals.iloc[i,:])/t_mat[i]**m,color=colors[i])
-    #ax.set_yscale('log')
-    ax.set_ylabel(r'$C \cdot \mu_k$')
-    ax.set_xlabel(r'$k/k_{min}$')
-    ax.set_title(r"Growth index $\mu_k$ for LH=%.3f"%LH)
-    if save:
-        fig.savefig(trim_file_name(filefile)+"_mu_k.png")
-    return vals,ks,t_mat
     
 
 def compare_floquet(p1,p2,pw_data1,data,L=L,LH=LH):
@@ -950,7 +910,7 @@ def compare_floquet(p1,p2,pw_data1,data,L=L,LH=LH):
     ax.set_ylabel("$\mu_k$")
     ax.set_title("Floquet exponent plot for $\lambda=10^{-4}$ in Palatini Higgs (numerical vs. lattice)(reds vs. blue-greens)")
 trunc = 270
-compare_floquet(p1,p2,pw_data1,data)
+#compare_floquet(p1,p2,pw_data1,data)
 #plot_qk(pw_data1[:trunc],data[:trunc*10],L=L,LH=LH,use_xlog=False,jump=5)
 #%% Lattice slices
 
@@ -983,3 +943,40 @@ if energies== 'yes':
     plot_energy(gedf,0,title='Gradient',use_FFT=False,use_log=True)
     #plot_mesh(pdf,cond=['z',0],use_FFT=True)
     #plot_slices(spdf,use_FFT=True)
+
+
+#%% Working ground
+def plot_fig1(data,error=True,save_img=True,img_name="img",truncate=0):
+    plt.yscale('log')
+    plt.title('Reproduction of Fig.1: ratios of energies')
+    plt.xlabel('a')
+    plt.ylabel('$\log_{10}(|E|/E_{tot})$')
+    plt.plot(data['a'],data['pratio'],linestyle='dashed',label='Potential energy')
+    plt.plot(data['a'],data['kratio'],linestyle='dashed',label='Kinetic energy')
+    plt.plot(data['a'],data['gratio'],'b',label='Gradient of field energy')
+    plt.legend()
+    
+    if save_img==True:
+        plt.savefig(img_name)
+    if error==True:
+        plt.plot(data['a'][truncate:],abs(1/(data['omega'][truncate:]+1)-1),linestyle='dashed',label='Fractional energy noises')
+        plt.legend()
+        if save_img==True: plt.savefig(img_name + "_with_error")
+    
+    plt.show()
+def plot_energy_metric(data,save_img=False,img_name="img"):
+    fig,ax = plt.subplots()
+    ax.plot(data['a'], data['gratio'], 'r', label='Fields gradient')
+    ax.plot(data['a'], abs(data['gg']), color='cyan', linestyle='dashed',label='Gravity gradient')
+    ax.plot(data['a'], data['gratio']+data['pratio']+data['kratio'], 'b', linestyle='dashed', label='Total Hamiltonian')
+    #ax.plot(data['a'], abs(data['gg']+data['kg']), color='black', linestyle='dashed', label='GW energy')
+    ax.plot(data['a'], abs(data['rmsh']), color='orange', linestyle='dashed', label='GW energy')
+    #ax.plot(data['a'], abs(data['gg']+data['kg']+data['gratio']+data['pratio']+data['kratio']), color='purple', linestyle='dashed', label='GW energy')
+    ax.plot(data['a'], abs(data['eratio']),color='green',  linestyle='dashed', label=r"Numerical noise on $\mathcal{H}=0$")
+    ax.set_yscale('log')
+    ax.legend()
+    
+plot_energy_metric(data)
+
+
+
