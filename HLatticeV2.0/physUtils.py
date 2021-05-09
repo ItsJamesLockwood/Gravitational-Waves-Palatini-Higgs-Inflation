@@ -46,13 +46,13 @@ def xvar(data,conformal=True,amp=False):
         xvar = const * np.sqrt(ts)
     return xvar
 
-def init_momenta(v,dvdf,field0, use_PM=True, **kwargs):
+def init_momenta(v,dvdf,field0, use_PM=False, **kwargs):
     result = -dvdf(field0,**kwargs,use_PM=use_PM) / np.sqrt( 3 * v(field0, **kwargs,use_PM=use_PM))
     if use_PM:
         result *= (1/np.sqrt(8*np.pi)) **2
     return result
 
-def palatiniV(field0,use_PM=True,**kwargs):
+def palatiniV(field0,use_PM=False,**kwargs):
     default = {'l':10**-4,'xi':-1,'nstar':50}
     ks = default
     for k in default.keys():
@@ -74,7 +74,7 @@ def palatiniV(field0,use_PM=True,**kwargs):
     potential = a * np.tanh(b*field0)**4
     return potential
 
-def palatiniDV(field0,use_PM=True, **kwargs):
+def palatiniDV(field0,use_PM=False, **kwargs):
     default = {'l':10**-4,'xi':-1,'nstar':50}
     ks = default
     for k in default.keys():
@@ -95,7 +95,7 @@ def palatiniDV(field0,use_PM=True, **kwargs):
     dvdf = 4*a*b * np.tanh(b*field0)**3 / np.cosh(b*field0)**2
     return dvdf
 
-def palatiniD2V(field0,use_PM=True, **kwargs):
+def palatiniD2V(field0,use_PM=False, **kwargs):
     default = {'l':10**-4,'xi':-1,'nstar':50}
     ks = default
     for k in default.keys():
@@ -117,7 +117,7 @@ def palatiniD2V(field0,use_PM=True, **kwargs):
     return dvdf
 
     
-def lf4V(field0,use_PM=True, **kwargs):
+def lf4V(field0,use_PM=False, **kwargs):
     default = {'l':10**-4}
     ks = default
     for k in default.keys():
@@ -130,7 +130,7 @@ def lf4V(field0,use_PM=True, **kwargs):
         potential /= eta**4
     return potential
 
-def lf4DV(field0,use_PM=True, **kwargs):
+def lf4DV(field0,use_PM=False, **kwargs):
     default = {'l':10**-4}
     ks = default
     for k in default.keys():
@@ -163,7 +163,7 @@ def phi_k(pw_data1,L=64):
 def phi_dot_k(pw_data2,L=64):
     pw2 = pw_data2.drop('a',axis=1)
     ks = k_list(pw_data2,L=L)
-    pw2 /= ks**5
+    pw2 /= ks**3
     return pw2
     
 def k_list(pw_data1,L=64):
@@ -178,11 +178,11 @@ def n_k_red(pw_data1,pw_data2,L=64):
 
     ks = k_list(pw_data1,L=L)
     #Retrieve actual field eignemode values
-    fk_df = pw_a.multiply(a_list**2,axis=0) 
+    fk_df = pw_a.multiply(a_list**0,axis=0) 
     fkdot_df = pw_b
 
     #Some pretty cool element-wise multiplication between vector ks and dataframes fk_df and fkdot_df!
-    ns = 1/2 * (fk_df + fkdot_df)
+    ns = 1/2 * (fk_df + fkdot_df) / ks**4
     #Store ks in the column headers
     ns.columns = ks
     #Add a values back for plotting purposes
@@ -235,7 +235,7 @@ def omegas(pw1,data,L=64,skip=50,LH=0.8,h0=-1):
     omegas = ks_a_matrix + d2v_column.reshape(-1,1)
     # For information: print information about tachyonic modes. 
     print("Tachyonic modes present: ", (omegas<0).any())
-    if (omegas<0).any(): print("Number of tachyonic modes: ", np.count_nonzero(omegas<0))
+    if (omegas<0).any(): print("Number of tachyonic modes: ", np.count_nonzero(omegas<0),"/",np.size)
     return ks_a_matrix, d2v_column.reshape(-1,1)
     
 def n_palatini(pw1,pw2,data, L=64, skip=2,h0=-1,LH=6,use_ks=True):
@@ -272,13 +272,15 @@ def n_palatini(pw1,pw2,data, L=64, skip=2,h0=-1,LH=6,use_ks=True):
     data_size = data[::skip].shape[0]
     pw_size = pw1.shape[0]
     min_size,max_size = min(data_size,pw_size),max(data_size,pw_size)
-    if (int(min_size*1.1) > max_size):
+    if (min_size*1.1 > max_size):
         data = data[:min_size*skip]
         pw1 = pw1[:min_size]
         pw2 = pw2[:min_size]
         print("Trimmed data, pw1 and pw2: ",data.shape,pw1.shape,pw2.shape)
     else:
-        raise ValueError("data and pw1/pw2 have two large a discrepancy in shapes: ",data.shape,pw1.shape)
+        print("Min size:",min_size,"Max size:",max_size)
+        print(int(min_size*1.1) > max_size)
+        raise ValueError("data and pw1/pw2 have two large a discrepancy in calculated shapes: ",data_size,pw_size,"; Untouched shapes: ",data.shape,pw1.shape)
 
     pw_a = pw1.drop('a',axis=1)
     pw_b = pw2.drop('a',axis=1)
@@ -308,7 +310,7 @@ def n_palatini(pw1,pw2,data, L=64, skip=2,h0=-1,LH=6,use_ks=True):
     omegas = ks_a_matrix + d2v_column.reshape(-1,1)
     # For information: print information about tachyonic modes. 
     print("Tachyonic modes present: ", (omegas<0).any())
-    if (omegas<0).any(): print("Number of tachyonic modes: ", np.count_nonzero(omegas<0))
+    if (omegas<0).any(): print("Number of tachyonic modes: ", np.count_nonzero(omegas<0),"/",omegas.size)
     
     # Add the terms together to form the number density.
     term1 = phi_dots
