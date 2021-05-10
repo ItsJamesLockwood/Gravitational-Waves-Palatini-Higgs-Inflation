@@ -69,7 +69,7 @@
 #define INTEGRATOR SYMPLECTIC_6TH
 
 !! define the # of grid points along each edge of the cubical box (global variable "n" in the code):it must be integer power of 2 (and between 4 and 4096); the total number of grid points is n^3
-#define SIMU_RESOLUTION 256
+#define SIMU_RESOLUTION 128
 
 !! want gravitational waves? You can use it for any METRIC_OPTION. In the case METRIC_OPTION = MINKOWSKI_BACKGROUND or FRW_BACKGROUND, the metric perturbations will be integrated without giving feedback to the scalar fields.
 #define WANTGW YES
@@ -95,7 +95,8 @@
 #define XZ_SLICE 1
 
 #define WANTFIELDS NO
-#define WANTSLICES NO
+#define WANTSLICES YES
+#define WANTMETRIC YES
 !! As slices and fields are resource intensive, there is an option to save them less regularly than regular checkpoints.
 #define CHECKPOINTS_PER_SLICE 5
 #define CHECKPOINTS_PER_FIELD 10

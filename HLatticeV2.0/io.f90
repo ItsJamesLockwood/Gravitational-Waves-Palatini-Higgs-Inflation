@@ -350,4 +350,15 @@ contains
       enddo  
    end subroutine output_energy
 
+   subroutine output_metric_h()
+      type(file_pointer) fp
+      fp = open_file("data/" // trim(run_name) // "_full_metric.log","a")
+      if (sipar%nsteps.eq.0) then
+         write(fp%unit,*) n
+      endif
+      write(fp%unit,*) metric%a
+      write(fp%unit,*) sum(metric_h(:,:,:,:),dim=1)/6._dl
+      call close_file(fp)
+   end subroutine output_metric_h
+
 end module io_utils

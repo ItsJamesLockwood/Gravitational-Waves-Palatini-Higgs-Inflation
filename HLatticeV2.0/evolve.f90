@@ -9,14 +9,18 @@ module evolution
 contains
 
   subroutine evolve()
-    logical save_slices, save_fields
+    logical save_slices, save_fields, save_metric
     save_fields = .false.
     save_slices = .false.
+    save_metric = .false.
 #if WANTFIELDS
   save_fields= .true.
 #endif
 #if WANTSLICES
   save_slices = .true.
+#endif
+#if WANTMETRIC && (WANTGW || METRIC_PERTURB)
+  save_metric = .true.
 #endif
     do
       call output_to_screen()
@@ -28,10 +32,14 @@ contains
           call output_fields()
           call output_momenta()
         endif 
-        if (save_slices.and. mod(sipar%nsteps,checkpoint_steps*save_slice_interval) .eq. 0) then 
+        if (save_slices .and. mod(sipar%nsteps,checkpoint_steps*save_slice_interval) .eq. 0) then 
           write(*,*) "Saving slices at step ",sipar%nsteps, "..."
           call output_field_slice()
           call output_momentum_slice()
+        endif
+        if (save_metric .and.  mod(sipar%nsteps,checkpoint_steps*save_field_interval).eq.0 .and. (checkpoint_steps*save_field_interval*field_number_cutoff).ge.sipar%nsteps ) then
+          write(*,*) "Saving metric at step ",sipar%nsteps, "..."
+          call output_metric_h()
         endif        
       endif
       call step(n_feedback)
