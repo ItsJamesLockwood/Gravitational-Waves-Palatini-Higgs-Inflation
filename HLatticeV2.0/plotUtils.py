@@ -48,6 +48,7 @@ def  trim_name(file):
     ind = file.index('_screen')
     return file[:ind]
 
+
 def trim_file_name(file):
     ind1 = file.index('_screen')
     ind2 = file.rindex('\\')+1
@@ -1129,7 +1130,163 @@ def imgs_to_gif(template_path,img_type='.jpeg', indices=[],fps=1):
             print("Processing index: ",i)
             images.append(imageio.imread(file_path))
     imageio.mimsave(template_path+'GIF'+ str(min(indices)) + '_' + str(max(indices)) + '.gif', images,fps=fps)
+
+def import_metric(path):
+    file = open(path,'r')
+    field_list = []
+
+    counter = 1
+    res = int(file.readline().strip())
+    l1 = file.readline().strip()    
+    l2 = file.readline().strip()    
+
+    while l1!='' and l2!='':        
+        mesh = list(map(float, l2.split()))
+        
+        mesh = np.array(mesh).reshape(res,res,res).T
+        
+        field_list.append([float(l1),mesh])
+        counter +=1
+        l1 = file.readline().strip()
+        l2 = file.readline().strip()
     
+    mesh_df = pd.DataFrame(field_list, columns=['a','mesh'])
+    file.close()
+    return mesh_df    
+
+def split_metric(path,screen_file,mode='h'):
+    modes = {'h': 'metric_h',
+             'p': 'metric_p',
+             'f1': 'q_k',
+             'f2': 'qdot_k'}
+    destination = trim_name(screen_file)+'_MESHES'
+    if not os.path.isdir(destination):
+        os.mkdir(destination)
+    file = open(path,'r')
+    
+    counter = 1
+    lres = file.readline()
+    l1 = file.readline()   
+    l2 = file.readline()
+
+    while l1!='' and l2!='':                
+        print("\rProcessing mesh: ",counter,end='')
+        output = open(destination + r'\\%s_%i.log' %( modes[mode], counter), 'w')
+        output.write(lres)
+        output.write(l1)
+        output.write(l2)
+        
+        counter +=1
+        l1 = file.readline()
+        l2 = file.readline()
+        output.close()
+    print("Done! Closing input file and exiting...")
+    file.close()
+    
+def metric_folder_to_gif(first_file,out="",dim=2,inds=[],fps=2,use_perts=True,cutoff=3,scientific=False):  
+    folder_ind = first_file.rindex('\\')  
+    folder = first_file[:folder_ind]
+    extension_ind = first_file.rindex('.')
+    extension = first_file[extension_ind:]
+    
+    v_ind = extension_ind-1
+    try:
+        while type(int(first_file[v_ind]))==int:
+            v_ind -=1
+    except ValueError:
+        pass
+    
+    first = int(first_file[v_ind+1:extension_ind])
+    path = first_file[: v_ind+1] # Note: subtract 1 in order to remove counter
+    
+    counter = first
+    plt.ioff()
+
+    images = []
+    if dim==2:
+        if scientific:
+            vmin,vmax = 0,0
+            while os.path.exists(path + str(counter) + extension):
+                dest = path + str(counter) + extension
+                print("\rScanning for minimum/maximum in image %i"%counter,dest,end='; ')
+                temp_df = import_metric(dest)
+                if use_perts:
+                    if counter==first:
+                        vmin = np.log10(np.abs(temp_df.mesh[0][1,:,:]-temp_df.mesh[0][1,:,:].mean())).min()
+                        vmax = np.log10(np.abs(temp_df.mesh[0][1,:,:]-temp_df.mesh[0][1,:,:].mean())).max()
+                    v1 = np.log10(np.abs(temp_df.mesh[0][1,:,:]-temp_df.mesh[0][1,:,:].mean())).min()
+                    v2 = np.log10(np.abs(temp_df.mesh[0][1,:,:]-temp_df.mesh[0][1,:,:].mean())).max()
+                    if v1<vmin: vmin = v1s
+                    if v2>vmax: vmax = v2
+                else:
+                    if counter==first:
+                        vmin = temp_df.mesh[0][1,:,:].min()
+                        vmax = temp_df.mesh[0][1,:,:].max()
+                    v1 = temp_df.mesh[0][1,:,:].min()
+                    v2 = temp_df.mesh[0][1,:,:].max()
+                    if v1<vmin: vmin = v1
+                    if v2>vmax: vmax = v2
+                counter += 1
+            counter = first
+        while os.path.exists(path + str(counter) + extension):
+            dest = path + str(counter) + extension
+            print("\rProcessing:",dest,end='; ')
+            temp_df = import_metric(dest)
+            print("\rPlotting image %i..."%counter,end='')
+            fig,ax = plt.subplots()
+            if scientific:
+                if use_perts:
+                    img = ax.imshow(np.log10(np.abs(temp_df.mesh[0][1,:,:]-temp_df.mesh[0][1,:,:].mean())),vmin=vmin,vmax=vmax)
+                else:
+                    img = ax.imshow(temp_df.mesh[0][1,:,:],vmin=vmin,vmax=vmax)
+            else:
+                if use_perts:
+                    img = ax.imshow(np.log10(np.abs(temp_df.mesh[0][1,:,:]-temp_df.mesh[0][1,:,:].mean())))
+                else:
+                    img = ax.imshow(temp_df.mesh[0][1,:,:])
+            ax.set_title("$a=%.4f$"%temp_df.a[0])
+            fig.colorbar(img,ax=ax)
+            fig.savefig(folder + '\\dump.jpeg')
+            plt.close(fig)
+            print("\rAdding image %i..."%counter,end ='')
+            images.append(imageio.imread(folder + '\\dump.jpeg'))
+            counter += 1
+    elif dim==3:
+        while os.path.exists(path + str(counter) + extension):
+            dest = path + str(counter) + extension
+            print("\rProcessing in 3D:",dest,end='; ')
+            temp_df = import_metric(dest)
+            print("Plotting in 3D...",end=' ')
+            fig = plt.figure()
+            ax = fig.add_subplot(projection='3d')
+            if use_perts:
+                ax.imshow(np.log10(np.abs(temp_df.mesh[0][1,:,:]-temp_df.mesh[0][1,:,:].mean())))
+            else:
+                ax.imshow(temp_df.mesh[0][1,:,:])
+            ax.set_title("$a=%.4f$"%temp_df.a[0])
+            fig.savefig(folder + '\\dump.jpeg')
+            plt.close(fig)
+            print("Adding image...",end =' ')
+            images.append(imageio.imread(folder + '\\dump.jpeg'))
+            counter += 1
+        
+
+
+    print("\nDone! Saving to GIF...")
+    if out=="":
+        v=1
+        gif_out = path+'_GIF'+ str(first) + '_' + str(counter-1) + '.gif'
+        while os.path.exists(gif_out):
+            gif_out = path+'_GIF'+ str(first) + '_' + str(counter-1) +'_v%i'%v + '.gif'
+            v += 1
+        imageio.mimsave(gif_out, images,fps=fps)
+    else:
+        imageio.mimsave(folder+'\\'+out+'_GIF'+ str(first) + '_' + str(counter-1) + '.gif', images,fps=fps)
+        
+
+
+path2 = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\dump_test_screen.log"
+some_path = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\dump_full_metric.log"
 #%% Animating the results
 def animate_potential(data,plt_obj=0,t_max=25,fps=25, Mpl=1):
     # Set plot object
@@ -1373,7 +1530,7 @@ def plot_qk(pw_data1,data,L=64,use_metric=False,jump=5,LH=0.1,save=False,filefil
     vals = vals.multiply(etot**j,axis=0) * np.sqrt(2*np.pi**2)
     
     m = 1
-    if use_xlog:
+    if use_xlog and plot:
         ax.set_xscale('log')
         ks /= kmin
     else:
@@ -1393,6 +1550,8 @@ def plot_qk(pw_data1,data,L=64,use_metric=False,jump=5,LH=0.1,save=False,filefil
         fig.savefig(trim_file_name(filefile)+"_mu_k.png")
     return vals,ks,t_mat
 
+def plot_spectogram(arr_2d):
+    pw_da_data
 
 #%% Main
 if __name__=="__main__":

@@ -8,6 +8,8 @@ import numpy as np
 import pandas as pd
 import scipy.special as sp
 from scipy import interpolate, signal,misc, integrate
+from mpl_toolkits.mplot3d.art3d import Line3DCollection
+import matplotlib.pyplot as plt
 
 def phi_amplitude(data):
     '''Deprecated: was designed for a time-dependent inflaton amplitude. 
@@ -365,8 +367,88 @@ def integrate_perturbation(n_pal,Mpl=1024):
     return perturbations
     
 
+#%% Hybrid model
+def hybrid_v(sigma,phi, l=1e-14, g2l= 2, v=1e-3,Mp=1):
+    return l/4 * (sigma**2 -(v*np.sqrt(8*np.pi))**2)**2 + 0.5 * g2l*l * phi**2 * sigma**2
+
+def plot_hyb_path(data,V, bounds=[],use_abs=0):
+    mean1 = data.mean1.copy() * np.sqrt(8 * np.pi)
+    mean2 = data.mean2.copy() * np.sqrt(8 * np.pi)
+    mean3 = data.mean3.copy() * np.sqrt(8 * np.pi)
+    
+    if use_abs==0:
+        max1 = abs(np.sqrt(mean1**2 + mean2**2)).max()*1.05
+        max2 = abs(mean3).max()*1.05
+        f1 = np.sqrt(mean1**2 + mean2**2)
+        f2 = mean3
+    elif use_abs==1:
+        max1 = abs(mean1).max()*1.05
+        max2 = abs(mean3).max()*1.05
+        f1 = mean1
+        f2 = mean3
+    elif use_abs==2:
+        max1 = abs(mean2).max()*1.05
+        max2 = abs(mean3).max()*1.05
+        f1 = mean2
+        f2 = mean3
+    elif use_abs==3:
+        max1 = abs(mean1).max() *1.05
+        max2 = abs(mean2).max()*1.05
+        f1 = mean1
+        f2 = mean2
+    res = 100
+    
+    line1 = np.linspace(-max1,max1, res)
+    line2 = np.linspace(-max2, max2, res)
+    
+
+    f3 = V(f1,f2)
+    
+    xs,ys = np.meshgrid(line1,line2)
+    zs = V(xs,ys)
+    fig = plt.figure()
+    ax3 = fig.add_subplot(projection='3d')
+    ax3.plot_surface(xs,ys,zs,cmap='YlGnBu_r',alpha=0.5)
+    #ax3.plot(f1,f2,f3)
+    
+    points = np.array([f1, f2, f3]).T.reshape(-1, 1, 3)
+    segments = np.concatenate([points[:-1], points[1:]], axis=1)
+
+    cols_list = np.linspace(data.a.min(),data.a.max(),len(f1))
+    norm = plt.Normalize(data.a.min(),data.a.max())
+    lc = Line3DCollection(segments, cmap='magma', norm=norm)
+    # Set the values used for colormapping
+    lc.set_array(cols_list)
+    lc.set_linewidth(2)
+    line = ax3.add_collection(lc)
+    fig.colorbar(line, ax=ax3)
+#plot_hyb_path(data, hybrid_v)
+        
+
+def w_state(data,plot=False,eos=[]):
+    factor = 1
+    power = 1
+    pressure = data.kratio - 1/factor / data.a**power *data.gratio - data.pratio
+    density = data.kratio + 1/(3*factor) / data.a**power *data.gratio + data.pratio
+    
+
+    
+    if plot:        
+        fig,ax = plt.subplots()
+        ax.plot(data.a,pressure/density,label="Post-processing")
+        ax.set_title("Equation of state")
+        ax.set_xlabel("Metric a")
+        if type(eos)==pd.core.frame.DataFrame:
+            size = min(data.shape[0],eos.shape[0])
+            print(size)
+            ax.plot(data.a[:size],eos[0][:size],label="From HLattice")
+        ax.axhline(1/3,linestyle='dashed',c='grey')
+        ax.axhline(0,linestyle='dashed',c='green')
+        ax.legend()
+    return pressure/density
 
 
+#%% Main
 
 if __name__=="__main__":
     print('foo')

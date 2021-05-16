@@ -1,29 +1,42 @@
 # -*- coding: utf-8 -*-
 """
-Created on Sun May  9 01:43:29 2021
+Created on Tue May 11 13:31:20 2021
 
 @author: James
 """
+from physUtils import *
+from plotUtils import *
+from metricTools import *
 
-import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
-import os
-import sys
-import logging
-from plotUtils import *
-from physUtils import *
+import matplotlib
+import math as maths
+import numpy as np
 
 
+
+pathA = r"D:\Physics\MPhys Project\DatasetArcive\Remote tests\rtanh_std_metric_h_screen.log"
+pathB = r"D:\Physics\MPhys Project\DatasetArcive\Remote tests\rtanh_125_STD_WAVE_screen.log"
+filefile = pathA
+pw_field_number = 1
+form = 'log'
+
+
+global Mpl
+Mpl = 1
+#%% Functions
+def mission_control(data,ns,pw_data1,rows=[],error=True,save_panel=False,save_plots=False,path=filefile,truncate=0,ts=False):
+    # Quick fix: call metric_mission_control if column 'ef' present
+    if data.columns[2]=='ef':
+        metric_mission_control(data,ns,pw_data1,rows=rows,save_panel=save_panel, save_plots=save_plots,path=path,truncate=truncate,ts=ts)
+        return
     
-def metric_mission_control(data,ns,pw_data1,rows=[],error=True,save_panel=False,save_plots=False,path='',truncate=0,ts=False,xi=3.8*10**6*50**2*10**-4):    
-    strs, vals = sim_settings(path)
-    RESOLUTION = vals[6] 
+    
     # Try first to import gravitational wave files
     GW_files_found = True
     try:
-        gw1, gw2 = import_GW(trim_name(path) + '_GW.log')
+        gw1, gw2 = import_GW(trim_name(filefile) + '_GW.log')
     except FileNotFoundError:
         print("No GW files found. Proceeding without...")
         GW_files_found = False
@@ -43,9 +56,10 @@ def metric_mission_control(data,ns,pw_data1,rows=[],error=True,save_panel=False,
     fig.set_figheight(9.5)
     fig.suptitle(png_name)
     plt.subplots_adjust(top=.93)
+    print("Processing plot 00...")
     #Subplt 0,0
     ax[0,0].set_title("Inflaton field evolution")
-    ax[0,0].plot(data['a'][:truncate], data['mean1'][:truncate])
+    ax[0,0].plot(data['a'][:truncate]**pow_a, data['mean1'][:truncate])
     ax[0,0].axhline(1.05/np.sqrt(xi),linestyle='dashed',color='grey')
     ax[0,0].axhline(-1.05/np.sqrt(xi),linestyle='dashed',color='grey')
     
@@ -54,12 +68,14 @@ def metric_mission_control(data,ns,pw_data1,rows=[],error=True,save_panel=False,
     c2 = np.flip(cm.magma(np.linspace(0,1,len(ns.columns)-1)),axis=0)
     ax_twin =  ax[0,0].twinx()
     for j in range(len(ns.columns)-1):
-        ax_twin.plot(ns['a'][:truncate],np.log(pw_data1[:truncate].iloc[:,j]/pw_data1[:truncate].iloc[0,j]),
-                     color=c2[j],
-                     alpha=1)
+        if 0 not in pw_data1[:truncate].iloc[:,j].values:        
+            ax_twin.plot(ns['a'][:truncate],np.log(pw_data1[:truncate].iloc[:,j]/pw_data1[:truncate].iloc[0,j]),
+                         color=c2[j],
+                         alpha=1)
     
         
     #Subplot 0,1
+    print("Processing plot 01...")
     if (not ts) and GW_files_found:
         global freqs
         freqs = gw1.drop('a',axis=1)
@@ -92,7 +108,8 @@ def metric_mission_control(data,ns,pw_data1,rows=[],error=True,save_panel=False,
                 ax[0,1].plot(a_list,gw_intensity.iloc[:,j],color=colors[j])
         c3 = np.flip(cm.magma(np.linspace(0,1,len(ns.columns)-1)),axis=0)
         for j in range(len(ns.columns)-1):
-            ax_twin.plot(ns['a'][:truncate],np.log(pw_data1[:truncate].iloc[:,j]/pw_data1[:truncate].iloc[0,j]),
+            if 0 not in pw_data1[:truncate].iloc[:,j].values:        
+                ax_twin.plot(ns['a'][:truncate],np.log(pw_data1[:truncate].iloc[:,j]/pw_data1[:truncate].iloc[0,j]),
                      color=c3[j],
                      alpha=.6)        
         
@@ -124,6 +141,7 @@ def metric_mission_control(data,ns,pw_data1,rows=[],error=True,save_panel=False,
         #ax[0,1].plot(xpower,ypower)
         
     #Subplot 1,0
+    print("Processing plot 10...")
     if not ts:
         if rows==[]:
             rows.append(int(ns.shape[0])/2)
@@ -151,7 +169,7 @@ def metric_mission_control(data,ns,pw_data1,rows=[],error=True,save_panel=False,
         dfield = data['mean1'].diff()[1:]/dmetric
         ax[1,0].plot(data['a'][1:], dfield,label="Derivative from the field")
         ax[1,0].set_title("Derivative $d\phi/da$ of the inflaton")
-        Etot = data['ef'] * data['eratio']
+        Etot = 3* data['h']**2 * Mpl**2 * (data['omega']+1) 
         #ax[1,0].set_yscale('log')
         #ax[1,0].set_xscale('log')
         
@@ -161,7 +179,8 @@ def metric_mission_control(data,ns,pw_data1,rows=[],error=True,save_panel=False,
         
     
     #Subplot 1,1
-    etot = data['ef'][:truncate]
+    print("Processing plot 11...")
+    etot = 3* data['h'][:truncate]**2 * Mpl**2 * (data['omega'][:truncate]+1)
     ax[1,1].set_yscale('log')
     ax[1,1].set_title('Reproduction of Fig.1: ratios of energies')
     ax[1,1].set_xlabel('a')
@@ -178,10 +197,11 @@ def metric_mission_control(data,ns,pw_data1,rows=[],error=True,save_panel=False,
         #pass
         ax[1,1].plot(ns['a'][:truncate],ns[:truncate].iloc[:,j]/ns[:truncate].drop('a',axis=1).min().min(),color=c2[j])
     if error==True:
-        #ax[1,1].plot(data['a'][:truncate],abs(3*data['h'][:truncate]**2/(data['ef'][:truncate]*data['eratio'][:truncate])-1),linestyle='dashed',label='Fractional energy noises')
+        ax[1,1].plot(data['a'][:truncate],abs(1/(data['omega'][:truncate]+1)-1),linestyle='dashed',label='Fractional energy noises')
         ax[1,1].legend()
     
     #Subplot 0,2
+    print("Processing plot 02...")
     if GW_files_found:
         ax[0,2].set_yscale('log')    
         ax[0,2].set_xscale('log')
@@ -217,6 +237,7 @@ def metric_mission_control(data,ns,pw_data1,rows=[],error=True,save_panel=False,
         ax[0,2].set_title("FILES NOT FOUND: Gravitational waves spectrum")
         
     #Subplot 1,2
+    print("Processing plot 12...")
     ax_twin = ax[1,2].twinx()
     p1, = ax[1,2].plot(data['a'], np.sqrt(data['mean1']**2 + data['rms1']**2),label=r"$\langle \phi^{2} \rangle $")
     p2, = ax_twin.plot(data['a'],np.abs(data['mean1']),color=prop_colors[1],label=r"$\langle \phi \rangle$")
@@ -246,3 +267,68 @@ def metric_mission_control(data,ns,pw_data1,rows=[],error=True,save_panel=False,
         fig.savefig(png_name + '_energies.png', bbox_inches=extents[3].expanded(padx, pady))
         if GW_files_found:
             fig.savefig(png_name + '_gw.png', bbox_inches=extents[4].expanded(padx, pady))
+            
+
+def compare_data(da_,db_,patha,pathb):
+    fig,ax =plt.subplots()
+    
+    a_max = min(da_.shape[0],db_.shape[0])
+    da, db = da_[:a_max], db_[:a_max]
+    
+    
+    
+    #ax.set_title("Fractional differences between data values of: %s vs. %s"%(trim_file_name(patha), trim_file_name(pathb)))
+    ax.set_title("Fractional differences between data values of (A, B): $k_{eff}$ vs. $k_{std}$")
+    
+    ax.plot(da.a,np.abs(da.mean1/db.mean1-1),label=r"$|\phi_A/\phi_B-1|$")
+    ax.plot(da.a,np.abs(da.rms1/db.rms1-1),label=r"$|\langle\phi^2_A\rangle/\langle\phi^2_B\rangle-1|$",linestyle='dashed')
+    ax.plot(da.a,np.abs(da.gratio/db.gratio-1),label=r"$|E_{grad,A}/E_{grad,B}-1|$")
+    
+    etotA = 3* da['h']**2 * Mpl**2 * (da['omega']+1)
+    etotB = 3* db['h']**2 * Mpl**2 * (db['omega']+1)
+    #ax.plot(np.abs(etotA/etotB-1),label=r"$|E_{tot,A}/E_{tot,B}-1|$")
+    
+    ax.set_xlabel('$a$')
+    ax.set_ylabel('$|E_{i,A}/E_{i,B}-1|$')
+    ax.set_yscale('log')
+    ax.legend()
+    fig.show()
+
+def compare_pw(pwa,pwb,patha,pathb,L=128):
+    fig,ax =plt.subplots()
+    
+    a_max = min(pwa.shape[0],pwb.shape[0])
+    k_max = min(pwa.shape[1],pwb.shape[1]) -1 #Takes into account the a-column
+    print(a_max,k_max)
+    pwa_, pwb_ = pwa.iloc[:a_max,:k_max], pwb.iloc[:a_max,:k_max]
+    a_list = pwa.a[:a_max]
+    jump=int(a_max/19)
+    
+    ks = k_list(pwa.iloc[:a_max,:(k_max+1)],L)
+    
+    #ax.set_title("Fractional differences between modes of (A, B): %s vs. %s"%(trim_file_name(patha), trim_file_name(pathb)))
+    ax.set_title("Fractional differences between modes of (A, B): $k_{eff}$ vs. $k_{std}$")
+    
+    colors = np.flip(cm.viridis(np.linspace(0,1,a_max)),axis=0)
+    for i in range(0,a_max,jump):
+        ax.plot(ks, np.abs(np.sqrt(pwa_).iloc[i,:]/np.sqrt(pwb_).iloc[i,:]-1), label=r"$a=%.4f$"%a_list[i],color=colors[i])
+    
+    
+    ax.set_xlabel('$k$')
+    ax.set_ylabel(r'Fractional difference between $\phi^A_k$ and $\phi^B_k$')
+
+    ax.set_yscale('log')
+    ax.legend(title=r"$|\phi^A_k/\phi^B_k-1|$")
+    fig.show()
+#%% Main
+
+da,db = import_screen(pathA),import_screen(pathB)
+
+
+pw1a, pw2a = import_pw(trim_name(pathA) + '_pw_%i.%s'%(pw_field_number,form))
+pw1b, pw2b = import_pw(trim_name(pathB) + '_pw_%i.%s'%(pw_field_number,form))
+
+
+compare_data(da,db,pathA,pathB)
+compare_pw(pw1a,pw1b,pathA,pathB)
+

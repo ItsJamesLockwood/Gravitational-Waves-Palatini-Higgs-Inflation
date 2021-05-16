@@ -157,8 +157,10 @@ cernboxR2a = r"D:\Physics\MPhys Project\DatasetArcive\CERNBox\Remote Sim 2a\data
 cernboxR3a = r"D:\Physics\MPhys Project\DatasetArcive\CERNBox\Remote Sim 3a\data\RemoteSim3_UPDATED_f4ee809_screen.log"
 cernboxR5a = r"D:\Physics\MPhys Project\DatasetArcive\CERNBox\Remote SIm 5a\data\Remote_SIM5_8c54b1d_screen.log"
 cernboxR6a = r"D:\Physics\MPhys Project\DatasetArcive\CERNBox\Remote SIm 6a\data\Remote_SIM6_f5ec45f_screen.log"
+cernbox256van = r"D:\Physics\MPhys Project\DatasetArcive\CERNBox\Sim_256_vanilla\data\Sim_256_vanilla_ec5e36b_screen.log"
 
-
+cerncomp1 = r"D:\Physics\MPhys Project\DatasetArcive\CERNBox\Comp128_1\data\Compare128_1_d6f2db3_screen.log"
+cerncomp2 = r"D:\Physics\MPhys Project\DatasetArcive\CERNBox\Comp128_2\data\Compare128_2_8f87b7f_screen.log"
 
 sim_l2 = r"D:\Physics\MPhys Project\DatasetArcive\Remote tests\sim_lambda2_lh1_t120_screen.log"
 sim_l2B = r"D:\Physics\MPhys Project\DatasetArcive\Last updated\sim_lambda2_lh1_t120_screen.log"
@@ -190,9 +192,17 @@ filefile = sim_l2B
 #filefile = sim16f
 #filefile = rsimp_lf4
 
-frw = r"D:\Physics\MPhys Project\DatasetArcive\Remote tests\FRWcomp%i_screen.log" %1
+frw = r"D:\Physics\MPhys Project\DatasetArcive\Remote tests\FRWcomp%i_screen.log" %3
 rhyb = r"D:\Physics\MPhys Project\DatasetArcive\Remote tests\rhybrid-test%i_screen.log"% 7
-filefile = rhyb
+fix1 = r"D:\Physics\MPhys Project\DatasetArcive\Remote tests\hyb_fix_run1_screen.log"
+bg1 = r"D:\Physics\MPhys Project\DatasetArcive\Remote tests\hyb_bg_run1_screen.log"
+
+rtf = r"D:\Physics\MPhys Project\DatasetArcive\Remote tests\rtanh_std_metric_h_screen.log"
+std = r"D:\Physics\MPhys Project\DatasetArcive\Remote tests\rtanh_125_STD_WAVE_screen.log"
+hyb = r"D:\Physics\MPhys Project\DatasetArcive\Remote tests\hyb_fix_hl1_128_screen.log"
+hyb_last = r"D:\Physics\MPhys Project\DatasetArcive\Last updated\hyb_fix_hl1_128_screen.log"
+filefile = cernbox256van
+filefile = cerncomp1
 
 #filefile = r"D:\Physics\MPhys Project\gw-local-repo\HLatticeV2.0\data\simp-lf4-run1_screen.log"
 #filefile = hyb_file
@@ -493,7 +503,7 @@ def plot_gw_t(gw1,gw2, pw1 = pd.DataFrame(),rows=[],alpha=0.5,tolerance=0.5,trun
     ax1.legend()
         
 
-def plot_all_gw(gw1,gw2,rows=[]):
+def plot_all_gw(gw1,gw2,rows=[],total=0):
     fig,ax = plt.subplots()
     ax.set_yscale('log')    
     ax.set_xscale('log')
@@ -504,7 +514,9 @@ def plot_all_gw(gw1,gw2,rows=[]):
     if rows==[]:
         #rows.append(int(gw1.shape[0]/2))
         #colors = np.flip(cm.magma(np.linspace(0,1,len(rows))),axis=0)
-        rows = range(0,gw1.shape[0],int(gw1.shape[0]/10))
+        if total==0:
+            total = 10
+        rows = range(0,gw1.shape[0],int(gw1.shape[0]/total))
         colors = np.flip(cm.magma(np.linspace(0,1,gw1.shape[0])),axis=0)
     else:
         #colors = np.flip(cm.magma(np.linspace(0,1,len(rows))),axis=0)
@@ -526,6 +538,32 @@ def plot_all_gw(gw1,gw2,rows=[]):
     ax.set_xlabel(r"Frequency spectrum in Hz")
     ax.set_ylabel("(Omega_{gw}h^2)")
 
+def plot_some_gw(gw1,gw2,total=0):
+    if total==0:
+        total = 10
+    jump = int(gw1.shape[0]/total)
+    fig,ax = plt.subplots()
+    ax.set_yscale('log')    
+    ax.set_xscale('log')
+    
+    frequencies = gw1.drop(['a'],axis=1)
+    grav_intensity = gw2.drop(['a'],axis=1)
+    a_list = gw1['a']
+    colors = np.flip(cm.magma(np.linspace(0,1,total)),axis=0)
+
+    print(len(colors))
+    # Plot all of the spectra, but only label those in the selected rows
+    for j in range(total):
+        #Retrieve k values from the column headers, discarding the 'a' in the last column
+        j_df = j * jump
+        xs= frequencies.iloc[j_df,:]
+        ys = grav_intensity.iloc[j_df,:]
+        ax.plot(xs,ys,color=colors[j], label=a_list[j_df])
+            
+    ax.legend(title='Spectrum at $a=$',loc='lower right')
+    ax.set_title("Gravitational waves spectrum at different scale factors $a$ ")
+    ax.set_xlabel(r"Frequency spectrum in Hz")
+    ax.set_ylabel("(Omega_{gw}h^2)")
     
 def mission_control(data,ns,pw_data1,rows=[],error=True,save_panel=False,save_plots=False,path=filefile,truncate=0,ts=False):
     # Quick fix: call metric_mission_control if column 'ef' present
@@ -557,6 +595,7 @@ def mission_control(data,ns,pw_data1,rows=[],error=True,save_panel=False,save_pl
     fig.set_figheight(9.5)
     fig.suptitle(png_name)
     plt.subplots_adjust(top=.93)
+    print("Processing plot 00...")
     #Subplt 0,0
     ax[0,0].set_title("Inflaton field evolution")
     ax[0,0].plot(data['a'][:truncate]**pow_a, data['mean1'][:truncate])
@@ -568,12 +607,14 @@ def mission_control(data,ns,pw_data1,rows=[],error=True,save_panel=False,save_pl
     c2 = np.flip(cm.magma(np.linspace(0,1,len(ns.columns)-1)),axis=0)
     ax_twin =  ax[0,0].twinx()
     for j in range(len(ns.columns)-1):
-        ax_twin.plot(ns['a'][:truncate],np.log(pw_data1[:truncate].iloc[:,j]/pw_data1[:truncate].iloc[0,j]),
-                     color=c2[j],
-                     alpha=1)
+        if 0 not in pw_data1[:truncate].iloc[:,j].values:        
+            ax_twin.plot(ns['a'][:truncate],np.log(pw_data1[:truncate].iloc[:,j]/pw_data1[:truncate].iloc[0,j]),
+                         color=c2[j],
+                         alpha=1)
     
         
     #Subplot 0,1
+    print("Processing plot 01...")
     if (not ts) and GW_files_found:
         global freqs
         freqs = gw1.drop('a',axis=1)
@@ -606,7 +647,8 @@ def mission_control(data,ns,pw_data1,rows=[],error=True,save_panel=False,save_pl
                 ax[0,1].plot(a_list,gw_intensity.iloc[:,j],color=colors[j])
         c3 = np.flip(cm.magma(np.linspace(0,1,len(ns.columns)-1)),axis=0)
         for j in range(len(ns.columns)-1):
-            ax_twin.plot(ns['a'][:truncate],np.log(pw_data1[:truncate].iloc[:,j]/pw_data1[:truncate].iloc[0,j]),
+            if 0 not in pw_data1[:truncate].iloc[:,j].values:        
+                ax_twin.plot(ns['a'][:truncate],np.log(pw_data1[:truncate].iloc[:,j]/pw_data1[:truncate].iloc[0,j]),
                      color=c3[j],
                      alpha=.6)        
         
@@ -638,6 +680,7 @@ def mission_control(data,ns,pw_data1,rows=[],error=True,save_panel=False,save_pl
         #ax[0,1].plot(xpower,ypower)
         
     #Subplot 1,0
+    print("Processing plot 10...")
     if not ts:
         if rows==[]:
             rows.append(int(ns.shape[0])/2)
@@ -675,6 +718,7 @@ def mission_control(data,ns,pw_data1,rows=[],error=True,save_panel=False,save_pl
         
     
     #Subplot 1,1
+    print("Processing plot 11...")
     etot = 3* data['h'][:truncate]**2 * Mpl**2 * (data['omega'][:truncate]+1)
     ax[1,1].set_yscale('log')
     ax[1,1].set_title('Reproduction of Fig.1: ratios of energies')
@@ -696,6 +740,7 @@ def mission_control(data,ns,pw_data1,rows=[],error=True,save_panel=False,save_pl
         ax[1,1].legend()
     
     #Subplot 0,2
+    print("Processing plot 02...")
     if GW_files_found:
         ax[0,2].set_yscale('log')    
         ax[0,2].set_xscale('log')
@@ -731,6 +776,7 @@ def mission_control(data,ns,pw_data1,rows=[],error=True,save_panel=False,save_pl
         ax[0,2].set_title("FILES NOT FOUND: Gravitational waves spectrum")
         
     #Subplot 1,2
+    print("Processing plot 12...")
     ax_twin = ax[1,2].twinx()
     p1, = ax[1,2].plot(data['a'], np.sqrt(data['mean1']**2 + data['rms1']**2),label=r"$\langle \phi^{2} \rangle $")
     p2, = ax_twin.plot(data['a'],np.abs(data['mean1']),color=prop_colors[1],label=r"$\langle \phi \rangle$")
@@ -965,6 +1011,8 @@ def plot_fig1(data,error=True,save_img=True,img_name="img",truncate=0):
     
     plt.show()
 def plot_energy_metric(data,save_img=False,img_name="img"):
+    if data.columns[2]!='ef':
+        return
     fig,ax = plt.subplots()
     ax.plot(data['a'], data['gratio'], 'r', label='Fields gradient')
     ax.plot(data['a'], abs(data['gg']), color='cyan', linestyle='dashed',label='Gravity gradient')
@@ -978,5 +1026,5 @@ def plot_energy_metric(data,save_img=False,img_name="img"):
     
 plot_energy_metric(data)
 
-
+plt.show()
 
