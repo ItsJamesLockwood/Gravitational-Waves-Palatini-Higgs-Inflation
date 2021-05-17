@@ -100,7 +100,7 @@
 #define WANTEOS YES
 #define WANTDENSITY YES
 !! As slices and fields are resource intensive, there is an option to save them less regularly than regular checkpoints.
-#define CHECKPOINTS_PER_SLICE 5
+#define CHECKPOINTS_PER_SLICE 1
 #define CHECKPOINTS_PER_FIELD 10
 #define N_FIELD_SAVES 50 
 !!*** below are some settings that you can, but usually do not need to change *****
@@ -129,6 +129,10 @@
 
 !!only print the scale factor and Hubble parameter?
 #define FEEDBACK_ONLYAH NO
+
+!! If density-type fields requested, set whether to keep the pressure field.
+#define KEEPPRESSURE NO
+
 !!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !!**************** end of configuration section *********************!!
 

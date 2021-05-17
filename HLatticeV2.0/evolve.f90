@@ -9,10 +9,13 @@ module evolution
 contains
 
   subroutine evolve()
-    logical save_slices, save_fields, save_metric, save_density, save_eos
+    logical save_slices, save_fields, save_metric, save_density, save_eos, keep_pressure
     save_fields = .false.
     save_slices = .false.
     save_metric = .false.
+    save_eos = .false.
+    save_density = .false.
+    keep_pressure = .false.
 #if WANTFIELDS
   save_fields= .true.
 #endif
@@ -24,7 +27,10 @@ contains
 #endif
 #if WANTDENSITY 
   save_density = .true.
+#if KEEPPRESSURE
+    keep_pressure = .true.
 #endif 
+#endif
 #if WANTEOS
   save_eos = .true.
 #endif
@@ -46,13 +52,14 @@ contains
         if (save_metric .and.  mod(sipar%nsteps,checkpoint_steps*save_field_interval).eq.0 .and. (checkpoint_steps*save_field_interval*field_number_cutoff).ge.sipar%nsteps ) then
           write(*,*) "Saving metric at step ",sipar%nsteps, "..."
           call output_metric_h()
+          call output_metric_p()
         endif
         if (save_eos .and. mod(sipar%nsteps,checkpoint_steps*save_slice_interval) .eq. 0) then
           call output_w()
         endif   
         if (save_density .and. mod(sipar%nsteps,checkpoint_steps*save_field_interval).eq.0 .and. (checkpoint_steps*save_field_interval*field_number_cutoff).ge.sipar%nsteps ) then
           call output_fld_density()
-          call output_fld_pressure()
+          if (keep_pressure) call output_fld_pressure()
         endif
       endif
       call step(n_feedback)

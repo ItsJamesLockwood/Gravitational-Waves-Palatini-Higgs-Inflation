@@ -25,6 +25,9 @@ contains
 
     call allocate_fields()    
     call allocate_metric()
+#if WANTEOS || WANTDENSITY
+    call allocate_density_fields()
+#endif
 
     if(use_checkpoint)then
        call read_check(ierror)

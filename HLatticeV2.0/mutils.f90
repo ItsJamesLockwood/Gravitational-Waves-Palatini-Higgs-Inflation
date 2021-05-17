@@ -6,10 +6,11 @@ module mutils
 #include "configure.h"
   
   logical::need_recalculate=.true.
+  logical::need_new_fld_density=.true.
+  logical::need_new_fld_pressure=.true.
   real(dl)::last_potential_energy, last_fields_kinetic_energy, last_fields_gradient_energy, last_gravity_kinetic_energy, last_gravity_gradient_energy, last_total_detg, last_effective_Hubble
   real(dl),dimension(n):: FPE_mesh, FKE_mesh, FGE_mesh
 
-  logical::need_new_fld_density=.true.
 contains
 
   !!the total potential energy of the scalar fields
@@ -282,7 +283,8 @@ contains
     metric%physdx = metric%dx*metric%a
 #endif
     need_recalculate = .true.
-    need_recalculate_fld_density = .true.
+    need_new_fld_density = .true.
+    need_new_fld_pressure = .true.
     !!================================================
   end subroutine coor_trans
 
@@ -501,10 +503,12 @@ contains
 !!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
   subroutine get_density_field()
+    DEFINE_IND
     if (.not. need_new_fld_density) then 
         return
     endif
-    DEFINE_IND
+    density_field = 0._dl
+
     !$omp parallel do default(shared) private(i,j,k)
     LOOP    
     density_field(i,j,k) = potential(fields_f(:,i,j,k))*DETG(i,j,k) &
@@ -562,16 +566,17 @@ contains
 #endif
 #endif
     ENDLOOP
-    !$omp end parallel do    
+    !$omp end parallel do  
     need_new_fld_density = .false.
     return
     end subroutine get_density_field
 
   subroutine get_pressure_field() 
-    if (.not. need_new_fld_density) then 
+    integer(IB) i,j,k
+    if (.not. need_new_fld_pressure) then 
         return
     endif
-    DEFINE_IND
+    pressure_field = 0._dl
     !$omp parallel do default(shared) private(i,j,k)
     LOOP    
     pressure_field(i,j,k) = (-1._dl)* potential(fields_f(:,i,j,k))*DETG(i,j,k) &
@@ -630,22 +635,30 @@ contains
 #endif
     ENDLOOP
     !$omp end parallel do  
-
-    need_new_fld_density = .false.
+    need_new_fld_pressure = .false.
     return   
   end subroutine get_pressure_field
 
+
+
   function equation_of_state()
     real(dl) equation_of_state, cach(n)
+    DEFINE_IND
     if (need_new_fld_density) then
+        write(*,*) "Calling density field for EOS"
         call get_density_field()
-        call get_pressure_field()
+        need_new_fld_density = .false.
     endif
-    
+    if (need_new_fld_pressure) then
+        write(*,*) "Calling pressure field for EOS"
+        call get_pressure_field()
+        need_new_fld_pressure = .false.
+    endif
+
     cach = 0._dl
     !$omp parallel do default(shared) private(i,j,k)
     LOOP
-    cach(k) = cach(k) + pressure(i,j,k)/density(i,j,k)
+    cach(k) = cach(k) + pressure_field(i,j,k)/density_field(i,j,k)
     ENDLOOP
     !$omp end parallel do    
     equation_of_state = sum(cach)/ncube

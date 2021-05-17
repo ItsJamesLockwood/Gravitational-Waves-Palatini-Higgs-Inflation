@@ -226,8 +226,8 @@ contains
       call deallocate_density_fields()
       allocate(density_field(n,n,n))
       allocate(pressure_field(n,n,n))
-      density_field = 0._dl
-      pressure_field = 0._dl
+      !!density_field = 0._dl
+      !!pressure_field = 0._dl
    end subroutine allocate_density_fields
 
 
