@@ -1158,10 +1158,15 @@ def split_metric(path,screen_file,mode='h'):
     modes = {'h': 'metric_h',
              'p': 'metric_p',
              'f1': 'q_k',
-             'f2': 'qdot_k'}
+             'f2': 'qdot_k',
+             'fd':'fld_density',
+             'fp': 'fld_pressure'}
     destination = trim_name(screen_file)+'_MESHES'
     if not os.path.isdir(destination):
+        print("Making new folder...")
         os.mkdir(destination)
+    else:
+        print("Folder already found!")
     file = open(path,'r')
     
     counter = 1

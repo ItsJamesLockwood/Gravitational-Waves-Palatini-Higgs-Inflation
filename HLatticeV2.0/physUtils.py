@@ -427,9 +427,9 @@ def plot_hyb_path(data,V, bounds=[],use_abs=0):
 
 def w_state(data,plot=False,eos=[]):
     factor = 1
-    power = 1
-    pressure = data.kratio - 1/factor / data.a**power *data.gratio - data.pratio
-    density = data.kratio + 1/(3*factor) / data.a**power *data.gratio + data.pratio
+    power = 0
+    pressure = data.kratio - 1/3/factor / data.a**power *data.gratio - data.pratio
+    density = data.kratio + 1/(factor) / data.a**power *data.gratio + data.pratio
     
 
     
@@ -441,7 +441,7 @@ def w_state(data,plot=False,eos=[]):
         if type(eos)==pd.core.frame.DataFrame:
             size = min(data.shape[0],eos.shape[0])
             print(size)
-            ax.plot(data.a[:size],eos[0][:size],label="From HLattice")
+            ax.plot(eos[0],eos[1][:size],label="From HLattice")
         ax.axhline(1/3,linestyle='dashed',c='grey')
         ax.axhline(0,linestyle='dashed',c='green')
         ax.legend()
@@ -468,3 +468,4 @@ if __name__=="__main__":
     #plt.plot(xs, slow_roll(v, dv))
 
 
+/
