@@ -352,7 +352,7 @@ contains
 
    subroutine output_metric_h()
       type(file_pointer) fp
-      fp = open_file("data/" // trim(run_name) // "_full_metric.log","a")
+      fp = open_file("data/" // trim(run_name) // "_avg_metric.log","a")
       if (sipar%nsteps.eq.0) then
          write(fp%unit,*) n
       endif
@@ -361,4 +361,50 @@ contains
       call close_file(fp)
    end subroutine output_metric_h
 
+   subroutine output_metric_p()
+      type(file_pointer) fp
+      fp = open_file("data/" // trim(run_name) // "_gw_density.log","a")
+      if (sipar%nsteps.eq.0) then
+         write(fp%unit,*) n
+      endif
+      write(fp%unit,*) metric%a
+      !! Sum all components of p_ij * p_ij (where p_ij = \dot{h_ij})
+      write(fp%unit,*) sum(metric_p(:,:,:,:)**2,dim=1) + 2*(metric_p(1,:,:,:)*metric_p(2,:,:,:) &
+                           + metric_p(2,:,:,:)*metric_p(3,:,:,:) &
+                           + metric_p(1,:,:,:)*metric_p(3,:,:,:))
+      call close_file(fp)
+   end subroutine output_metric_p
+
+   subroutine output_w()
+      type(file_pointer) fp
+      real(dl) eos
+      fp = open_file("data/" // trim(run_name) // "_eos_w.log","a")
+      eos = equation_of_state()
+      write(fp%unit,*) metric%a, eos
+      call close_file(fp)
+   end subroutine output_w
+
+   subroutine output_fld_density()
+      type(file_pointer) fp
+      fp = open_file("data/" // trim(run_name) // "_fld_density.log","a")
+      if (sipar%nsteps.eq.0) then
+         write(fp%unit,*) n
+      endif
+      call get_density_field()
+      write(fp%unit,*) metric%a
+      write(fp%unit,*) density_field(:,:,:)
+      call close_file(fp)
+   end subroutine output_fld_density
+   
+   subroutine output_fld_pressure()
+      type(file_pointer) fp
+      fp = open_file("data/" // trim(run_name) // "_fld_pressure.log","a")
+      if (sipar%nsteps.eq.0) then
+         write(fp%unit,*) n
+      endif
+      call get_pressure_field()
+      write(fp%unit,*) metric%a
+      write(fp%unit,*) pressure_field(:,:,:)
+      call close_file(fp)            
+   end subroutine output_fld_pressure
 end module io_utils

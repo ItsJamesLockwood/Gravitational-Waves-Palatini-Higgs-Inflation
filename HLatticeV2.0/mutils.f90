@@ -8,6 +8,8 @@ module mutils
   logical::need_recalculate=.true.
   real(dl)::last_potential_energy, last_fields_kinetic_energy, last_fields_gradient_energy, last_gravity_kinetic_energy, last_gravity_gradient_energy, last_total_detg, last_effective_Hubble
   real(dl),dimension(n):: FPE_mesh, FKE_mesh, FGE_mesh
+
+  logical::need_new_fld_density=.true.
 contains
 
   !!the total potential energy of the scalar fields
@@ -280,6 +282,7 @@ contains
     metric%physdx = metric%dx*metric%a
 #endif
     need_recalculate = .true.
+    need_recalculate_fld_density = .true.
     !!================================================
   end subroutine coor_trans
 
@@ -493,6 +496,160 @@ contains
   end subroutine get_GW_spectrum
 
 
+!!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!!!! Modifications to source code %%%%
+!!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  subroutine get_density_field()
+    if (.not. need_new_fld_density) then 
+        return
+    endif
+    DEFINE_IND
+    !$omp parallel do default(shared) private(i,j,k)
+    LOOP    
+    density_field(i,j,k) = potential(fields_f(:,i,j,k))*DETG(i,j,k) &
+!! Adding the kinetic energy term
+#if METRIC_OPTION == FRW_BACKGROUND
+#if METRIC_PERTURB
+            + sum(fields_p(:,i,j,k)**2)/DETG(i,j,k)/2._dl / scale_factor()**6 &
+#else 
+            + sum(fields_p(:,i,j,k)**2)/2._dl / scale_factor()**6 &
+#endif 
+#else
+#if METRIC_PERTURB
+            + sum(fields_p(:,i,j,k)**2)/DETG(i,j,k)/2._dl  &
+#else 
+            + sum(fields_p(:,i,j,k)**2)/2._dl &
+#endif
+#endif
+
+!! Adding the gradient energy
+#if DIS_SCHEME == LATTICEEASY
+         + ( sum((GRID_FLD(fields_f,:,i+1,j,k)-GRID_FLD(fields_f,:,i,j,k))**2 &
+         +(GRID_FLD(fields_f,:,i,j+1,k)-GRID_FLD(fields_f,:,i,j,k))**2 &
+         +(GRID_FLD(fields_f,:,i,j,k+1)-GRID_FLD(fields_f,:,i,j,k))**2) ) / (metric%physdx)**2 / 2._dl
+#elif DIS_SCHEME ==  HLATTICE1
+#if METRIC_PERTURB
+         + DETG(i,j,k) * ( &
+         GUP11(i,j,k) * sum(TWO_DFLD_X(i,j,k)**2) &
+         + GUP22(i,j,k) * sum(TWO_DFLD_Y(i,j,k)**2) &
+         + GUP33(i,j,k) * sum(TWO_DFLD_Z(i,j,k)**2) &
+         + 2._dl*( &
+         GUP23(i,j,k) * sum(TWO_DFLD_Y(i,j,k)*TWO_DFLD_Z(i,j,k)) &
+         + GUP13(i,j,k) * sum(TWO_DFLD_X(i,j,k)*TWO_DFLD_Z(i,j,k)) &
+         + GUP12(i,j,k) * sum(TWO_DFLD_X(i,j,k)*TWO_DFLD_Y(i,j,k)) &
+         )) /(metric%physdx)**2 / 8._dl
+#else
+         + (sum(TWO_DFLD_X(i,j,k)**2) &
+         + sum(TWO_DFLD_Y(i,j,k)**2) &
+         + sum(TWO_DFLD_Z(i,j,k)**2) ) /(metric%physdx)**2 / 8._dl
+#endif
+#elif DIS_SCHEME == HLATTICE2
+#if METRIC_PERTURB
+         + DETG(i,j,k) * ( &
+         GUP11(i,j,k) * sum(TWELVE_DFLD_X(i,j,k)**2) &
+         + GUP22(i,j,k) * sum(TWELVE_DFLD_Y(i,j,k)**2) &
+         + GUP33(i,j,k) * sum(TWELVE_DFLD_Z(i,j,k)**2) &
+         + 2._dl*( &
+         GUP23(i,j,k) * sum(TWELVE_DFLD_Y(i,j,k)*TWELVE_DFLD_Z(i,j,k)) &
+         + GUP13(i,j,k) * sum(TWELVE_DFLD_X(i,j,k)*TWELVE_DFLD_Z(i,j,k)) &
+         + GUP12(i,j,k) * sum(TWELVE_DFLD_X(i,j,k)*TWELVE_DFLD_Y(i,j,k)) &
+         )) / (metric%physdx)**2 / 288._dl
+#else
+         + (sum(TWELVE_DFLD_X(i,j,k)**2) &
+         + sum(TWELVE_DFLD_Y(i,j,k)**2) &
+         + sum(TWELVE_DFLD_Z(i,j,k)**2)) / (metric%physdx)**2 / 288._dl
+#endif
+#endif
+    ENDLOOP
+    !$omp end parallel do    
+    need_new_fld_density = .false.
+    return
+    end subroutine get_density_field
+
+  subroutine get_pressure_field() 
+    if (.not. need_new_fld_density) then 
+        return
+    endif
+    DEFINE_IND
+    !$omp parallel do default(shared) private(i,j,k)
+    LOOP    
+    pressure_field(i,j,k) = (-1._dl)* potential(fields_f(:,i,j,k))*DETG(i,j,k) &
+!! Adding the kinetic energy term
+#if METRIC_OPTION == FRW_BACKGROUND
+#if METRIC_PERTURB
+            + sum(fields_p(:,i,j,k)**2)/DETG(i,j,k)/2._dl / scale_factor()**6 &
+#else 
+            + sum(fields_p(:,i,j,k)**2)/2._dl / scale_factor()**6 &
+#endif 
+#else
+#if METRIC_PERTURB
+            + sum(fields_p(:,i,j,k)**2)/DETG(i,j,k)/2._dl  &
+#else 
+            + sum(fields_p(:,i,j,k)**2)/2._dl &
+#endif
+#endif
+
+!! Adding the gradient energy
+#if DIS_SCHEME == LATTICEEASY
+         + (-1._dl/3)* ( sum((GRID_FLD(fields_f,:,i+1,j,k)-GRID_FLD(fields_f,:,i,j,k))**2 &
+         +(GRID_FLD(fields_f,:,i,j+1,k)-GRID_FLD(fields_f,:,i,j,k))**2 &
+         +(GRID_FLD(fields_f,:,i,j,k+1)-GRID_FLD(fields_f,:,i,j,k))**2) ) / (metric%physdx)**2 / 2._dl
+#elif DIS_SCHEME ==  HLATTICE1
+#if METRIC_PERTURB
+         + (-1._dl/3)*  DETG(i,j,k) * ( &
+         GUP11(i,j,k) * sum(TWO_DFLD_X(i,j,k)**2) &
+         + GUP22(i,j,k) * sum(TWO_DFLD_Y(i,j,k)**2) &
+         + GUP33(i,j,k) * sum(TWO_DFLD_Z(i,j,k)**2) &
+         + 2._dl*( &
+         GUP23(i,j,k) * sum(TWO_DFLD_Y(i,j,k)*TWO_DFLD_Z(i,j,k)) &
+         + GUP13(i,j,k) * sum(TWO_DFLD_X(i,j,k)*TWO_DFLD_Z(i,j,k)) &
+         + GUP12(i,j,k) * sum(TWO_DFLD_X(i,j,k)*TWO_DFLD_Y(i,j,k)) &
+         )) /(metric%physdx)**2 / 8._dl
+#else
+         + (-1._dl/3)* (sum(TWO_DFLD_X(i,j,k)**2) &
+         + sum(TWO_DFLD_Y(i,j,k)**2) &
+         + sum(TWO_DFLD_Z(i,j,k)**2) ) /(metric%physdx)**2 / 8._dl
+#endif
+#elif DIS_SCHEME == HLATTICE2
+#if METRIC_PERTURB
+         + (-1._dl/3)* DETG(i,j,k) * ( &
+         GUP11(i,j,k) * sum(TWELVE_DFLD_X(i,j,k)**2) &
+         + GUP22(i,j,k) * sum(TWELVE_DFLD_Y(i,j,k)**2) &
+         + GUP33(i,j,k) * sum(TWELVE_DFLD_Z(i,j,k)**2) &
+         + 2._dl*( &
+         GUP23(i,j,k) * sum(TWELVE_DFLD_Y(i,j,k)*TWELVE_DFLD_Z(i,j,k)) &
+         + GUP13(i,j,k) * sum(TWELVE_DFLD_X(i,j,k)*TWELVE_DFLD_Z(i,j,k)) &
+         + GUP12(i,j,k) * sum(TWELVE_DFLD_X(i,j,k)*TWELVE_DFLD_Y(i,j,k)) &
+         )) / (metric%physdx)**2 / 288._dl
+#else
+         + (-1._dl/3)* (sum(TWELVE_DFLD_X(i,j,k)**2) &
+         + sum(TWELVE_DFLD_Y(i,j,k)**2) &
+         + sum(TWELVE_DFLD_Z(i,j,k)**2)) / (metric%physdx)**2 / 288._dl
+#endif
+#endif
+    ENDLOOP
+    !$omp end parallel do  
+
+    need_new_fld_density = .false.
+    return   
+  end subroutine get_pressure_field
+
+  function equation_of_state()
+    real(dl) equation_of_state, cach(n)
+    if (need_new_fld_density) then
+        call get_density_field()
+        call get_pressure_field()
+    endif
+    
+    cach = 0._dl
+    !$omp parallel do default(shared) private(i,j,k)
+    LOOP
+    cach(k) = cach(k) + pressure(i,j,k)/density(i,j,k)
+    ENDLOOP
+    !$omp end parallel do    
+    equation_of_state = sum(cach)/ncube
+    return
+  end function equation_of_state
+
 end module mutils
-
-

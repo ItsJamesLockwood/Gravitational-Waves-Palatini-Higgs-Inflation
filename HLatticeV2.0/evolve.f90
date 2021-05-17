@@ -9,7 +9,7 @@ module evolution
 contains
 
   subroutine evolve()
-    logical save_slices, save_fields, save_metric
+    logical save_slices, save_fields, save_metric, save_density, save_eos
     save_fields = .false.
     save_slices = .false.
     save_metric = .false.
@@ -22,9 +22,15 @@ contains
 #if WANTMETRIC && (WANTGW || METRIC_PERTURB)
   save_metric = .true.
 #endif
+#if WANTDENSITY 
+  save_density = .true.
+#endif 
+#if WANTEOS
+  save_eos = .true.
+#endif
     do
       call output_to_screen()
-      call output_energy()
+      !!call output_energy()
       if(use_checkpoint .and. mod(sipar%nsteps,checkpoint_steps).eq.0 .and. (sipar%nsteps.gt.0 .or. write_check_at_step0))then
         call write_check()
         if (save_fields .and. mod(sipar%nsteps,checkpoint_steps*save_field_interval).eq.0 .and. (checkpoint_steps*save_field_interval*field_number_cutoff).ge.sipar%nsteps ) then
@@ -40,7 +46,14 @@ contains
         if (save_metric .and.  mod(sipar%nsteps,checkpoint_steps*save_field_interval).eq.0 .and. (checkpoint_steps*save_field_interval*field_number_cutoff).ge.sipar%nsteps ) then
           write(*,*) "Saving metric at step ",sipar%nsteps, "..."
           call output_metric_h()
-        endif        
+        endif
+        if (save_eos .and. mod(sipar%nsteps,checkpoint_steps*save_slice_interval) .eq. 0) then
+          call output_w()
+        endif   
+        if (save_density .and. mod(sipar%nsteps,checkpoint_steps*save_field_interval).eq.0 .and. (checkpoint_steps*save_field_interval*field_number_cutoff).ge.sipar%nsteps ) then
+          call output_fld_density()
+          call output_fld_pressure()
+        endif
       endif
       call step(n_feedback)
       

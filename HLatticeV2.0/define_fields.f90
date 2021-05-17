@@ -48,6 +48,8 @@ module define_fields
   real(dl),dimension(:,:,:,:),allocatable::gauge_lambda
 #endif
 
+   real(dl),dimension(:,:,:),allocatable::pressure_field
+   real(dl),dimension(:,:,:),allocatable::density_field
 contains
 
 !! input/output utils   
@@ -211,5 +213,22 @@ contains
      call allocate_metric_p()
 #endif     
    end subroutine allocate_metric
+
+!!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!!!! Modifications to source code %%%%
+!!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   subroutine deallocate_density_fields()
+      if(allocated(density_field)) deallocate(density_field)
+      if(allocated(pressure_field)) deallocate(pressure_field)
+   end subroutine deallocate_density_fields
+
+   subroutine allocate_density_fields()
+      call deallocate_density_fields()
+      allocate(density_field(n,n,n))
+      allocate(pressure_field(n,n,n))
+      density_field = 0._dl
+      pressure_field = 0._dl
+   end subroutine allocate_density_fields
+
 
 end module define_fields
