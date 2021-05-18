@@ -48,6 +48,10 @@ contains
           write(*,*) "Saving slices at step ",sipar%nsteps, "..."
           call output_field_slice()
           call output_momentum_slice()
+#if WANTGW || METRIC_PERTURB
+          call output_metric_h_slice()
+          call output_metric_p_slice()
+#endif
         endif
         if (save_metric .and.  mod(sipar%nsteps,checkpoint_steps*save_field_interval).eq.0 .and. (checkpoint_steps*save_field_interval*field_number_cutoff).ge.sipar%nsteps ) then
           write(*,*) "Saving metric at step ",sipar%nsteps, "..."

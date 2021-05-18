@@ -333,6 +333,61 @@ contains
       
    end subroutine output_momentum_slice
 
+   subroutine output_metric_h_slice()
+      type(file_pointer) fp
+      integer(IB) nf,i,j
+      do nf=1, ns
+         fp = open_file("data/" // trim(run_name) // "_slice_metric_h_"//trim(int2str(nf))//".log","a")
+         if (sipar%nsteps.eq.0) then
+            write(fp%unit,*) n
+         endif
+         write(fp%unit,*) "SEPARATOR"
+         write(fp%unit,*) metric%a
+         
+         if (which_lattice_cut .eq. 1) then
+            write(fp%unit,*) sum(metric_h(:,yz_lattice_slice,:,:), dim=1)
+         else if (which_lattice_cut .eq. 2) then
+            write(fp%unit,*) sum(metric_h(:,:,:,xy_lattice_slice), dim=1)
+         else if (which_lattice_cut .eq. 3) then
+            write(fp%unit,*) sum(metric_h(:,:,xz_lattice_slice,:), dim=1)
+         else 
+            write(*,*) "Skipping momentum slices: slice direction not recognised"
+         endif
+         call close_file(fp)
+      enddo
+   end subroutine output_metric_h_slice
+
+   subroutine output_metric_p_slice()
+      type(file_pointer) fp
+      integer(IB) nf,i,j
+      do nf=1, ns
+         fp = open_file("data/" // trim(run_name) // "_slice_metric_p_"//trim(int2str(nf))//".log","a")
+         if (sipar%nsteps.eq.0) then
+            write(fp%unit,*) n
+         endif
+         write(fp%unit,*) "SEPARATOR"
+         write(fp%unit,*) metric%a
+         
+         if (which_lattice_cut .eq. 1) then
+            write(fp%unit,*) sum(metric_p(:,yz_lattice_slice,:,:)**2,dim=1) + 2*(metric_p(1,yz_lattice_slice,:,:)*metric_p(2,yz_lattice_slice,:,:) &
+            + metric_p(2,yz_lattice_slice,:,:)*metric_p(3,yz_lattice_slice,:,:) &
+            + metric_p(1,yz_lattice_slice,:,:)*metric_p(3,yz_lattice_slice,:,:))
+         else if (which_lattice_cut .eq. 2) then
+            write(fp%unit,*) sum(metric_p(:,:,:,xy_lattice_slice)**2,dim=1) + 2*(metric_p(1,:,:,xy_lattice_slice)*metric_p(2,:,:,xy_lattice_slice) &
+            + metric_p(2,:,:,xy_lattice_slice)*metric_p(3,:,:,xy_lattice_slice) &
+            + metric_p(1,:,:,xy_lattice_slice)*metric_p(3,:,:,xy_lattice_slice))
+         else if (which_lattice_cut .eq. 3) then
+            write(fp%unit,*) sum(metric_p(:,:,xz_lattice_slice,:)**2,dim=1) + 2*(metric_p(1,:,xz_lattice_slice,:)*metric_p(2,:,xz_lattice_slice,:) &
+            + metric_p(2,:,xz_lattice_slice,:)*metric_p(3,:,xz_lattice_slice,:) &
+            + metric_p(1,:,xz_lattice_slice,:)*metric_p(3,:,xz_lattice_slice,:))
+         else 
+            write(*,*) "Skipping momentum slices: slice direction not recognised"
+         endif
+         call close_file(fp)
+      enddo
+   end subroutine output_metric_p_slice
+
+
    subroutine output_energy()
       type(file_pointer) fp
       integer(IB) nf,i,j
