@@ -47,7 +47,7 @@
 #define NUM_SCALAR_FIELDS 1
 
 !!the length of each edge times Hubble: In HLattice the speed of light is defined to be 1, so this quantity is dimensionless. It should be chosen such that the dominating growing mode is captured. 
-#define INIT_BOXSIZE_TIMES_H 0.200000000
+#define INIT_BOXSIZE_TIMES_H 0.400000000
 
 !! define the discretization scheme
 #define DIS_SCHEME HLATTICE2
@@ -69,7 +69,7 @@
 #define INTEGRATOR SYMPLECTIC_6TH
 
 !! define the # of grid points along each edge of the cubical box (global variable "n" in the code):it must be integer power of 2 (and between 4 and 4096); the total number of grid points is n^3
-#define SIMU_RESOLUTION 256
+#define SIMU_RESOLUTION 512
 
 !! want gravitational waves? You can use it for any METRIC_OPTION. In the case METRIC_OPTION = MINKOWSKI_BACKGROUND or FRW_BACKGROUND, the metric perturbations will be integrated without giving feedback to the scalar fields.
 #define WANTGW YES
