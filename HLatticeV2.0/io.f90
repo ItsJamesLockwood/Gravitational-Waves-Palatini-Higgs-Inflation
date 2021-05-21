@@ -81,7 +81,7 @@ contains
   subroutine output_to_screen()
     DEFINE_IND
     character (len=20):: formatString
-    character (len=100):: totalFormat
+    character (len=200):: totalFormat
     character (len=10):: parentheses
     character (len=20):: lastTerm
     real(dl) avef(ns),flucf(ns)
@@ -97,9 +97,15 @@ contains
     do i=1,ns
        flucf(i)=sqrt(sum((fields_f(i,:,:,:)-avef(i))**2)/ncube)
     enddo
+#if METRIC_PERTURB
+   do i=1, 2*ns+10
+      totalFormat=trim(totalFormat)//trim(formatString)
+   enddo
+#else
     do i=1, 2*ns+4
       totalFormat=trim(totalFormat)//trim(formatString)
     enddo
+#endif
     totalFormat=trim(totalFormat)//trim(lastTerm)//trim(parentheses)
     avef=avef/Mpl
     flucf=flucf/Mpl
@@ -115,8 +121,8 @@ contains
        write(*,'(A9, 9A11, 2A'//trim(int2str(ns*11))//')') 'a   ','H  ','E_f ','P_f/E_f', 'K_f/E_f', 'G_f/E_f', 'K_g/E_f', 'G_g/E_f', 'E_tot/E_f', 'rms_h ', 'mean_fields',  'rms_fields'
        write(screen_file%unit,'(A9, 9A11, 2A'//trim(int2str(ns*11))//')') 'a  ','H  ','E_f  ','P_f/E_f', 'K_f/E_f', 'G_f/E_f', 'K_g/E_f', 'G_g/E_f', 'E_tot/E_f', 'rms_h ', 'mean_fields',  'rms_fields'
     endif
-    write(*,'(F9.5,'//trim(Int2str(2*ns+9))//'G11.3)') metric%a, effective_Hubble(), total_fields_energy(), potential_energy()/total_fields_energy(), fields_kinetic_energy()/total_fields_energy(), fields_gradient_energy()/total_fields_energy(), gravity_kinetic_energy()/total_fields_energy(),gravity_gradient_energy()/total_fields_energy(), total_energy()/total_fields_energy(),sqrt(sum(metric_h(:,1:n,1:n,1:n)**2)/ncube/6._dl), avef, flucf
-    write(screen_file%unit,'(F10.5,'//trim(Int2str(2*ns+9))//'G11.3)') metric%a, effective_Hubble(), total_fields_energy(), potential_energy()/total_fields_energy(), fields_kinetic_energy()/total_fields_energy(), fields_gradient_energy()/total_fields_energy(), gravity_kinetic_energy()/total_fields_energy(),gravity_gradient_energy()/total_fields_energy(), total_energy()/total_fields_energy(),sqrt(sum(metric_h(:,1:n,1:n,1:n)**2)/ncube/6._dl), avef, flucf
+    write(*,(totalFormat)) metric%a, effective_Hubble(), total_fields_energy(), potential_energy()/total_fields_energy(), fields_kinetic_energy()/total_fields_energy(), fields_gradient_energy()/total_fields_energy(), gravity_kinetic_energy()/total_fields_energy(),gravity_gradient_energy()/total_fields_energy(), total_energy()/total_fields_energy(),sqrt(sum(metric_h(:,1:n,1:n,1:n)**2)/ncube/6._dl), avef, flucf
+    write(screen_file%unit,(totalFormat)) metric%a, effective_Hubble(), total_fields_energy(), potential_energy()/total_fields_energy(), fields_kinetic_energy()/total_fields_energy(), fields_gradient_energy()/total_fields_energy(), gravity_kinetic_energy()/total_fields_energy(),gravity_gradient_energy()/total_fields_energy(), total_energy()/total_fields_energy(),sqrt(sum(metric_h(:,1:n,1:n,1:n)**2)/ncube/6._dl), avef, flucf
 #else
     if(sipar%nsteps.eq.0)then
        write(*,'(A9, 5A11, 2A'//trim(int2str(ns*11))//')') 'a  ','H  ','rho/3H^2-1','P_f/E_f   ', 'K_f/E_f   ', 'G_f/E_f   ', 'mean_fields ',  'rms_fields'
