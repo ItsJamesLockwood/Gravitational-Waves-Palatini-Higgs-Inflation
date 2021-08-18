@@ -14,4 +14,19 @@ The Python modules provide tools for formatting, analysing and saving the result
 - animation tools for playing back the evolution of pseudo-solitonic objects inside the lattice, showing how the initial uniform Higgs field quickly fragments.
 - analytics functions for quantifying the behaviour of the Higgs-Palatini model and comparing the simulation results to previously studied models.
 
+Some examples of the dashboards and output from the Python analysis scripts are shown below.
+
+Output from the dashboard, giving an overview of a typical simulation:
+![rtanh_std_metric_h_panel](https://user-images.githubusercontent.com/33159939/129893982-10fe5b5c-48aa-4663-893a-a4a783df81be.png)
+
+Overlay of the Floquet exponent for the field's evolution at different scale factors _a(t)_:
+![image](https://user-images.githubusercontent.com/33159939/129894952-90ee34e8-3d7d-4e45-995f-4a76f504a95e.png)
+
+Comparison of the evolution of a perturbation mode in the approximated linear regime and the simulated fully non-linear regime:  
+![image](https://user-images.githubusercontent.com/33159939/129895057-9d883d32-ba6c-4b71-a79e-0cc364ac62a7.png)
+
+Slice of the lattice showing the gravitational wave energy density late in the simulation:
+![image](https://user-images.githubusercontent.com/33159939/129895208-75888da8-2c81-489b-87c2-520d457342a3.png)
+
+
 Please note, that due to the ever-evolving nature of the requirements of this project, the Python scripts are not heavily documented at this time and require a reorganisation before they can be used effectively in the public domain. For any questions regarding this project, including its current status, please feel free to get in touch. 
